@@ -37,6 +37,7 @@ export default function Breakdown() {
     setBreakdowns,
     units,
     updateUnitStatus,
+    removeRow,
   } = useDataStore();
 
   const [search, setSearch] = useState('');
@@ -286,17 +287,23 @@ export default function Breakdown() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Hapus data breakdown ini?')) {
-      const breakdown = breakdowns.find(b => b.id === id);
-      if (breakdown) {
-        // Restore unit status if it was BREAKDOWN
-        const unit = units.find((u: any) => u.serialNumber === breakdown.unitSerialNumber);
-        if (unit && unit.status === 'BREAKDOWN') {
-          updateUnitStatus(unit.id, 'AVAILABLE');
-        }
+  // Hapus lewat removeRow, lalu baru kembalikan status unit. Urutan ini penting:
+  // kalau penghapusan ditahan (mis. tersimpan tidak tercapai), unit tidak boleh
+  // berpindah status padahal laporan breakdown-nya masih ada.
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus data breakdown ini?')) return;
+    const hasil = await removeRow('breakdowns', id);
+    if (!hasil.ok) {
+      alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
+      return;
+    }
+    const breakdown = breakdowns.find(b => b.id === id);
+    if (breakdown) {
+      // Restore unit status if it was BREAKDOWN
+      const unit = units.find((u: any) => u.serialNumber === breakdown.unitSerialNumber);
+      if (unit && unit.status === 'BREAKDOWN') {
+        updateUnitStatus(unit.id, 'AVAILABLE');
       }
-      setBreakdowns(breakdowns.filter(b => b.id !== id));
     }
   };
 

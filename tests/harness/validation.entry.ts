@@ -6,3 +6,4 @@
 export * as V from '../../src/utils/validation';
 export { getDataRecovery, collectSnapshotSettings } from '../../src/utils/dataRecovery';
 export { matchesQuery } from '../../src/utils/searchMatch';
+export { COLLECTION_KEYS } from '../../src/store/collections';

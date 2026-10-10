@@ -314,8 +314,14 @@ const MENU_HAPUS = {
   rentals: 'Rental.tsx',
   services: 'Service.tsx',
   purchases: 'Purchase.tsx',
+  deliveries: 'Delivery.tsx',
+  documents: 'Documents.tsx',
+  breakdowns: 'Breakdown.tsx',
+  operators: 'Operators.tsx',
+  technicians: 'Technicians.tsx',
+  approvals: 'Approvals.tsx',
 };
-const idArrayHapus = /\.filter\(\s*\w+\s*=>\s*\w+\.id\s*!==\s*id\s*\)/;
+const idArrayHapus = /\.filter\(\s*\w+\s*=>\s*\w+\.id\s*!==\s*\w+\s*\)/;
 for (const [collection, file] of Object.entries(MENU_HAPUS)) {
   const src = fs.readFileSync(path.join(__dirname, '../../src/pages', file), 'utf8');
   check(`${file}: hapus "${collection}" lewat removeRow`,
@@ -323,6 +329,27 @@ for (const [collection, file] of Object.entries(MENU_HAPUS)) {
   check(`${file}: tidak menghapus collection dengan menyaring array`,
     !idArrayHapus.test(src));
 }
+// Peta di atas hanya mengawasi menu yang sudah dikenal. Aturan umum ini yang
+// menahan menu baru (atau perubahan lama) supaya tidak kembali ke filter-array:
+// setiap halaman yang mengambil datanya dari useDataStore harus menghapus lewat
+// removeRow. Brands.tsx sengaja tidak ikut — daftar merek/model adalah state
+// lokal halaman itu, bukan collection store, jadi tidak ada baris file yang bisa
+// tertinggal.
+const halamanStore = fs.readdirSync(path.join(__dirname, '../../src/pages'))
+  .filter(f => f.endsWith('.tsx'))
+  .filter(f => {
+    const src = fs.readFileSync(path.join(__dirname, '../../src/pages', f), 'utf8');
+    return src.includes('useDataStore') && idArrayHapus.test(src);
+  });
+check('tidak ada halaman berstore yang menghapus dengan menyaring array',
+  halamanStore.length === 0, { halamanStore });
+// Kelengkapan peta, dibandingkan dengan daftar collection yang benar-tbenar ada
+// di store. bankAccounts satu-satunya yang belum punya layar hapus (kunci rekening
+// dikelola lewat Settings tanpa tombol hapus). Collection baru yang muncul di
+// daftar ini tanpa ikut disambungkan akan gagal di sini.
+const belumPeta = E.COLLECTION_KEYS.filter(c => !MENU_HAPUS[c]);
+check('setiap collection store tercatat di peta hapus (kecuali bankAccounts)',
+  belumPeta.join(',') === 'bankAccounts', { belumPeta });
 try {
   const { REFERENCE_RULES } = require('../../dist-electron/referential.js');
   const tanpaMenu = Object.keys(REFERENCE_RULES).filter(c => !MENU_HAPUS[c]);
@@ -531,6 +558,21 @@ check('smoke-paket: menjalankan FATHONI.exe selalu dalam sandbox',
   /--user-data-dir=\$\{PROFIL\}/.test(SMOKE) && !/APPDATA: SANDBOX/.test(SMOKE));
 check('smoke-paket: profil nyata dibandingkan sebelum/sesudah agar kebocoran terlihat',
   /sebelumLive === sesudahLive/.test(SMOKE));
+
+// ── 20. boundary dipasang per rute, bukan hanya di akar ───────────
+// ErrorBoundary di akar (App.tsx) menyimpan status kesalahan sampai aplikasi
+// dimuat ulang. Satu layar yang melempar karena satu baris rusak membuat SEMUA
+// menu ikut menampilkan "Terjadi Kesalahan" — inilah bentuk "aplikasi macet" yang
+// paling sering dilaporkan, padahal file basis datanya baik-baik saja. ProtectedRoute
+// sekarang membungkus kontennya sendiri dengan boundary berkunci rute, jadi
+// pindah menu memulihkan layar.
+const APPSRC = fs.readFileSync(path.join(ROOT, 'src', 'App.tsx'), 'utf8');
+check('App: konten terlindungi dibungkus boundary berkunci rute (pulih saat pindah menu)',
+  /<ErrorBoundary key=\{[^}]*pathname[^}]*\}>/.test(APPSRC));
+check('App: boundary akar tetap ada untuk error di luar rute',
+  /<ErrorBoundary>\s*<AuthProvider>/.test(APPSRC));
+check('handoff-check bagian 10 menguji enam menu katalog menghapus lewat patch',
+  /KATALOG/.test(fs.readFileSync(path.join(ROOT, 'tests', 'harness', 'handoff-check.cjs'), 'utf8')));
 
 fs.rmSync(outfile, { force: true });
 console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

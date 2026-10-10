@@ -1095,6 +1095,191 @@ async function run(wc) {
   ok('9.11 database tetap utuh sesudah seluruh uji hidrasi dan penjaga tulis',
     sehat9.ok === true, sehat9.quickCheck);
 
+  // ── 10. hapus di menu katalog: satu baris lewat patch, bukan collection penuh ──
+  // Operator, Teknisi, Dokumen, Pengiriman, Breakdown dan Persetujuan dulu
+  // menghapus dengan menyaring array di memorinya sendiri. Di layar hasilnya
+  // identik, jadi tidak ada yang sadar bahwa yang dikirim ke file adalah seluruh
+  // collection — dan pemeriksaan rujukan di removeRow tidak pernah dipanggil.
+  // Enam menu ini diuji dengan cara yang sama seperti 7.14: dua baris uji masuk ke
+  // file, satu ditekan lewat tombolnya, dan jejak tulisnya dibandingkan.
+  const KATALOG = [
+    { rute: 'operators', collection: 'operators',
+      baris: (id, tanda) => ({
+        id, operatorNumber: tanda, name: 'Operator Uji ' + tanda, phone: '0811000000',
+        email: '', nik: '', status: 'ACTIVE', certifications: [], assignedUnit: '',
+        assignedProject: '', totalHours: 3, startDate: '2026-01-05', licenseNumber: '',
+        notes: '',
+      }) },
+    { rute: 'technicians', collection: 'technicians',
+      baris: (id, tanda) => ({
+        id, technicianNumber: tanda, name: 'Teknisi Uji ' + tanda, phone: '0811000000',
+        email: '', status: 'ACTIVE', specializations: [], certifications: [],
+        totalWorkOrders: 1, totalHours: 4, startDate: '2026-01-05', skills: [], notes: '',
+      }) },
+    { rute: 'documents', collection: 'documents',
+      baris: (id, tanda) => ({
+        id, jenisDokumen: 'Surat Uji Tipe', nomorDokumen: tanda, masaBerlaku: '2030-01-01',
+        statusLegalitas: 'AKTIF', keterangan: '',
+      }) },
+    { rute: 'delivery', collection: 'deliveries',
+      baris: (id, tanda) => ({
+        id, doNumber: tanda, salesOrderRef: 'SO-UJI-10', customerName: 'PT Uji Serah',
+        unitModel: 'SANY SY215C', serialNumber: 'RANGKA-UJI-10', deliveryDate: '2026-10-01',
+        destination: 'Site Uji', driverName: 'Sopir Uji', truckPlate: 'B 1234 XY',
+        status: 'MENUNGGU', notes: '',
+      }) },
+    { rute: 'breakdown', collection: 'breakdowns',
+      baris: (id, tanda) => ({
+        id, breakdownNumber: tanda, unitSerialNumber: 'RANGKA-UJI-10', unitModel: 'SANY SY215C',
+        location: 'Site Uji', reportedBy: 'Pimpinan Uji', reportedAt: '2026-10-01T08:00:00.000Z',
+        severity: 'MINOR', status: 'REPORTED', description: 'Laporan uji hapus',
+      }) },
+    { rute: 'approvals', collection: 'approvals',
+      baris: (id, tanda) => ({
+        id, requestNumber: tanda, type: 'PURCHASE_REQUEST', title: 'Pengajuan Uji',
+        description: 'Pengajuan uji hapus', requestedBy: 'Sales Uji', requestedAt: '2026-10-01',
+        amount: 1000, status: 'PENDING', approverLevel: 1, currentApprover: '', notes: '',
+      }) },
+  ];
+  for (const m of KATALOG) {
+    const kode = m.collection.slice(0, 2).toUpperCase();
+    m.hapus = 'UJI10HAPUS' + kode;
+    m.sisa = 'UJI10SISA' + kode;
+  }
+  const masuk = await ev(wc, `return await window.electronAPI.dbPatch(${JSON.stringify(
+    Object.fromEntries(KATALOG.map(m => [m.collection, {
+      upsert: [m.baris('H10A-' + m.hapus, m.hapus), m.baris('H10B-' + m.sisa, m.sisa)],
+      removeIds: [],
+    }])))
+  });`);
+  ok('10.0 dua baris uji per collection masuk ke file sebelum tombolnya ditekan',
+    KATALOG.every(m => masuk[m.collection] && masuk[m.collection].inserted === 2), masuk);
+
+  // Boot tidak lagi memindahkan seluruh file ke renderer, jadi collection yang
+  // sudah pernah dibuka menunya (deliveries dibaca lewat Penjualan di bagian 5)
+  // menyimpan salinannya sendiri di memori dan TIDAK membaca ulang apa yang baru
+  // saja masuk ke file. Tanpa muat ulang, baris uji tidak akan pernah muncul di
+  // daftar dan yang diuji bukan jalurnya. Sesi login ikut bertahan, makanya
+  // layar login hanya dibuka kalau aplikasinya benar-benar keluar.
+  await wc.reload();
+  const masukLagi = async () => {
+    for (let i = 0; i < 60; i++) {
+      if (await ev(wc, `return !!document.querySelector('#login-username');`)) {
+        await ev(wc, `
+          setVal(document.querySelector('#login-username'), 'admin');
+          setVal(document.querySelector('#login-password'), 'BaruHand123');
+          const b = byText(/Masuk ke FATHONI/); if (b) b.click();
+          return true;`);
+      } else if (await ev(wc, `return /Dasbor|Armada|Kontrol|Laporan/i.test(document.body.innerText);`)) {
+        return true;
+      }
+      await wait(500);
+    }
+    return false;
+  };
+  ok('10.0b aplikasi dibuka ulang dengan tenang supaya daftar katalog dibaca dari file',
+    await masukLagi());
+
+  // Jejak tulis hanya bermakna kalau tidak ada simpanan tertunda yang mengalir di
+  // sampingnya: counter dibaca berulang sampai dua detik terakhir tidak bergerak.
+  const tulisTenang = async () => {
+    let terakhir = await ev(wc, `return (await window.electronAPI.dbStats()).writes;`);
+    for (let i = 0; i < 8; i++) {
+      await wait(1500);
+      const kini = await ev(wc, `return (await window.electronAPI.dbStats()).writes;`);
+      if (kini.patchCalls === terakhir.patchCalls && kini.patchUpsertRows === terakhir.patchUpsertRows
+        && kini.patchRemoveIds === terakhir.patchRemoveIds && kini.fullCalls === terakhir.fullCalls) return kini;
+      terakhir = kini;
+    }
+    return terakhir;
+  };
+
+  for (const [i, m] of KATALOG.entries()) {
+    await ev(wc, `window.location.hash = '#/${m.rute}'; return true;`);
+    const tampak = await waitFor(wc,
+      `[...document.querySelectorAll('tbody tr')].some(r => /${m.hapus}/.test(r.innerText))`,
+      `baris uji ${m.collection} tampil`, 25000);
+    const sebelumTulis = await tulisTenang();
+    const sebelumJumlah = await ev(wc, `
+      window.confirm = () => true;
+      window.__alert = null;
+      window.alert = (msg) => { window.__alert = String(msg); };
+      return (await window.electronAPI.dbQuery({ collection: '${m.collection}', limit: 500 })).total;`);
+    const klik = await ev(wc, `
+      const tr = [...document.querySelectorAll('tbody tr')].find(r => /${m.hapus}/.test(r.innerText));
+      const btn = tr && [...tr.querySelectorAll('button')].find(b => (b.title || '') === 'Delete' || /Hapus/.test((b.innerText || '').trim()));
+      if (btn) btn.click();
+      return { baris: !!tr, tombol: !!btn };`);
+    ok(`10.${i + 1} ${m.collection}: baris uji tampil dan tombol hapusnya dapat dipakai`,
+      tampak === true && klik.baris === true && klik.tombol === true, { tampak, klik });
+
+    const bersih = await waitFor(wc,
+      `(await window.electronAPI.dbQuery({ collection: '${m.collection}', search: '${m.hapus}', limit: 1 })).total === 0`,
+      `baris ${m.hapus} hilang dari file`, 25000);
+    const sesudah = await ev(wc, `
+      const w = (await window.electronAPI.dbStats()).writes;
+      return {
+        tulis: {
+          removeIds: w.patchRemoveIds - ${sebelumTulis.patchRemoveIds},
+          upsertRows: w.patchUpsertRows - ${sebelumTulis.patchUpsertRows},
+          fullCalls: w.fullCalls - ${sebelumTulis.fullCalls},
+        },
+        jumlah: (await window.electronAPI.dbQuery({ collection: '${m.collection}', limit: 500 })).total,
+        sisaAda: (await window.electronAPI.dbQuery({ collection: '${m.collection}', search: '${m.sisa}', limit: 1 })).total,
+        alert: window.__alert,
+      };`);
+    ok(`10.${i + 7} ${m.collection}: hapus mengirim satu id lewat patch, bukan seluruh collection`,
+      bersih === true && sesudah.tulis.removeIds === 1 && sesudah.tulis.upsertRows === 0
+        && sesudah.tulis.fullCalls === 0 && sesudah.jumlah === sebelumJumlah - 1
+        && sesudah.sisaAda === 1 && !sesudah.alert,
+      { bersih, sebelumJumlah, sesudah });
+  }
+
+  const sehat10 = await ev(wc, `return window.electronAPI.dbIntegrity();`);
+  ok('10.13 database tetap utuh sesudah enam menu katalog menghapus barisnya',
+    sehat10.ok === true, sehat10.quickCheck);
+
+  // ── 10.14 satu layar rusak tidak boleh membekukan seluruh aplikasi ──
+  // Ditemukan oleh bagian 10 ini sendiri: baris breakdown dengan nilai severity di
+  // luar daftarnya membuat layarnya melempar saat merender, dan boundary yang
+  // hanya ada di akar aplikasi menyimpan status kesalahannya — setelah tiga kali
+  // percobaan pulih otomatis, SEMUA menu ikut menampilkan "Terjadi Kesalahan"
+  // sampai pengguna memuat ulang. Itulah bentuk "macet" yang paling sering
+  // dilaporkan. Boundary sekarang dipasang per rute, jadi kerusakannya berhenti
+  // di satu layar.
+  const barisRusak = await ev(wc, `
+    return await window.electronAPI.dbPatch({ breakdowns: { upsert: [{
+      id: 'H10RUSAK', breakdownNumber: 'UJI10RUSAKBR', unitSerialNumber: 'RANGKA-UJI-10',
+      unitModel: 'SANY SY215C', location: 'Site Uji', reportedBy: 'Pimpinan Uji',
+      reportedAt: '2026-10-01T08:00:00.000Z', severity: 'MEDIUM', status: 'REPORTED',
+      description: 'Baris uji dengan severity di luar daftarnya',
+    }], removeIds: [] } });`);
+  await wc.reload();
+  const masukSetelahRusak = await masukLagi();
+  await ev(wc, `window.location.hash = '#/breakdown'; return true;`);
+  const runtuh = await waitFor(wc, `/Terjadi Kesalahan/.test(document.body.innerText)`,
+    'layar Breakdown menjatuhkan dirinya sendiri', 25000);
+  await ev(wc, `window.location.hash = '#/customers'; return true;`);
+  // Sekaligus menunggu barisnya datang: rute ini baru saja dihidrasi dari file,
+  // dan judul "Pelanggan" sudah tampil sebelum tabelnya terisi.
+  const pulih = await waitFor(wc,
+    `/Pelanggan/.test(document.body.innerText)`
+    + ` && !/Terjadi Kesalahan/.test(document.body.innerText)`
+    + ` && document.querySelectorAll('tbody tr').length > 0`,
+    'menu Pelanggan tetap terbuka sesudah Breakdown jatuh', 25000);
+  const daftarPelanggan = await ev(wc, `return document.querySelectorAll('tbody tr').length;`);
+  ok('10.14 satu baris rusak hanya menjatuhkan layar Breakdown, menu lain tetap dipakai',
+    barisRusak.breakdowns.inserted === 1 && masukSetelahRusak === true && runtuh === true
+      && pulih === true && daftarPelanggan > 0,
+    { barisRusak, masukSetelahRusak, runtuh, pulih, daftarPelanggan });
+
+  const bersihkan10 = await ev(wc, `
+    return await window.electronAPI.dbPatch({ breakdowns: { upsert: [], removeIds: ['H10RUSAK'] } });`);
+  const sehat10b = await ev(wc, `return window.electronAPI.dbIntegrity();`);
+  ok('10.15 baris rusak dibersihkan dan database tetap utuh',
+    bersihkan10.breakdowns.deleted === 1 && sehat10b.ok === true,
+    { bersihkan10, quickCheck: sehat10b.quickCheck });
+
   console.log(`\n=== handoff-check: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);
 }

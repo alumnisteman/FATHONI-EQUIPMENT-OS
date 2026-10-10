@@ -31,7 +31,7 @@ const STATUS_MAP: Record<string, { label: string; badge: string }> = {
 };
 
 export default function Delivery() {
-  const { sales, deliveries: data, setDeliveries: setData, addDelivery } = useDataStore();
+  const { sales, deliveries: data, setDeliveries: setData, addDelivery, removeRow } = useDataStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
@@ -84,8 +84,12 @@ export default function Delivery() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Hapus data pengiriman ini?')) setData(data.filter(i => i.id !== id));
+  // Lewat removeRow, bukan filter array: hanya baris ini yang dikirim ke
+  // database, dan pemeriksaan rujukan di main process ikut berjalan.
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus data pengiriman ini?')) return;
+    const hasil = await removeRow('deliveries', id);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
   const handleUpdateStatus = (id: string, newStatus: DeliveryOrder['status']) => {

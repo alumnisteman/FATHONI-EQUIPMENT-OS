@@ -39,7 +39,7 @@ const STATUS_CONFIG = {
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Documents() {
-  const { documents: data, setDocuments: setData } = useDataStore();
+  const { documents: data, setDocuments: setData, removeRow } = useDataStore();
   
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -102,10 +102,12 @@ export default function Documents() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Hapus dokumen ini?')) {
-      setData(data.filter(i => i.id !== id));
-    }
+  // Lewat removeRow, bukan filter array: satu baris dikirim ke database dan
+  // pemeriksaan rujukan di main process ikut berjalan.
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus dokumen ini?')) return;
+    const hasil = await removeRow('documents', id);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

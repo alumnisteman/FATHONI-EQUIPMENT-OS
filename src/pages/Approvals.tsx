@@ -29,7 +29,7 @@ const TYPE_MAP: Record<ApprovalType, { label: string; icon: string }> = {
 };
 
 export default function Approvals() {
-  const { approvals, setApprovals } = useDataStore();
+  const { approvals, setApprovals, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -164,10 +164,12 @@ export default function Approvals() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Hapus request approval ini?')) {
-      setApprovals(approvals.filter(a => a.id !== id));
-    }
+  // Lewat removeRow, bukan filter array: satu baris dikirim ke database dan
+  // pemeriksaan rujukan di main process ikut berjalan.
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus request approval ini?')) return;
+    const hasil = await removeRow('approvals', id);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
   const handleApprove = (id: string) => {

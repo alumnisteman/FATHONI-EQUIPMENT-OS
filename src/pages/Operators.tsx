@@ -20,7 +20,7 @@ const STATUS_MAP: Record<OperatorStatus, { label: string; badge: string }> = {
 };
 
 export default function Operators() {
-  const { operators, setOperators, units } = useDataStore();
+  const { operators, setOperators, units, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -169,10 +169,13 @@ export default function Operators() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Hapus data operator ini?')) {
-      setOperators(operators.filter(o => o.id !== id));
-    }
+  // Lewat removeRow: hanya baris ini yang dikirim ke database, dan pemeriksaan
+  // rujukan di main process ikut berjalan. Menyaring array berarti menulis ulang
+  // seluruh collection operators setiap kali satu nama dihapus.
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus data operator ini?')) return;
+    const hasil = await removeRow('operators', id);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
   const handlePrint = (item: Operator) => {

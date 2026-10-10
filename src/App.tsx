@@ -101,6 +101,7 @@ function RouteGate({ children }: { children: React.ReactNode }) {
 function ProtectedRoute({ children, requireSetup = true }: { children: React.ReactNode, requireSetup?: boolean }) {
   const { isAuthenticated, isLoading, mustChangePassword } = useAuth();
   const { isSetupComplete } = useConfig();
+  const lokasi = useLocation();
 
   if (isLoading) return <PageLoader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -112,7 +113,16 @@ function ProtectedRoute({ children, requireSetup = true }: { children: React.Rea
   return (
     <Layout>
       <Suspense fallback={<PageLoader />}>
-        <RouteGate>{children}</RouteGate>
+        <RouteGate>
+          {/* Boundary per layar, bukan cuma boundary aplikasi. ErrorBoundary yang
+              di atas itu menyimpan status kesalahannya sampai aplikasi dimuat
+              ulang: satu baris rusak di menu A membuat SEMUA menu lain ikut
+              menampilkan "Terjadi Kesalahan" dan aplikasi terasa macet padahal
+              datanya baik-baik saja. Dengan key berupa rute, boundary-nya lahir
+              ulang saat pindah menu dan kegagalan satu layar berhenti di layar
+              itu. */}
+          <ErrorBoundary key={lokasi.pathname}>{children}</ErrorBoundary>
+        </RouteGate>
       </Suspense>
     </Layout>
   );

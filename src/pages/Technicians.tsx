@@ -20,7 +20,7 @@ const STATUS_MAP: Record<TechnicianStatus, { label: string; badge: string }> = {
 };
 
 export default function Technicians() {
-  const { technicians, setTechnicians } = useDataStore();
+  const { technicians, setTechnicians, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -164,10 +164,12 @@ export default function Technicians() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Hapus data teknisi ini?')) {
-      setTechnicians(technicians.filter(t => t.id !== id));
-    }
+  // Lewat removeRow, bukan filter array: satu baris dikirim ke database dan
+  // pemeriksaan rujukan di main process ikut berjalan.
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus data teknisi ini?')) return;
+    const hasil = await removeRow('technicians', id);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
   const handleAddSpecialization = () => {
