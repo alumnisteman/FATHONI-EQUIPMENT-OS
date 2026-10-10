@@ -297,7 +297,7 @@ export default function Service() {
           <tr><th>Pelanggan / Lokasi</th><td>${sanitize(item.customerOrProject)}</td></tr>
           <tr><th>Tipe Servis</th><td>${sanitize(SERVICE_TYPE_LABEL[item.serviceType] || item.serviceType)}</td></tr>
           <tr><th>Teknisi</th><td>${sanitize(item.mechanicName)}</td></tr>
-          <tr><th>Estimasi Biaya</th><td class="total">Rp ${item.estimatedCost.toLocaleString('id-ID')}</td></tr>
+          <tr><th>Estimasi Biaya</th><td class="total">Rp ${(item.estimatedCost ?? 0).toLocaleString('id-ID')}</td></tr>
           <tr><th>Status</th><td>${sanitize(item.status)}</td></tr>
         </table>
         ${item.complaintNotes ? '<div class="notes"><strong>Keluhan / Catatan Mekanik:</strong><br/>' + sanitize(item.complaintNotes) + '</div>' : ''}

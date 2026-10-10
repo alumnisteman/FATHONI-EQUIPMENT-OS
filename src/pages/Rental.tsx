@@ -209,7 +209,7 @@ export default function Rental() {
           <tr><th>Lokasi Proyek</th><td>${sanitize(item.location)}</td></tr>
           <tr><th>Tanggal Mulai</th><td>${item.startDate}</td></tr>
           <tr><th>Tanggal Selesai</th><td>${item.endDate}</td></tr>
-          <tr><th>Tarif Bulanan</th><td class="total">Rp ${item.monthlyRate.toLocaleString('id-ID')}</td></tr>
+          <tr><th>Tarif Bulanan</th><td class="total">Rp ${(item.monthlyRate ?? 0).toLocaleString('id-ID')}</td></tr>
           <tr><th>Jam Minimum</th><td>${item.minimumHours} jam/bulan</td></tr>
           <tr><th>Operator Termasuk</th><td>${item.operatorIncluded ? 'Ya' : 'Tidak'}</td></tr>
           <tr><th>Status</th><td>${sanitize(item.status)}</td></tr>

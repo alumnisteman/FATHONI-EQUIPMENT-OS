@@ -231,8 +231,8 @@ export default function Technicians() {
               <p>Technician Profile</p>
             </div>
 
-            <div class="status status-${item.status.toLowerCase().replace('_', '-')}">
-              Status: ${STATUS_MAP[item.status].label}
+            <div class="status status-${(item.status ?? '').toLowerCase().replace('_', '-')}">
+              Status: ${STATUS_MAP[item.status]?.label ?? item.status}
             </div>
 
             <div class="info">
@@ -265,20 +265,20 @@ export default function Technicians() {
             <div class="section">
               <h3>Performance</h3>
               <p>Total Work Orders: ${item.totalWorkOrders}</p>
-              <p>Total Hours: ${item.totalHours.toLocaleString('id-ID')} hours</p>
+              <p>Total Hours: ${(item.totalHours ?? 0).toLocaleString('id-ID')} hours</p>
             </div>
 
             <div class="section">
               <h3>Specializations</h3>
               <div class="tags">
-                ${item.specializations.map(spec => `<span class="tag">${sanitize(spec)}</span>`).join('')}
+                ${(item.specializations ?? []).map(spec => `<span class="tag">${sanitize(spec)}</span>`).join('')}
               </div>
             </div>
 
             <div class="section">
               <h3>Skills</h3>
               <div class="tags">
-                ${item.skills.map(skill => `<span class="tag">${sanitize(skill)}</span>`).join('')}
+                ${(item.skills ?? []).map(skill => `<span class="tag">${sanitize(skill)}</span>`).join('')}
               </div>
             </div>
 
@@ -403,21 +403,21 @@ export default function Technicians() {
                 <td>{item.phone}</td>
                 <td>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {item.specializations.slice(0, 2).map((spec, i) => (
+                    {(item.specializations ?? []).slice(0, 2).map((spec, i) => (
                       <span key={i} style={{ fontSize: 10, background: '#e0e0e0', padding: '2px 8px', borderRadius: 12 }}>
                         {spec}
                       </span>
                     ))}
-                    {item.specializations.length > 2 && (
-                      <span style={{ fontSize: 10, color: '#666' }}>+{item.specializations.length - 2}</span>
+                    {(item.specializations ?? []).length > 2 && (
+                      <span style={{ fontSize: 10, color: '#666' }}>+{(item.specializations ?? []).length - 2}</span>
                     )}
                   </div>
                 </td>
                 <td>{item.totalWorkOrders}</td>
-                <td>{item.totalHours.toLocaleString('id-ID')}h</td>
+                <td>{(item.totalHours ?? 0).toLocaleString('id-ID')}h</td>
                 <td>
-                  <span className={`badge ${STATUS_MAP[item.status].badge}`}>
-                    {STATUS_MAP[item.status].label}
+                  <span className={`badge ${STATUS_MAP[item.status]?.badge ?? 'badge-muted'}`}>
+                    {STATUS_MAP[item.status]?.label ?? item.status}
                   </span>
                 </td>
                 <td>

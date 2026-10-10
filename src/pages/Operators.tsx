@@ -213,8 +213,8 @@ export default function Operators() {
               <p>Operator Profile</p>
             </div>
 
-            <div class="status status-${item.status.toLowerCase().replace('_', '-')}">
-              Status: ${STATUS_MAP[item.status].label}
+            <div class="status status-${(item.status ?? '').toLowerCase().replace('_', '-')}">
+              Status: ${STATUS_MAP[item.status]?.label ?? item.status}
             </div>
 
             <div class="info">
@@ -248,7 +248,7 @@ export default function Operators() {
               <h3>Assignment</h3>
               <p>Assigned Unit: ${item.assignedUnit ? sanitize(item.assignedUnit) : 'Not assigned'}</p>
               <p>Assigned Project: ${item.assignedProject ? sanitize(item.assignedProject) : 'Not assigned'}</p>
-              <p>Total Hours: ${item.totalHours.toLocaleString('id-ID')} hours</p>
+              <p>Total Hours: ${(item.totalHours ?? 0).toLocaleString('id-ID')} hours</p>
             </div>
 
             ${item.licenseNumber ? `
@@ -380,10 +380,10 @@ export default function Operators() {
                 <td>{item.phone}</td>
                 <td>{item.assignedUnit || '-'}</td>
                 <td>{item.assignedProject || '-'}</td>
-                <td>{item.totalHours.toLocaleString('id-ID')}h</td>
+                <td>{(item.totalHours ?? 0).toLocaleString('id-ID')}h</td>
                 <td>
-                  <span className={`badge ${STATUS_MAP[item.status].badge}`}>
-                    {STATUS_MAP[item.status].label}
+                  <span className={`badge ${STATUS_MAP[item.status]?.badge ?? 'badge-muted'}`}>
+                    {STATUS_MAP[item.status]?.label ?? item.status}
                   </span>
                 </td>
                 <td>

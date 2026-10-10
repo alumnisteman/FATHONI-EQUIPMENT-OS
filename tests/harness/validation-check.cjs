@@ -574,6 +574,65 @@ check('App: boundary akar tetap ada untuk error di luar rute',
 check('handoff-check bagian 10 menguji enam menu katalog menghapus lewat patch',
   /KATALOG/.test(fs.readFileSync(path.join(ROOT, 'tests', 'harness', 'handoff-check.cjs'), 'utf8')));
 
+// ── 21. nilai asing tidak boleh menjatuhkan layar ──────────────────
+// Peta status/severity ditulis sebagai Record<Enum, {label, badge}> sehingga TypeScript
+// mengira kuncinya selalu dikenal. Baris dari SQLite tidak tahu itu: kolom status hanya
+// TEXT, dan satu nilai di luar daftar membuat `MAP[nilai].label` melempar saat layar
+// merender. Inilah jalan masuk yang dipakai handoff 10.14 (severity 'MEDIUM'), dan
+// sebelum boundary per rute dipasang kerusakannya menyebar ke semua menu. Yang boleh
+// adalah bentuk yang sudah dipakai Purchase/Rental/Service/Warehouse/Delivery: `?.`
+// dengan fallback, jadi barisnya tetap tampil dengan nilainya apa adanya.
+const BERKAS_SRC = [];
+(() => {
+  const jalan = (dir) => {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) jalan(p);
+      else if (/\.(tsx|ts)$/.test(ent.name) && !/\.d\.ts$/.test(ent.name)) BERKAS_SRC.push(p);
+    }
+  };
+  jalan(path.join(ROOT, 'src'));
+})();
+check('penjaga membaca berkas sumber (daftar tidak boleh kosong karena jalur salah)',
+  BERKAS_SRC.length > 30, { jumlah: BERKAS_SRC.length });
+// `[^\]]*\]` lalu TITIK tanpa tanda tanya: persis pola yang melempar.
+const TANPA_FALLBACK = [];
+for (const f of BERKAS_SRC) {
+  fs.readFileSync(f, 'utf8').split(/\r?\n/).forEach((baris, i) => {
+    if (/(MAP|CONFIG|LABELS|STYLES|BADGES|ICONS)\[[^\]]*\]\.(label|badge|icon)\b/.test(baris)) {
+      TANPA_FALLBACK.push(path.relative(ROOT, f) + ':' + (i + 1) + '  ' + baris.trim());
+    }
+  });
+}
+check('setiap pembacaan peta label/badge memakai ?., sehingga nilai asing tidak meruntuhkan layar',
+  TANPA_FALLBACK.length === 0, { TANPA_FALLBACK });
+
+// ── 22. kolom yang boleh kosong tidak boleh langsung dipakai ─────────
+// Kolom INTEGER/REAL dikembalikan lapisan SQLite sebagai null kalau barisnya tidak
+// punya field itu — terbukti lewat handoff 10.16, yang membuat layar Operator dan
+// Teknisi jatuh hanya karena satu baris tanpa totalHours. Data lama, hasil impor,
+// dan restore semuanya bisa membawa baris seperti ini. Jadi angka/teks dari baris
+// harus dibaca dengan `?? ` atau diperiksa dulu sebelum `.toLocaleString()` /
+// `.toLowerCase()`. Aturan ini hanya menyaring src/pages: di situ `item` selalu
+// baris database, sementara di komponen `item` bisa saja konfigurasi menu yang
+// labelnya terjamin ada (Layout.tsx mencari dengan item.label.toLowerCase()).
+const PANGGILAN_LANGSUNG = /\bitem\.([A-Za-z_]+)\.(toLocaleString|toFixed|toLowerCase|toUpperCase|replace|split|trim|charAt|padStart)\(/g;
+const LANGSUNG = [];
+for (const f of BERKAS_SRC.filter(x => x.includes(path.join('src', 'pages')))) {
+  fs.readFileSync(f, 'utf8').split(/\r?\n/).forEach((baris, i) => {
+    for (const m of baris.matchAll(PANGGILAN_LANGSUNG)) {
+      const field = m[1];
+      const dijaga = baris.includes(`${field} ?? `) || baris.includes(`item.${field} ?`)
+        || baris.includes(`item.${field} &&`);
+      if (!dijaga) LANGSUNG.push(path.relative(ROOT, f) + ':' + (i + 1) + '  ' + baris.trim());
+    }
+  });
+}
+check('halaman: angka/teks dari baris dibaca lewat ?? atau pemeriksaan dulu (null tidak meruntuhkan layar)',
+  LANGSUNG.length === 0, { LANGSUNG });
+check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
+  /H10NULL-OP/.test(fs.readFileSync(path.join(ROOT, 'tests', 'harness', 'handoff-check.cjs'), 'utf8')));
+
 fs.rmSync(outfile, { force: true });
 console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);
 process.exit(failed === 0 ? 0 : 1);

@@ -235,8 +235,8 @@ export default function Sales() {
           <tr><th>Serial Number</th><td>${sanitize(item.serialNumber)}</td></tr>
           <tr><th>Skema Pembayaran</th><td>${sanitize(item.paymentScheme)}</td></tr>
           <tr><th>Sales</th><td>${sanitize(item.salesPerson)}</td></tr>
-          <tr><th>Harga Unit</th><td class="total">Rp ${item.totalPrice.toLocaleString('id-ID')}</td></tr>
-          <tr><th>Uang Muka (DP)</th><td>Rp ${item.downPayment.toLocaleString('id-ID')}</td></tr>
+          <tr><th>Harga Unit</th><td class="total">Rp ${(item.totalPrice ?? 0).toLocaleString('id-ID')}</td></tr>
+          <tr><th>Uang Muka (DP)</th><td>Rp ${(item.downPayment ?? 0).toLocaleString('id-ID')}</td></tr>
           <tr><th>Sisa Pembayaran</th><td class="total">Rp ${sisa.toLocaleString('id-ID')}</td></tr>
           <tr><th>Status</th><td>${sanitize(item.status)}</td></tr>
         </table>
@@ -358,8 +358,8 @@ export default function Sales() {
                   </td>
                   <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.salesPerson}</td>
                   <td>
-                    <span className={`badge ${STATUS_CONFIG[item.status as OrderStatus].badge}`}>
-                      {STATUS_CONFIG[item.status as OrderStatus].label}
+                    <span className={`badge ${STATUS_CONFIG[item.status as OrderStatus]?.badge ?? 'badge-muted'}`}>
+                      {STATUS_CONFIG[item.status as OrderStatus]?.label ?? item.status}
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>

@@ -183,7 +183,7 @@ export default function Documents() {
     doc.text(new Date().toLocaleString('id-ID'), 105, 285, { align: 'center' });
     
     // Save PDF
-    doc.save(`${item.jenisDokumen.replace(/\s+/g, '_')}_${item.nomorDokumen}.pdf`);
+    doc.save(`${(item.jenisDokumen ?? 'dokumen').replace(/\s+/g, '_')}_${item.nomorDokumen}.pdf`);
   };
 
   const checkExpiry = (dateString: string) => {
@@ -298,8 +298,8 @@ export default function Documents() {
                       )}
                     </td>
                     <td>
-                      <span className={`badge ${STATUS_CONFIG[autoStatus].badge}`}>
-                        {STATUS_CONFIG[autoStatus].label}
+                      <span className={`badge ${STATUS_CONFIG[autoStatus]?.badge ?? 'badge-muted'}`}>
+                        {STATUS_CONFIG[autoStatus]?.label ?? autoStatus}
                       </span>
                     </td>
                     <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>

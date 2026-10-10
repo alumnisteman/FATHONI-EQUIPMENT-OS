@@ -1239,26 +1239,34 @@ async function run(wc) {
   ok('10.13 database tetap utuh sesudah enam menu katalog menghapus barisnya',
     sehat10.ok === true, sehat10.quickCheck);
 
-  // ── 10.14 satu layar rusak tidak boleh membekukan seluruh aplikasi ──
-  // Ditemukan oleh bagian 10 ini sendiri: baris breakdown dengan nilai severity di
-  // luar daftarnya membuat layarnya melempar saat merender, dan boundary yang
-  // hanya ada di akar aplikasi menyimpan status kesalahannya — setelah tiga kali
+  // ── 10.14 nilai di luar daftar tidak menjatuhkan layarnya ──
+  // Ditemukan oleh bagian 10 ini sendiri: baris breakdown dengan severity di luar
+  // daftarnya membuat layaranya melempar saat merender, dan boundary yang hanya
+  // ada di akar aplikasi menyimpan status kesalahannya — setelah tiga kali
   // percobaan pulih otomatis, SEMUA menu ikut menampilkan "Terjadi Kesalahan"
   // sampai pengguna memuat ulang. Itulah bentuk "macet" yang paling sering
-  // dilaporkan. Boundary sekarang dipasang per rute, jadi kerusakannya berhenti
-  // di satu layar.
+  // dilaporkan. Dua lapis perbaikannya: peta status/severity sekarang dibaca
+  // dengan fallback (barisnya tetap tampil, nilainya apa adanya), dan boundary
+  // dipasang per rute supaya kerusakan apa pun berhenti di satu layar.
   const barisRusak = await ev(wc, `
     return await window.electronAPI.dbPatch({ breakdowns: { upsert: [{
       id: 'H10RUSAK', breakdownNumber: 'UJI10RUSAKBR', unitSerialNumber: 'RANGKA-UJI-10',
       unitModel: 'SANY SY215C', location: 'Site Uji', reportedBy: 'Pimpinan Uji',
-      reportedAt: '2026-10-01T08:00:00.000Z', severity: 'MEDIUM', status: 'REPORTED',
-      description: 'Baris uji dengan severity di luar daftarnya',
+      reportedAt: '2026-10-01T08:00:00.000Z', severity: 'MEDIUM', status: 'ESCALATED',
+      description: 'Baris uji dengan severity dan status di luar daftarnya',
     }], removeIds: [] } });`);
   await wc.reload();
   const masukSetelahRusak = await masukLagi();
   await ev(wc, `window.location.hash = '#/breakdown'; return true;`);
-  const runtuh = await waitFor(wc, `/Terjadi Kesalahan/.test(document.body.innerText)`,
-    'layar Breakdown menjatuhkan dirinya sendiri', 25000);
+  // Barisnya harus benar-benar terbaca di tabel, bukan hanya "halamannya tidak
+  // error": kalau nilainya disaring keluar, layar terlihat sehat padahal datanya
+  // hilang dari pandangan.
+  const tampil = await waitFor(wc,
+    `/UJI10RUSAKBR/.test(document.body.innerText)`
+    + ` && /MEDIUM/.test(document.body.innerText)`
+    + ` && /ESCALATED/.test(document.body.innerText)`
+    + ` && !/Terjadi Kesalahan/.test(document.body.innerText)`,
+    'baris asing tampil di Breakdown tanpa layar kesalahan', 25000);
   await ev(wc, `window.location.hash = '#/customers'; return true;`);
   // Sekaligus menunggu barisnya datang: rute ini baru saja dihidrasi dari file,
   // dan judul "Pelanggan" sudah tampil sebelum tabelnya terisi.
@@ -1266,19 +1274,69 @@ async function run(wc) {
     `/Pelanggan/.test(document.body.innerText)`
     + ` && !/Terjadi Kesalahan/.test(document.body.innerText)`
     + ` && document.querySelectorAll('tbody tr').length > 0`,
-    'menu Pelanggan tetap terbuka sesudah Breakdown jatuh', 25000);
+    'menu Pelanggan tetap terbuka sesudah baris asing dibuka', 25000);
   const daftarPelanggan = await ev(wc, `return document.querySelectorAll('tbody tr').length;`);
-  ok('10.14 satu baris rusak hanya menjatuhkan layar Breakdown, menu lain tetap dipakai',
-    barisRusak.breakdowns.inserted === 1 && masukSetelahRusak === true && runtuh === true
+  ok('10.14 baris dengan nilai di luar daftar tetap tampil dan tidak meruntuhkan menu lain',
+    barisRusak.breakdowns.inserted === 1 && masukSetelahRusak === true && tampil === true
       && pulih === true && daftarPelanggan > 0,
-    { barisRusak, masukSetelahRusak, runtuh, pulih, daftarPelanggan });
+    { barisRusak, masukSetelahRusak, tampil, pulih, daftarPelanggan });
 
   const bersihkan10 = await ev(wc, `
     return await window.electronAPI.dbPatch({ breakdowns: { upsert: [], removeIds: ['H10RUSAK'] } });`);
   const sehat10b = await ev(wc, `return window.electronAPI.dbIntegrity();`);
-  ok('10.15 baris rusak dibersihkan dan database tetap utuh',
+  ok('10.15 baris asing dibersihkan dan database tetap utuh',
     bersihkan10.breakdowns.deleted === 1 && sehat10b.ok === true,
     { bersihkan10, quickCheck: sehat10b.quickCheck });
+
+  // ── 10.16 kolom yang boleh kosong tidak boleh meruntuhkan layarnya ──
+  // Kelas cacat yang sama dengan 10.14, lewat field lain: kolom INTEGER
+  // dikembalikan sebagai null kalau barisnya tidak punya field itu (data lama,
+  // hasil impor, restore), dan field yang bukan kolom (array sertifikasi/keahlian)
+  // ikut hilang dari JSON. Sel tabel memanggil totalHours.toLocaleString() dan
+  // specializations.slice() langsung, jadi render-nya melempar.
+  const barisKosong = await ev(wc, `
+    return await window.electronAPI.dbPatch({
+      operators: { upsert: [{
+        id: 'H10NULL-OP', operatorNumber: 'UJI10NULLOP', name: 'Operator Tanpa Jam',
+        status: 'ACTIVE', phone: '08000000010',
+      }], removeIds: [] },
+      technicians: { upsert: [{
+        id: 'H10NULL-TE', technicianNumber: 'UJI10NULLTE', name: 'Teknisi Tanpa Jam',
+        status: 'ACTIVE', phone: '08000000011',
+      }], removeIds: [] } });`);
+  await wc.reload();
+  const masukNull = await masukLagi();
+  const nullDitulis = await ev(wc, `
+    return (await window.electronAPI.dbQuery({ collection: 'operators', search: 'UJI10NULLOP' })).rows
+      .map(r => r.totalHours);`);
+  const layarKosong = [];
+  for (const m of [
+    { rute: 'operators', tanda: 'UJI10NULLOP' },
+    { rute: 'technicians', tanda: 'UJI10NULLTE' },
+  ]) {
+    await ev(wc, `window.location.hash = '#/${m.rute}'; return true;`);
+    const tampil = await waitFor(wc,
+      `/UJI10NULL/.test(document.body.innerText)`
+      + ` && !/Terjadi Kesalahan/.test(document.body.innerText)`,
+      `baris tanpa angka tampil di ${m.rute}`, 25000);
+    if (!tampil) layarKosong.push(m.rute);
+  }
+  ok('10.16 baris dengan kolom angka kosong tetap tampil, layarnya tidak jatuh',
+    barisKosong.operators.inserted === 1 && barisKosong.technicians.inserted === 1
+      && masukNull === true && nullDitulis.length === 1
+      && (nullDitulis[0] === null || nullDitulis[0] === undefined)
+      && layarKosong.length === 0,
+    { barisKosong, nullDitulis, layarKosong });
+
+  const bersihkan10c = await ev(wc, `
+    return await window.electronAPI.dbPatch({
+      operators: { upsert: [], removeIds: ['H10NULL-OP'] },
+      technicians: { upsert: [], removeIds: ['H10NULL-TE'] } });`);
+  const sehat10c = await ev(wc, `return window.electronAPI.dbIntegrity();`);
+  ok('10.17 baris angka kosong dibersihkan dan database tetap utuh',
+    bersihkan10c.operators.deleted === 1 && bersihkan10c.technicians.deleted === 1
+      && sehat10c.ok === true,
+    { bersihkan10c, quickCheck: sehat10c.quickCheck });
 
   console.log(`\n=== handoff-check: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);

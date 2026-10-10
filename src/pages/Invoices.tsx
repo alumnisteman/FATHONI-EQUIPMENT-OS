@@ -293,8 +293,8 @@ export default function Invoices() {
           <tr><th>Pelanggan</th><td>${sanitize(item.customerName)}</td></tr>
           <tr><th>Keterangan</th><td>${sanitize(item.unitOrDesc)}</td></tr>
           <tr><th>Kategori</th><td>${sanitize(item.type)}</td></tr>
-          <tr><th class="right">Total Tagihan</th><td class="right total-row">Rp ${item.totalAmount.toLocaleString('id-ID')}</td></tr>
-          <tr><th class="right">Sudah Dibayar</th><td class="right paid-row">Rp ${item.paidAmount.toLocaleString('id-ID')}</td></tr>
+          <tr><th class="right">Total Tagihan</th><td class="right total-row">Rp ${(item.totalAmount ?? 0).toLocaleString('id-ID')}</td></tr>
+          <tr><th class="right">Sudah Dibayar</th><td class="right paid-row">Rp ${(item.paidAmount ?? 0).toLocaleString('id-ID')}</td></tr>
           <tr><th class="right">Sisa Tagihan</th><td class="right bal-row">Rp ${balance.toLocaleString('id-ID')}</td></tr>
           <tr><th>Status</th><td>${sanitize(statusLabel)} ${item.status === 'PAID' ? '<span class="stamp">LUNAS</span>' : ''}</td></tr>
         </table>
@@ -460,8 +460,8 @@ export default function Invoices() {
                       {fmt(balance)}
                     </td>
                     <td>
-                      <span className={`badge ${STATUS_CONFIG[item.status as PaymentStatus].badge}`}>
-                        {STATUS_CONFIG[item.status as PaymentStatus].label}
+                      <span className={`badge ${STATUS_CONFIG[item.status as PaymentStatus]?.badge ?? 'badge-muted'}`}>
+                        {STATUS_CONFIG[item.status as PaymentStatus]?.label ?? item.status}
                       </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>

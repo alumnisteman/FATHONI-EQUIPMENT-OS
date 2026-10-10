@@ -235,8 +235,8 @@ export default function Approvals() {
               <p>Approval Request</p>
             </div>
 
-            <div class="status status-${item.status.toLowerCase()}">
-              Status: ${STATUS_MAP[item.status].label}
+            <div class="status status-${(item.status ?? '').toLowerCase()}">
+              Status: ${STATUS_MAP[item.status]?.label ?? item.status}
             </div>
 
             <div class="info">
@@ -246,7 +246,7 @@ export default function Approvals() {
               </div>
               <div class="info-item">
                 <label>Type:</label>
-                <span>${TYPE_MAP[item.type].label}</span>
+                <span>${sanitize(TYPE_MAP[item.type]?.label ?? item.type)}</span>
               </div>
               <div class="info-item">
                 <label>Title:</label>
@@ -389,15 +389,15 @@ export default function Approvals() {
                   <strong>{item.requestNumber}</strong>
                 </td>
                 <td>
-                  <span>{TYPE_MAP[item.type].icon} {TYPE_MAP[item.type].label}</span>
+                  <span>{TYPE_MAP[item.type]?.icon} {TYPE_MAP[item.type]?.label ?? item.type}</span>
                 </td>
                 <td>{item.title}</td>
                 <td>{item.requestedBy}</td>
                 <td>{item.amount ? 'Rp ' + new Intl.NumberFormat('id-ID').format(item.amount) : '-'}</td>
                 <td>{new Date(item.requestedAt).toLocaleDateString('id-ID')}</td>
                 <td>
-                  <span className={`badge ${STATUS_MAP[item.status].badge}`}>
-                    {STATUS_MAP[item.status].label}
+                  <span className={`badge ${STATUS_MAP[item.status]?.badge ?? 'badge-muted'}`}>
+                    {STATUS_MAP[item.status]?.label ?? item.status}
                   </span>
                 </td>
                 <td>

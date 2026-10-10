@@ -374,8 +374,8 @@ export default function Breakdown() {
               <p>Breakdown Management Report</p>
             </div>
 
-            <div class="status status-${item.severity.toLowerCase()}">
-              Severity: ${SEVERITY_MAP[item.severity].label} | Status: ${STATUS_MAP[item.status].label}
+            <div class="status status-${(item.severity ?? '').toLowerCase()}">
+              Severity: ${SEVERITY_MAP[item.severity]?.label ?? item.severity} | Status: ${STATUS_MAP[item.status]?.label ?? item.status}
             </div>
 
             <div class="info">
@@ -579,13 +579,13 @@ export default function Breakdown() {
                 </td>
                 <td>{item.location}</td>
                 <td>
-                  <span className={`badge ${SEVERITY_MAP[item.severity].badge}`}>
-                    {SEVERITY_MAP[item.severity].label}
+                  <span className={`badge ${SEVERITY_MAP[item.severity]?.badge ?? 'badge-muted'}`}>
+                    {SEVERITY_MAP[item.severity]?.label ?? item.severity}
                   </span>
                 </td>
                 <td>
-                  <span className={`badge ${STATUS_MAP[item.status].badge}`}>
-                    {STATUS_MAP[item.status].label}
+                  <span className={`badge ${STATUS_MAP[item.status]?.badge ?? 'badge-muted'}`}>
+                    {STATUS_MAP[item.status]?.label ?? item.status}
                   </span>
                 </td>
                 <td>{new Date(item.reportedAt).toLocaleDateString('id-ID')}</td>
