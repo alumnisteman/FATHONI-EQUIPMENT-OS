@@ -27,11 +27,21 @@ const META_IMPORTED = 'localStorageImportedAt';
 // HEMS_DATA_DIR hanya berlaku pada build dev: pengujian otomasi wajib memakai folder
 // data sendiri, karena Windows mengabaikan variabel APPDATA pada proses anak dan
 // Chromium selalu membuka profil asli pengguna.
+// Satu-satunya jalan bagi PAKET untuk dipindah folder datanya adalah switch
+// --user-data-dir, mekanisme resmi Chromium yang harus disebut eksplisit pada
+// baris perintah. Uji rilis paket (tests/harness/smoke-paket-check.cjs) memakainya
+// supaya menjalankan FATHONI.exe hasil paket tidak mengganti password admin maupun
+// menambah jejak audit pada data pengguna nyata. Pengguna biasa tidak pernah
+// melewati switch ini, jadi jalurnya tetap folder pin.
 const DATA_DIR_NAME = 'hems-heavy-equipment-system';
-const forcedDataDir = app.isPackaged ? '' : (process.env.HEMS_DATA_DIR || '');
+const switchDataDir = app.isPackaged ? app.commandLine.getSwitchValue('user-data-dir') : '';
+const forcedDataDir = app.isPackaged ? switchDataDir : (process.env.HEMS_DATA_DIR || '');
 app.setPath('userData', forcedDataDir
   ? path.resolve(forcedDataDir)
   : path.join(app.getPath('appData'), DATA_DIR_NAME));
+if (app.isPackaged && switchDataDir) {
+  console.warn(`[data] profil dipindah lewat --user-data-dir ke ${path.resolve(switchDataDir)}`);
+}
 
 // Semua jendela memakai origin localStorage yang sama; dua instance akan saling
 // menimpa tulis tanpa peringatan.

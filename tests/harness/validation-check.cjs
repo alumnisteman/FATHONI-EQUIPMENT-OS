@@ -495,6 +495,43 @@ const KEBUTUHAN = fs.readFileSync(path.join(ROOT, 'src', 'store', 'collectionNee
 check('AuditLog: rute tidak menghidrasi collection yang tidak dibacanya',
   /'audit-log':\s*\[\]/.test(KEBUTUHAN));
 
+// ── 18. penjaga health check memeriksa penyimpanan yang benar ──
+// Smoke test paket 3.0.0 menemukan probe '_hems_health_test_' masih ditulis ke
+// localStorage setiap siklus di mode desktop, sementara data pengguna sudah
+// pindah ke SQLite. Akibatnya arsip pra-SQLite terus tumbuh dan file basis data
+// yang tidak terbuka bisa tertutup status "localStorage bisa ditulis".
+const HEALTH = fs.readFileSync(path.join(ROOT, 'src', 'utils', 'healthCheck.ts'), 'utf8');
+check('healthCheck: mengenal lapisan SQLite',
+  /dbAvailable/.test(HEALTH) && /dbInfo/.test(HEALTH) && /dbIntegrity/.test(HEALTH));
+check('healthCheck: cek penyimpanan pertama dialihkan ke SQLite bila tersedia',
+  /if \(dbAvailable\(\)\) return this\.checkSqlite\(\);/.test(HEALTH));
+check('healthCheck: integritas dibaca dari PRAGMA, bukan dari kunci hems_* lama',
+  /if \(dbAvailable\(\)\) return this\.checkSqliteIntegrity/.test(HEALTH));
+// Probe tulis localStorage hanya boleh ada di cabang browser (mode demo).
+check('healthCheck: probe tulis localStorage hanya untuk mode demo',
+  HEALTH.indexOf('checkLocalStorageBrowser') >= 0 &&
+  HEALTH.indexOf('_hems_health_test_') > HEALTH.indexOf('checkLocalStorageBrowser'));
+// Nama cek berubah menjadi 'storage'; pemulihan otomatis tidak boleh lagi
+// menyapu localStorage saat yang rusak adalah file basis data.
+check('healthCheck: pemulihan localStorage tidak dijalankan di mode desktop',
+  !/case 'localStorage':/.test(HEALTH) &&
+  /if \(!dbAvailable\(\)\) this\.fixLocalStorage\(\);/.test(HEALTH));
+
+// ── 19. penjaga lokasi data pada paket + uji asap rilis ───────
+// Paket mem-pin folder datanya supaya rebrand tidak memindahkan database. Satu
+// jalan keluar yang diizinkan adalah --user-data-dir (switch resmi Chromium);
+// tanpa itu, uji asap paket akan mengganti password admin dan menulis jejak audit
+// ke profil pengguna nyata — pernah terjadi dan harus dikembalikan manual.
+const MAIN = fs.readFileSync(path.join(ROOT, 'electron', 'main.ts'), 'utf8');
+check('main: paket hanya berpindah folder data bila --user-data-dir disebut',
+  /getSwitchValue\('user-data-dir'\)/.test(MAIN) &&
+  /forcedDataDir = app\.isPackaged \? switchDataDir : \(process\.env\.HEMS_DATA_DIR \|\| ''\)/.test(MAIN));
+const SMOKE = fs.readFileSync(path.join(ROOT, 'tests', 'harness', 'smoke-paket-check.cjs'), 'utf8');
+check('smoke-paket: menjalankan FATHONI.exe selalu dalam sandbox',
+  /--user-data-dir=\$\{PROFIL\}/.test(SMOKE) && !/APPDATA: SANDBOX/.test(SMOKE));
+check('smoke-paket: profil nyata dibandingkan sebelum/sesudah agar kebocoran terlihat',
+  /sebelumLive === sesudahLive/.test(SMOKE));
+
 fs.rmSync(outfile, { force: true });
 console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);
 process.exit(failed === 0 ? 0 : 1);

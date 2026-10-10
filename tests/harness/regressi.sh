@@ -1,12 +1,17 @@
 #!/bin/sh
 # tests/harness/regressi.sh
-# Rantai regresi lengkap: tigabelas harness berjalan BERURUTAN, ditambah satu
+# Rantai regresi lengkap: empatbelas harness berjalan BERURUTAN, ditambah satu
 # audit dependensi. Urutan bukan hiasan — mesin ini hanya 3,8 GB RAM, dua
 # harness Electron paralel langsung membuat yang kedua macet di tengah layar.
 # Setiap harness electron membuka profil baru (HEMS_DATA_DIR dibersihkan lebih
 # dulu) karena marker migrasi hems_data_migration_v1 hanya berlaku sekali per
 # profil. Harness bertenaga node (migration, unit, store, backup) tidak butuh
 # profil dan tidak memakan RAM Electron.
+#
+# Langkah terakhir (paket) menguji FATHONI.exe HASIL PAKET, jadi ia butuh
+# `npm run make:installer` atau `npm run dist:dir` lebih dulu; tanpa paket harness
+# itu mencetak LEWAT dan rantai tetap hijau. Profil uji dibuat di sandbox sendiri
+# (--user-data-dir), sehingga rantai tidak pernah menyentuh data pengguna nyata.
 #
 # Hasil tiap harness dibaca dari baris "SELESAI kode=N" yang dicetak harness itu
 # sendiri (tests/harness/selesai.cjs), bukan dari kode keluar proses: pembungkus
@@ -97,6 +102,7 @@ jalan compat npx electron tests/harness/compat-check.cjs
 jalan perf npx electron tests/harness/perf-check.cjs
 jalan store node tests/harness/db-store-run.cjs
 jalan backup node tests/harness/db-backup-run.cjs
+jalan paket node tests/harness/smoke-paket-check.cjs
 audit
 
 echo

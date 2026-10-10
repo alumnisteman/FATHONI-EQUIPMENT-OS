@@ -508,6 +508,45 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Data contoh / mock kembali muncul tanpa permintaan | migration-check 1.1–1.4, 3.0, 8.1–8.3 (seed hanya lewat paket contoh) |
 | Cetak dokumen kembali lewat popup | gui-check "kanal cetak merespons (tidak menggantung)", "cetak dokumen kosong ditolak" |
 | Aplikasi macet saat data bertambah | perf "median waktu cari < 800 ms", "berganti halaman < 800 ms", "50.000 baris tidak lebih dari 3x waktu 12.000 baris" |
+| Halaman Jejak Audit menayangkan baris karangan (AUDIT-001..) alih-alih kejadian nyata, dengan CSV rakitan sendiri | unit 17 (sumber authClient, tanpa log karangan, CSV lewat `buildCsv`, menu SUPERADMIN, rute tanpa collection), smoke-paket "Jejak Audit menampilkan LOGIN_OK/PASSWORD_CHANGED yang sungguh terjadi" |
+| Ada rute aplikasi yang tidak pernah dibuka satu harness UI pun, jadi kerusakannya tidak terlihat | unit 16 "cakupan UI: setiap rute aplikasi dilewati minimal satu harness" (daftar rute dibaca dari `App.tsx`) |
+| Health check mengira localStorage masih tempat data: probe tulis tiap siklus memperbesar arsip lama, dan file SQLite yang tidak terbuka tertutup status "localStorage bisa ditulis" | unit 18 (cek penyimpanan & integritas dialihkan ke `dbInfo`/`dbIntegrity`, probe hanya mode demo), smoke-paket 4.1–4.2 (kunci yang ditulis selama sesi) |
+| Uji asap paket mengganti password admin / menambah jejak audit pada profil pengguna nyata | unit 19 (`--user-data-dir` adalah satu-satunya jalan berpindah folder di paket), smoke-paket 7.1 (isi leveldb profil live dibandingkan sebelum/sesudah) |
+
+## Uji asap terhadap paket (`smoke-paket-check.cjs`)
+
+Harness-harness lain menguji kode dari DALAM proses Electron. Yang satu ini
+menguji barang yang benar-benar diserahkan ke pengguna: `FATHONI.exe` hasil
+`dist-app/win-unpacked`, dengan `app.asar` berisi, tanpa `HEMS_DATA_DIR`.
+
+```
+npm run make:installer            # atau npm run dist:dir
+node tests/harness/smoke-paket-check.cjs
+```
+
+Cara kerjanya:
+
+1. Sandbox profil dibuat ulang di `tmp-harness/appdata-smoke/hems-heavy-equipment-system`
+   dan diisi salinan arsip `Local Storage` pra-SQLite (bisa ditunjuk lain lewat
+   `SMOKE_ARSIP`), sehingga jalur sekali-impor ikut teruji. Tanpa arsip, yang
+   teruji jalur instalasi baru.
+2. Paket dinyalakan dengan `--user-data-dir=<sandbox>` dan `--remote-debugging-port`.
+   `electron/main.ts` mem-pin folder datanya, dan switch itulah — bukan variabel
+   APPDATA, yang diabaikan Windows untuk proses anak — satu-satunya cara memindah
+   profil paket. Tanpa pin ini, menjalankan paket = mengganti password admin dan
+   menambah jejak audit milik pengguna nyata.
+3. Jendela dikendalikan lewat CDP: login, gerbang wajib ganti password, lalu
+   halaman Pemasok/Pembelian/Gudang/Armada/Jejak Audit. Yang diperiksa bukan hanya
+   "layar muncul", tapi barisnya benar-benar hasil impor dan dokumen tidak terpotong.
+4. Sebelum keluar dipasang pencatat `Storage.prototype.setItem/removeItem`. Setelah
+   sesi, daftar kunci yang ditulis dibandingkan dengan daftar izin; tambahan apa pun
+   berarti ada kode yang masih memperlakukan localStorage sebagai tempat data.
+5. Setelah proses mati: database sandbox dibaca (penanda impor, tepat 11 baris asli,
+   tanpa baris contoh), `accounts.json` diperiksa (hash+salt, nol plaintext), dan
+   isi leveldb profil nyata dibandingkan sebelum/sesudah sebagai bukti isolasi.
+
+Tanpa paket yang sudah dibangun, harness mencetak `LEWAT` dan `SELESAI kode=0` —
+rantai regresi tidak dianggap rusak hanya karena biner rilis belum dibuat.
 
 ## Memeriksa profil sungguhan tanpa menyentuhnya
 

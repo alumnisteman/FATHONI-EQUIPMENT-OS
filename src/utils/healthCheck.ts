@@ -4,6 +4,7 @@
 // BUG-014 FIX: Hapus window.gc yang bukan API resmi browser
 
 import { getDataRecovery } from './dataRecovery';
+import { dbAvailable, dbInfo, dbIntegrity, type DbInfo, type DbIntegrity } from '../services/dbClient';
 
 interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -62,8 +63,8 @@ class HealthCheck {
     const deep = opts.deep !== false;
     const checks: HealthCheckResult['checks'] = [];
 
-    // Check 1: localStorage availability (& quota saat deep)
-    checks.push(await this.checkLocalStorage(deep));
+    // Check 1: penyimpanan yang benar-benar dipakai data hari ini
+    checks.push(await this.checkStorage(deep));
 
     // Check 2: Data integrity
     checks.push(await this.checkDataIntegrity(deep));
@@ -98,7 +99,35 @@ class HealthCheck {
     return result;
   }
 
-  private async checkLocalStorage(deep: boolean): Promise<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }> {
+  /**
+   * Mode desktop menguji SQLite karena file itulah yang menyimpan data hari
+   * ini. Probe tulis ke localStorage sengaja tidak dipakai lagi di sana: tiap
+   * siklus menambah isi arsip pra-SQLite, dan kegagalan baca file basis data
+   * bisa tertutup oleh status "localStorage bisa ditulis".
+   */
+  private async checkStorage(deep: boolean): Promise<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }> {
+    if (dbAvailable()) return this.checkSqlite();
+    return this.checkLocalStorageBrowser(deep);
+  }
+
+  private async checkSqlite(): Promise<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }> {
+    try {
+      const info: DbInfo | null = await dbInfo();
+      if (!info) {
+        return { name: 'storage', status: 'fail', message: 'Basis data SQLite tidak terbuka. Buka menu Backup & Restore untuk memulihkan dari file cadangan.' };
+      }
+      const skema = Number(info.schemaVersion) || 0;
+      if (!skema) {
+        return { name: 'storage', status: 'fail', message: 'File basis data terbuka tetapi versi skema tidak terbaca.' };
+      }
+      const rows = Number(info.totalRows) || 0;
+      return { name: 'storage', status: 'pass', message: `SQLite: ${rows} baris, skema v${skema}` };
+    } catch (e) {
+      return { name: 'storage', status: 'fail', message: `Pemeriksaan basis data gagal: ${e}` };
+    }
+  }
+
+  private async checkLocalStorageBrowser(deep: boolean): Promise<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }> {
     try {
       const testKey = '_hems_health_test_';
       localStorage.setItem(testKey, '1');
@@ -106,13 +135,13 @@ class HealthCheck {
       localStorage.removeItem(testKey);
 
       if (retrieved !== '1') {
-        return { name: 'localStorage', status: 'fail', message: 'localStorage read/write gagal' };
+        return { name: 'storage', status: 'fail', message: 'localStorage read/write gagal' };
       }
 
       // Mengukur pemakaian butuh getItem atas setiap key — salinan string utuh
       // multi-megabyte. Hanya jalankan bila pengguna memintanya secara eksplisit.
       if (!deep) {
-        return { name: 'localStorage', status: 'pass', message: 'localStorage dapat ditulis dan dibaca' };
+        return { name: 'storage', status: 'pass', message: 'localStorage dapat ditulis dan dibaca' };
       }
 
       // Cek penggunaan storage
@@ -126,16 +155,22 @@ class HealthCheck {
       const pct      = (usedKB / limitKB) * 100;
 
       if (pct > 85) {
-        return { name: 'localStorage', status: 'warn', message: `Storage hampir penuh: ${usedKB.toFixed(0)}KB / ${limitKB}KB (${pct.toFixed(1)}%)` };
+        return { name: 'storage', status: 'warn', message: `Storage hampir penuh: ${usedKB.toFixed(0)}KB / ${limitKB}KB (${pct.toFixed(1)}%)` };
       }
 
-      return { name: 'localStorage', status: 'pass', message: `Storage OK: ${usedKB.toFixed(0)}KB dipakai (${pct.toFixed(1)}%)` };
+      return { name: 'storage', status: 'pass', message: `Storage OK: ${usedKB.toFixed(0)}KB dipakai (${pct.toFixed(1)}%)` };
     } catch (e) {
-      return { name: 'localStorage', status: 'fail', message: `localStorage error: ${e}` };
+      return { name: 'storage', status: 'fail', message: `localStorage error: ${e}` };
     }
   }
 
   private async checkDataIntegrity(deep: boolean): Promise<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }> {
+    // SQLite punya pemeriksaan bawaan (PRAGMA quick_check + deteksi nomor unik
+    // ganda). Memeriksa kunci hems_* di localStorage tidak lagi membuktikan
+    // apa pun tentang data pengguna, karena di mode desktop tidak ada satu baris
+    // pun yang ditulis ke sana.
+    if (dbAvailable()) return this.checkSqliteIntegrity(deep);
+
     try {
       // BUG-006 FIX: Periksa kedua prefix (lowercase dan uppercase)
       const hemsKeys = [];
@@ -178,6 +213,27 @@ class HealthCheck {
       }
     } catch (e) {
       return { name: 'dataIntegrity', status: 'warn', message: `Cek integritas gagal: ${e}` };
+    }
+  }
+
+  private async checkSqliteIntegrity(deep: boolean): Promise<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }> {
+    try {
+      const hasil: DbIntegrity | null = await dbIntegrity();
+      if (!hasil) {
+        return { name: 'dataIntegrity', status: 'fail', message: 'Basis data tidak menjawab PRAGMA quick_check. Pulihkan lewat menu Backup & Restore.' };
+      }
+      const ganda = hasil.duplicates ?? [];
+      if (!hasil.ok) {
+        const cuplikan = (hasil.quickCheck ?? []).slice(0, 2).join(' | ');
+        return { name: 'dataIntegrity', status: 'fail', message: `quick_check menolak file basis data${cuplikan ? `: ${cuplikan}` : ''}` };
+      }
+      if (ganda.length > 0) {
+        const contoh = ganda.slice(0, 2).map(d => `${d.collection}.${d.column}=${d.value} (${d.count}x)`).join(', ');
+        return { name: 'dataIntegrity', status: 'warn', message: `${ganda.length} nomor unik ganda: ${contoh}` };
+      }
+      return { name: 'dataIntegrity', status: 'pass', message: deep ? 'quick_check lolos, tidak ada nomor unik ganda' : 'Basis data utuh (quick_check)' };
+    } catch (e) {
+      return { name: 'dataIntegrity', status: 'warn', message: `Cek integritas SQLite gagal: ${e}` };
     }
   }
 
@@ -231,8 +287,11 @@ class HealthCheck {
 
     failedChecks.forEach(check => {
       switch (check.name) {
-        case 'localStorage':
-          this.fixLocalStorage();
+        case 'storage':
+          // Merapikan localStorage tidak bisa memperbaiki file SQLite yang
+          // tidak terbuka; di mode desktop yang perlu dilakukan pengguna adalah
+          // memulihkan dari cadangan, dan pesan check sudah menunjuk ke sana.
+          if (!dbAvailable()) this.fixLocalStorage();
           break;
         case 'dataIntegrity':
           this.fixDataIntegrity();
