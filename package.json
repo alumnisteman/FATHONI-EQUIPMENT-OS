@@ -1,0 +1,97 @@
+{
+  "name": "hems-heavy-equipment-system",
+  "version": "2.0.0",
+  "description": "FATHONI EQUIPMENT OS - Sistem Operasional Alat Berat Terintegrasi (Multi-Brand Desktop ERP)",
+  "author": "CV. MUGHNY NAMASKARABUMI KURNIA",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=2048 vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "dist": "npm run build && npm run build:electron && electron-builder --win",
+    "dist:dir": "electron-builder --win",
+    "dist:portable": "npm run build && npm run build:electron && electron-builder --win portable",
+    "make:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File build-installer.ps1",
+    "rebuild:native": "node scripts/install-native.cjs",
+    "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.12.0",
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "clsx": "^2.1.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "date-fns": "^3.6.0",
+    "electron": "^30.0.9",
+    "electron-builder": "^24.13.3",
+    "electron-store": "^8.2.0",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.395.0",
+    "pdf-lib": "^1.17.1",
+    "postcss": "^8.4.38",
+    "prisma": "^5.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.49.0",
+    "react-router-dom": "^6.23.1",
+    "recharts": "^2.12.2",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.13",
+    "wait-on": "^7.2.0",
+    "xlsx": "^0.18.5"
+  },
+  "build": {
+    "appId": "com.hems.heavyequipment",
+    "productName": "FATHONI EQUIPMENT OS",
+    "executableName": "FATHONI",
+    "directories": {
+      "output": "dist-app"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "!**/*.map",
+      "!**/*.pdb",
+      "!node_modules/better-sqlite3/deps/**",
+      "!node_modules/better-sqlite3/src/**",
+      "!node_modules/better-sqlite3/docs/**",
+      "!node_modules/@types/**"
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FATHONI EQUIPMENT OS"
+    },
+    "asarUnpack": [
+      "**/*.node"
+    ]
+  },
+  "allowScripts": {
+    "electron@30.5.1": true,
+    "esbuild@0.21.5": true,
+    "@prisma/client@5.22.0": true,
+    "prisma@5.22.0": true,
+    "@prisma/engines@5.22.0": true
+  }
+}

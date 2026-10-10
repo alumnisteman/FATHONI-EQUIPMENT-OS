@@ -1,0 +1,22 @@
+# Hasil build — semuanya bisa dibangun ulang dari src/, electron/, tests/.
+# Tidak ada di antaranya yang boleh masuk baseline git: dist-app berisi salinan
+# Electron penuh (266 MB) dan dist-electron-portable adalah paket lama.
+node_modules/
+dist/
+dist-electron/
+dist-app/
+dist-installer/
+dist-electron-portable/
+installer/dist-installer/
+*.tsbuildinfo
+
+# Bekas eksperimen dan profil sementara harness Electron. Harness menulis profil
+# uji ke tmp-harness/r-<nama> lewat HEMS_DATA_DIR; data pengguna sungguhan TIDAK
+# pernah ada di sini (dia di %APPDATA%\hems-heavy-equipment-system).
+tmp-harness/
+tmp-probe/
+
+# File sistem / editor
+.DS_Store
+Thumbs.db
+*.log

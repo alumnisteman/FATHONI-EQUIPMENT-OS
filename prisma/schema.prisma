@@ -1,0 +1,172 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./data/fathoni.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["selectRelationCount"]
+}
+
+// Enums
+enum UserRole {
+  SUPERADMIN
+  SALES
+  WAREHOUSE
+  SERVICE
+  FINANCE
+}
+
+enum UnitStatus {
+  OPERATING
+  MAINTENANCE
+  OUT_OF_SERVICE
+  RETIRED
+}
+
+// Models
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  name      String
+  email     String   @unique
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  auditLogs AuditLog[]
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  salesOrders SalesOrder[]
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  contact   String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  purchaseOrders PurchaseOrder[]
+}
+
+model Brand {
+  id   String @id @default(uuid())
+  name String @unique
+  categories Category[]
+}
+
+model Category {
+  id       String @id @default(uuid())
+  name     String
+  brandId  String
+  brand    Brand @relation(fields: [brandId], references: [id])
+  models   Model[]
+}
+
+model Model {
+  id         String @id @default(uuid())
+  name       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  units      Unit[]
+}
+
+model Unit {
+  id          String   @id @default(uuid())
+  serialNumber String   @unique
+  modelId     String
+  model       Model @relation(fields: [modelId], references: [id])
+  status      UnitStatus @default(OPERATING)
+  serviceRecords ServiceRecord[]
+}
+
+model ServiceRecord {
+  id          String   @id @default(uuid())
+  unitId      String
+  unit        Unit @relation(fields: [unitId], references: [id])
+  date        DateTime
+  description String
+  cost        Float
+  createdAt   DateTime @default(now())
+}
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  date        DateTime @default(now())
+  total       Float
+  status      String
+}
+
+model SalesOrder {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  date        DateTime @default(now())
+  total       Float
+  status      String
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  salesOrderId String
+  salesOrder  SalesOrder @relation(fields: [salesOrderId], references: [id])
+  date        DateTime @default(now())
+  amount      Float
+  paid        Boolean @default(false)
+}
+
+model SparePart {
+  id        String @id @default(uuid())
+  name      String
+  sku       String @unique
+  stock     Int @default(0)
+  price     Float
+}
+
+model Rental {
+  id          String @id @default(uuid())
+  unitId      String
+  unit        Unit @relation(fields: [unitId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  startDate   DateTime
+  endDate     DateTime?
+  rate        Float
+}
+
+model Delivery {
+  id          String @id @default(uuid())
+  orderId     String
+  address     String
+  deliveredAt DateTime?
+}
+
+model JournalEntry {
+  id        String @id @default(uuid())
+  date      DateTime @default(now())
+  description String
+  debit     Float
+  credit    Float
+}
+
+model AuditLog {
+  id        String @id @default(uuid())
+  entity    String
+  action    String
+  userId    String?
+  timestamp DateTime @default(now())
+  details   String?
+  user      User? @relation(fields: [userId], references: [id])
+}
