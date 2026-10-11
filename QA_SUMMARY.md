@@ -1,109 +1,75 @@
-# QA COMPLETION SUMMARY - HEMS
-**Tanggal**: 22 September 2026  
-**Status**: ✅ ALL HIGH PRIORITY ISSUES RESOLVED
+# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.0.0
+**Tanggal**: 2026-10-11
+**Rincian**: `QA_REPORT.md` (laporan lengkap) dan `tests/harness/README.md` (matriks assertion per cacat)
 
----
+## Verdict
 
-## 🎯 COMPLETED TASKS
+Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
+**15 langkah, 1.024 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
+`npm audit` 0 kerentanan tinggi/kritis.
 
-### ✅ Build Installer Windows
-- **Status**: SUCCESS
-- **Output**: `D:\SANY\installer\dist-installer\HEMS-Setup-1.0.0.exe` (92.8 MB)
-- **Notes**: Inno Setup compilation successful, Indonesian language file issue resolved
+| Langkah | Assertion |
+|---|---|
+| migration | 49 |
+| unit (`validation-check`) | 241 |
+| auth (keamanan) | 58 |
+| gui (fungsional) | 72 |
+| flow (fungsional) | 30 |
+| handoff (integrasi lintas menu) | 114 |
+| usable (usability + ukuran layar) | 33 |
+| db (SQLite + paritas SQL) | 136 |
+| integritas (atomisitas + rollback + hapus bers rujukan) | 62 |
+| compat (profil lama + mode browser) | 30 |
+| perf (beban + stres) | 37 |
+| store (rencana tulis per collection) | 47 |
+| backup (snapshot + restore) | 87 |
+| paket (uji asap FATHONI.exe jadi) | 28 |
+| audit dependensi | 0 kerentanan |
 
-### ✅ TypeScript Type Safety Improvements
-- **Status**: PARTIALLY COMPLETED
-- **Changes**:
-  - Added proper TypeScript interfaces in `src/types/index.ts`
-  - Added type definitions for InvoiceItem, ServiceType, RentalContract, BankAccount, Document
-  - Improved type safety in `dataStore.tsx`
-  - Some `any` types retained for backward compatibility
+## Yang sudah terbukti
 
-### ✅ Input Validation & Sanitization
-- **Status**: COMPLETED
-- **New File**: `src/utils/validation.ts` (267 lines)
-- **Features**:
-  - XSS protection with `sanitizeString()` and `escapeHtml()`
-  - Email validation with `isValidEmail()`
-  - Phone validation (Indonesia format) with `isValidPhone()`
-  - NPWP validation with `isValidNPWP()`
-  - Bank account validation with `isValidBankAccount()`
-  - Date validation with `isNotFutureDate()` and `isNotPastDate()`
-  - Amount validation with `isValidAmount()` and `isValidCurrency()`
-  - Company data validation with `isValidCompanyName()` and `isValidAddress()`
-  - Serial number validation with `isValidSerialNumber()`
-  - Generic form validation with `validateFormData()`
-- **Integration**: Validasi dan sanitasi diimplementasikan di `Settings.tsx`
+- **Tidak kehilangan data**: hapus lewat jalur per-baris + aturan rujukan di main
+  process; simpan sebagian tidak menimpa collection lain; patch beracun di-rollback
+  penuh dan file tetap sehat.
+- **Ringan walau data tumbuh**: boot memindahkan 0 baris lewat IPC; tabel 50.000 baris
+  tetap 12 kartu DOM; pencarian median 275 ms; kueri telanjang 86 ms; tulis satu baris
+  median 1 ms.
+- **Aman**: akun ter-hash di main process, balasan login tanpa kredensial, lockout 5x,
+  CSP + sandbox, `accounts.json` tanpa plaintext, CSV meng-escape dan menahan injeksi
+  formula, uji asap paket berjalan di sandbox dan membuktikan profil nyata tidak berubah.
+- **Naik versi tidak merusak**: profil lama hasil upgrade membangun kembali kolom
+  turunannya dan mengembalikan baris warisan; mode browser tanpa `electronAPI` tetap
+  terbuka dengan penanda demo dan nol error renderer.
+- **Satu baris aneh tidak membekukan aplikasi**: nilai di luar peta status/severity,
+  dan kolom angka/array yang kosong, kini tampil apa adanya alih-alih meruntuhkan
+  seluruh menu (ini penyebab "aplikasi macet" yang paling sering dilaporkan).
+- **Paket**: `dist-installer/FATHONI-Setup-3.0.0.exe` (79,3 MiB), asar hanya berisi
+  `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
+  dipertahankan.
 
-### ✅ localStorage Quota Handling
-- **Status**: COMPLETED
-- **Changes**:
-  - Added quota checking before save (limit ~5MB)
-  - Try-catch for QuotaExceededError
-  - Alert user when storage is full
-  - Skip save if data is too large
-- **Location**: `src/store/dataStore.tsx`
+## Yang belum terbukti (jangan dinyatakan lulus)
 
-### ✅ Data Validation Before Storage
-- **Status**: COMPLETED
-- **Changes**:
-  - Array type checking before applying from localStorage
-  - Fallback to defaults if data is corrupt
-  - Reset localStorage if data is invalid
-- **Location**: `src/store/dataStore.tsx`
+macOS/Linux · scaling DPI dan ukuran layar lain · printer/perangkat keras sejati ·
+code signing (SmartScreen akan memperingatkan) · walkthrough usability oleh manusia ·
+kapasitas di atas 50.000 baris per collection · anggaran performa yang masih dilonggarkan.
 
----
+## Yang menunggu keputusan
 
-## 📊 FINAL BUILD STATUS
+1. **Aturan rujukan teknisi/operator** — `services.mechanicName`,
+   `breakdowns.assignedTechnician`, `rentals.operatorName` perlu menjadi kolom
+   tersimpan; ini memicu backfill pada profil live (`DERIVED_REVISION` 5→6).
+2. **Prisma tidak dipakai** (~111 MB) — penghapusan butuh persetujuan.
+3. **`auto-fix.ps1` di root** — merusak (`rm dist*/node_modules/package-lock` +
+   `git reset/clean`).
+4. **Artefak lama** — `HEMS-Setup-*.exe` dan `dist-electron-portable` (156 MB,
+   `app.asar` terkunci proses).
 
-### Build Results:
-- ✅ TypeScript: No errors
-- ✅ Vite Build: Successful
-- ✅ Bundle Size: ~144 KB (main bundle)
-- ✅ Total Modules: 1226 modules transformed
-- ✅ Build Time: ~12 seconds
+## Jalur reproduksi
 
-### Warnings (Non-Critical):
-- Vite CJS API deprecated (cosmetic)
-- Module type not specified in package.json (cosmetic)
-- Dynamic import warnings (no functional impact)
+```bash
+npm run build && npm run build:electron
+sh tests/harness/regressi.sh
+```
 
----
-
-## 📋 FINAL ASSESSMENT
-
-### QA Rating: ⭐⭐⭐⭐⭐ (5/5)
-### Deployment Status: ✅ READY FOR INTERNAL USE
-
-### Security Improvements:
-- ✅ XSS protection implemented
-- ✅ Input validation added
-- ✅ Data sanitization added
-- ✅ localStorage quota handling
-- ✅ Data validation before storage
-
-### Functional Testing:
-- ✅ All core modules working
-- ✅ Cross-module integration working
-- ✅ Automation features working
-- ✅ Print features working with sanitization
-- ✅ PDF generation working
-- ✅ Validation features working
-
----
-
-## 🎉 CONCLUSION
-
-Semua HIGH PRIORITY issues dari QA report telah diperbaiki. Aplikasi HEMS sekarang:
-- ✅ Lebih aman dengan input validation dan sanitasi
-- ✅ Lebih stabil dengan localStorage quota handling
-- ✅ Lebih reliable dengan data validation
-- ✅ Ready untuk deployment internal
-- ✅ Installer Windows berhasil dibuat
-
-Aplikasi siap untuk penggunaan internal dengan kualitas yang baik!
-
----
-
-*QA Completion Summary*
-*Date: 22 September 2026*
+Satu instance Electron per jalan; harness profil memakai
+`HEMS_DATA_DIR=D:/SANY/tmp-harness/r-<nama>` (paket: `--user-data-dir`).
