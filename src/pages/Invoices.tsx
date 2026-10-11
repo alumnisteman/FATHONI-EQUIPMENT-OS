@@ -9,6 +9,7 @@ import { useCollectionSum, useCollectionCount } from '../hooks/useCollectionTota
 import Pager from '../components/Pager';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { validateAmount } from '../utils/validation';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 
 interface InvoiceItem {
   id: string;
@@ -130,15 +131,25 @@ export default function Invoices() {
   const rekeningList = rekeningAktif.length > 0 ? rekeningAktif : ['Kas Tunai'];
 
   // Form tambah
-  const [form, setForm] = useState({
-    invoiceNo: `INV-2026-00${data.length + 1}`,
+  const nomorInvoice = (urutan: number) =>
+    `INV-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    invoiceNo: nomorSementara(data, 'invoiceNo', nomorInvoice),
     customerName: '',
     unitOrDesc: '',
     type: 'RENTAL' as 'PENJUALAN' | 'RENTAL' | 'SERVICE' | 'SPAREPART',
     issueDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
     totalAmount: 0,
-  });
+  };
+  const [form, setForm] = useState(formKosong);
+
+  const openCreateModal = async () => {
+    const invoiceNo = await nomorBerikut('invoices', 'invoiceNo', data, nomorInvoice);
+    setForm({ ...formKosong, invoiceNo });
+    setShowModal(true);
+  };
 
   const paged = usePagedCollection<InvoiceItem>({
     collection: 'invoices',
@@ -203,15 +214,7 @@ export default function Invoices() {
 
     commit(newItem);
     setShowModal(false);
-    setForm({
-      invoiceNo: `INV-2026-00${data.length + 2}`,
-      customerName: '',
-      unitOrDesc: '',
-      type: 'RENTAL',
-      issueDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-      totalAmount: 0,
-    });
+    setForm(formKosong);
   };
 
   const handleRecordPayment = () => {
@@ -338,7 +341,7 @@ export default function Invoices() {
             </svg>
             Ekspor CSV
           </button>
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={15} height={15}>
               <path d="M12 5v14M5 12h14" />
             </svg>

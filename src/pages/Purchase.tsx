@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateAmount,
@@ -92,8 +93,11 @@ export default function Purchase() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  const [form, setForm] = useState({
-    poNumber: `PO-2026-00${data.length + 1}`,
+  const nomorPO = (urutan: number) =>
+    `PO-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    poNumber: nomorSementara(data, 'poNumber', nomorPO),
     supplierName: '',
     itemName: '',
     category: 'SPAREPART' as 'UNIT' | 'SPAREPART' | 'CONSUMABLE',
@@ -101,7 +105,8 @@ export default function Purchase() {
     deliveryExpectedDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
     totalAmount: 0,
     notes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const filtered = data.filter(item => {
@@ -184,7 +189,7 @@ export default function Purchase() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({ poNumber: `PO-${new Date().getFullYear()}-${String(data.length + 2).padStart(3,'0')}`, supplierName: '', itemName: '', category: 'SPAREPART', orderDate: new Date().toISOString().split('T')[0], deliveryExpectedDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0], totalAmount: 0, notes: '' });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: PurchaseOrder) => {
@@ -293,9 +298,10 @@ export default function Purchase() {
     }
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditingId(null);
-    setForm({ poNumber: `PO-${new Date().getFullYear()}-${String(data.length + 1).padStart(3,'0')}`, supplierName: '', itemName: '', category: 'SPAREPART', orderDate: new Date().toISOString().split('T')[0], deliveryExpectedDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0], totalAmount: 0, notes: '' });
+    const poNumber = await nomorBerikut('purchases', 'poNumber', data, nomorPO);
+    setForm({ ...formKosong, poNumber });
     setShowModal(true);
   };
 

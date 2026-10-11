@@ -5,6 +5,7 @@ import { useDataStore } from '../store/dataStore';
 import { ApprovalRequest, ApprovalStatus, ApprovalType } from '../types';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateName,
@@ -36,8 +37,11 @@ export default function Approvals() {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  const [form, setForm] = useState({
-    requestNumber: `APR-${new Date().getFullYear()}-${String(approvals.length + 1).padStart(3, '0')}`,
+  const nomorAPR = (urutan: number) =>
+    `APR-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    requestNumber: nomorSementara(approvals, 'requestNumber', nomorAPR),
     type: 'PURCHASE_REQUEST' as ApprovalType,
     title: '',
     description: '',
@@ -46,8 +50,16 @@ export default function Approvals() {
     approverLevel: 1,
     currentApprover: '',
     notes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const openCreateModal = async () => {
+    setEditingId(null);
+    const requestNumber = await nomorBerikut('approvals', 'requestNumber', approvals, nomorAPR);
+    setForm({ ...formKosong, requestNumber });
+    setShowModal(true);
+  };
 
   const filtered = approvals.filter(item => {
     const matchSearch = matchesQuery([item.requestNumber, item.title, item.requestedBy], search);
@@ -135,17 +147,7 @@ export default function Approvals() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({
-      requestNumber: `APR-${new Date().getFullYear()}-${String(approvals.length + 1).padStart(3, '0')}`,
-      type: 'PURCHASE_REQUEST',
-      title: '',
-      description: '',
-      requestedBy: '',
-      amount: 0,
-      approverLevel: 1,
-      currentApprover: '',
-      notes: '',
-    });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: ApprovalRequest) => {
@@ -363,7 +365,7 @@ export default function Approvals() {
           <option value="REJECTED">Ditolak</option>
           <option value="CANCELLED">Dibatalkan</option>
         </select>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+        <button onClick={openCreateModal} className="btn btn-primary">
           + Buat Request
         </button>
       </div>

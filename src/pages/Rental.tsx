@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateAmount,
@@ -33,8 +34,11 @@ export default function Rental() {
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState<'timeline' | 'table'>('timeline');
 
-  const [form, setForm] = useState({
-    contractNo: `RNT-2026-00${data.length + 1}`,
+  const nomorKontrak = (urutan: number) =>
+    `RNT-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    contractNo: nomorSementara(data, 'contractNo', nomorKontrak),
     customerName: '',
     unitModel: 'Komatsu PC200-8 Excavator',
     serialNumber: '',
@@ -44,7 +48,8 @@ export default function Rental() {
     monthlyRate: 90_000_000,
     minimumHours: 200,
     operatorIncluded: true,
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const filtered = data.filter(item => {
@@ -148,7 +153,7 @@ export default function Rental() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({ contractNo: `RNT-${new Date().getFullYear()}-${String(data.length + 2).padStart(3,'0')}`, customerName: '', unitModel: 'Komatsu PC200-8 Excavator', serialNumber: '', startDate: new Date().toISOString().split('T')[0], endDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0], location: '', monthlyRate: 90_000_000, minimumHours: 200, operatorIncluded: true });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: RentalContract) => {
@@ -225,9 +230,10 @@ export default function Rental() {
     }
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditingId(null);
-    setForm({ contractNo: `RNT-${new Date().getFullYear()}-${String(data.length + 1).padStart(3,'0')}`, customerName: '', unitModel: 'Komatsu PC200-8 Excavator', serialNumber: '', startDate: new Date().toISOString().split('T')[0], endDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0], location: '', monthlyRate: 90_000_000, minimumHours: 200, operatorIncluded: true });
+    const contractNo = await nomorBerikut('rentals', 'contractNo', data, nomorKontrak);
+    setForm({ ...formKosong, contractNo });
     setShowModal(true);
   };
 

@@ -1,7 +1,7 @@
 # FATHONI EQUIPMENT OS — Laporan QA
 **Versi aplikasi**: 3.0.0 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
-**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.036 assertion, 0 gagal.
+**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.056 assertion, 0 gagal.
 
 Laporan ini menggantikan laporan 2026-09-23 (HEMS 1.0.0). Laporan lama itu sudah tidak
 berlaku dan sengaja ditulis ulang, bukan ditambal: ia menyebut localStorage sebagai
@@ -28,10 +28,10 @@ Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11.
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 243 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, + penjaga statis (§5) |
+| **Unit** | `validation-check` | 258 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), + penjaga statis (§5) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
 | **Fungsional** | `gui-check`, `flow-check`, `usable-check` | 72 + 30 + 33 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16 |
-| **Integrasi (lintas menu)** | `handoff-check` | 118 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6) |
+| **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7) |
 | **Integritas & transaksi** | `db-check`, `integritas-check` | 136 + 68 | paritas SQL vs `matchesWhere`, `where` pada kunci `id`, rujukan saat hapus termasuk aturan ber-blob untuk orang, rollback penuh saat patch beracun, file tetap sehat setelah dibuka ulang |
 | **Keamanan** | `auth-check`, `npm audit` | 58 + 0 kerentanan | balasan login tanpa password/hash/salt, pesan generik, lockout, sesi palsu ditolak, CSP/sandbox/izin, injeksi formula CSV ditahan |
 | **Performa (beban + stres)** | `perf-check` | 37 | angka di §3, termasuk pertumbuhan ke 50.000 baris dan DOM yang tetap 12 kartu |
@@ -103,20 +103,41 @@ per collection belum ada angka, jadi jangan dinyatakan sebagai "sudah teruji".
    menampilkan alasan yang menyebut dokumennya; baris orang dan dokumennya tetap ada).
    *Penjaga*: validation 12 (aturan blob wajib menyebut field yang benar-benar ikut
    ditulis ke blob; teknisi dan operator wajib berpemeriksaan).
+7. **Usulan nomor dokumen dihitung dari array yang tidak lengkap.** Sebelas halaman
+   mencetak nomor berikutnya dari `data.length + 1` (SPK, kontrak rental, PO, WO,
+   surat jalan, invoice, laporan kerusakan, permohonan, nomor operator/teknisi, bukti
+   mutasi). Sejak #38 array itu hanya sebagian dari isi file, jadi nomor yang
+   diusulkan bisa (a) menabrak nomor yang sudah ada, atau (b) berhenti di tengah dan
+   menyisakan celah. Ini bukan hiasan: `electron/referential.ts` menandai dokumen
+   lintas menu lewat **nomor bisnisnya**, jadi nomor rangkap merusak pemeriksaan hapus
+   dan rujukan antar menu. Sumbernya kini satu fungsi (`src/utils/nomorBerikut.ts`):
+   tertinggi di file +1, lalu kandidat diperiksa berlapis (`WHERE <no> IN (...)`,
+   terindeks) sampai benar-benar bebas — termasuk kasus nomor leksikografis
+   (`SO-2026-999` vs `SO-2026-1000`) dan collection yang baru mulai di tahun berikutnya.
+   Tidak ada skema, IPC, atau `DERIVED_REVISION` yang berubah. *Bukti*: validation 23
+   (15 kasus murni: celah sesudah hapus, 60 nomor terisi → 61, lebar nomor berbeda
+   `T-00010`, embel asing tidak menghalangi, mode browser) dan handoff 9.9 + 10.19
+   (tombol asli diklik: usulan SPK melanjutkan 902 → 903 walau baris tertinggi sudah
+   dihapus; usulan bukti mutasi melewati nomor tanam 888, yang mustahil dihasilkan
+   rumus lama).
 
-Pola yang menyatukan keenamnya: yang rusak bukan satu menu, melainkan asumsi bahwa
+Pola yang menyatukan ketujuhnya: yang rusak bukan satu menu, melainkan asumsi bahwa
 data yang dibaca selalu lengkap dan selalu berasal dari jalur yang sama.
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
 
-`validation-check` §12, §15–§22 menahan bentuk kode, bukan hanya hasilnya:
+`validation-check` §12, §15–§23 menahan bentuk kode, bukan hanya hasilnya:
 peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataStore`;
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
 karangan; `healthCheck` wajib memeriksa SQLite; lokasi data paket dan sandbox uji asap;
-boundary berkunci rute; dua aturan §4.3–4.4 di atas; dan bentuk daftar rujukan
+boundary berkunci rute; dua aturan §4.3–4.4 di atas; bentuk daftar rujukan
 (§4.6) — kolom aturan wajib ada di `COLLECTION_SPECS`, `blobField` wajib ada di
-daftar `search` anak, dan teknisi/operator tidak boleh kembali menjadi record daun.
+daftar `search` anak, dan teknisi/operator tidak boleh kembali menjadi record daun;
+sumber nomor dokumen (§4.7) — tidak ada lagi baris di `src/pages` yang menghitung
+nomor dari `.length + n`, ke-11 collection bernomor bisnis wajib dipanggil lewat
+`nomorBerikut`, dan pasangan (collection, field) itu wajib benar-benar kolom SQL di
+`dbSchema` supaya pemeriksaan kandidat tidak pernah diam-diam disaring keluar.
 
 ## 6. Yang BELUM diverifikasi (perbatasan laporan ini)
 

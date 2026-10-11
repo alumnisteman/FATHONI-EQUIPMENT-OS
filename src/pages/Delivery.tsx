@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 
 interface DeliveryOrder {
   id: string;
@@ -35,8 +36,11 @@ export default function Delivery() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    doNumber: `DO-2026-00${data.length + 1}`,
+  const nomorDO = (urutan: number) =>
+    `DO-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    doNumber: nomorSementara(data, 'doNumber', nomorDO),
     salesOrderRef: '',
     customerName: '',
     unitModel: '',
@@ -46,7 +50,8 @@ export default function Delivery() {
     driverName: '',
     truckPlate: '',
     notes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const filtered = data.filter(item => {
@@ -74,7 +79,7 @@ export default function Delivery() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({ doNumber: `DO-${new Date().getFullYear()}-${String(data.length + 2).padStart(3,'0')}`, salesOrderRef: '', customerName: '', unitModel: '', serialNumber: '', deliveryDate: new Date().toISOString().split('T')[0], destination: '', driverName: '', truckPlate: '', notes: '' });
+    setForm(formKosong);
   };
 
 
@@ -96,9 +101,10 @@ export default function Delivery() {
     setData(data.map(i => (i.id === id ? { ...i, status: newStatus } : i)));
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditingId(null);
-    setForm({ doNumber: `DO-${new Date().getFullYear()}-${String(data.length + 1).padStart(3,'0')}`, salesOrderRef: '', customerName: '', unitModel: '', serialNumber: '', deliveryDate: new Date().toISOString().split('T')[0], destination: '', driverName: '', truckPlate: '', notes: '' });
+    const doNumber = await nomorBerikut('deliveries', 'doNumber', data, nomorDO);
+    setForm({ ...formKosong, doNumber });
     setShowModal(true);
   };
 

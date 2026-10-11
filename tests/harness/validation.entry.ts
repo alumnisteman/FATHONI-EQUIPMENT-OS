@@ -7,3 +7,6 @@ export * as V from '../../src/utils/validation';
 export { getDataRecovery, collectSnapshotSettings } from '../../src/utils/dataRecovery';
 export { matchesQuery } from '../../src/utils/searchMatch';
 export { COLLECTION_KEYS } from '../../src/store/collections';
+export {
+  urutanTerakhir, urutanTertinggi, cariUrutanBebas, nomorBerikut, nomorSementara,
+} from '../../src/utils/nomorBerikut';

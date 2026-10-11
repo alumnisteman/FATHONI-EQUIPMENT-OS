@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateAmount,
@@ -44,8 +45,11 @@ export default function Service() {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    woNumber: `WO-2026-00${data.length + 1}`,
+  const nomorWO = (urutan: number) =>
+    `WO-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    woNumber: nomorSementara(data, 'woNumber', nomorWO),
     unitModel: 'Komatsu PC200-8',
     serialNumber: '',
     customerOrProject: '',
@@ -55,7 +59,8 @@ export default function Service() {
     openDate: new Date().toISOString().split('T')[0],
     estimatedCost: 5_000_000,
     complaintNotes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Selesai WO lewat modal: biaya aktual & part terpakai harus tercatat agar stok dan Invoice SERVICE tidak kosong.
@@ -177,7 +182,7 @@ export default function Service() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({ woNumber: `WO-${new Date().getFullYear()}-${String(data.length + 2).padStart(3,'0')}`, unitModel: 'Komatsu PC200-8', serialNumber: '', customerOrProject: '', serviceType: 'PERIODIC_250H', mechanicName: 'Agus Sutrisno', hourMeter: 0, openDate: new Date().toISOString().split('T')[0], estimatedCost: 5_000_000, complaintNotes: '' });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: WorkOrder) => {
@@ -261,9 +266,10 @@ export default function Service() {
     setPartsDraft([]);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditingId(null);
-    setForm({ woNumber: `WO-${new Date().getFullYear()}-${String(data.length + 1).padStart(3,'0')}`, unitModel: 'Komatsu PC200-8', serialNumber: '', customerOrProject: '', serviceType: 'PERIODIC_250H', mechanicName: 'Agus Sutrisno', hourMeter: 0, openDate: new Date().toISOString().split('T')[0], estimatedCost: 5_000_000, complaintNotes: '' });
+    const woNumber = await nomorBerikut('services', 'woNumber', data, nomorWO);
+    setForm({ ...formKosong, woNumber });
     setShowModal(true);
   };
 

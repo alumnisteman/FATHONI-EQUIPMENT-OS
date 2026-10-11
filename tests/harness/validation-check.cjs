@@ -655,6 +655,89 @@ check('halaman: angka/teks dari baris dibaca lewat ?? atau pemeriksaan dulu (nul
 check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   /H10NULL-OP/.test(fs.readFileSync(path.join(ROOT, 'tests', 'harness', 'handoff-check.cjs'), 'utf8')));
 
-fs.rmSync(outfile, { force: true });
-console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);
-process.exit(failed === 0 ? 0 : 1);
+// ── 23. nomor dokumen berikutnya ───────────────────────────────
+// Nomor bisnis adalah kunci yang dipakai antar menu saling menunjuk (lihat
+// electron/referential.ts). Dua dokumen bernomor sama membuat rujukan tidak
+// terbaca lagi dan penolakan hapus salah alamat. Sumber nomornya dulu panjang
+// array di halaman — menghapus satu record meninggalkan celah dan saran
+// berikutnya menabrak nomor yang masih ada di file.
+(async () => {
+  const N = E;
+  const buat = (n) => `T-${String(n).padStart(3, '0')}`;
+
+  check('nomor: akhiran digit dibaca',
+    N.urutanTerakhir('SO-2026-007') === 7 && N.urutanTerakhir('INV-2026-0011') === 11,
+    { tujuh: N.urutanTerakhir('SO-2026-007'), sebelas: N.urutanTerakhir('INV-2026-0011') });
+  check('nomor: tanpa angka di ujung bernilai 0, bukan NaN',
+    N.urutanTerakhir('ABC') === 0 && N.urutanTerakhir(null) === 0 && N.urutanTerakhir(undefined) === 0
+    && N.urutanTerakhir('') === 0 && N.urutanTerakhir(12) === 12);
+  check('nomor: tertinggi dari baris memori, termasuk baris tanpa field',
+    N.urutanTertinggi([{ no: 'T-003' }, { no: 'T-011' }, {}], 'no') === 11
+    && N.urutanTertinggi([], 'no') === 0 && N.urutanTertinggi(undefined, 'no') === 0);
+
+  const tanya = (isi) => async () => isi;
+  check('nomor: file kosong memberi nomor pertama',
+    await N.cariUrutanBebas(1, buat, tanya([])) === 1);
+  check('nomor: celah hasil hapus tidak ditawari ulang',
+    await N.cariUrutanBebas(9, buat, tanya(['T-009'])) === 10);
+  check('nomor: deretan penuh melewati satu kelompok kandidat',
+    await N.cariUrutanBebas(1, buat, tanya(
+      Array.from({ length: 60 }, (_, i) => buat(i + 1)))) === 61);
+  // Lebar nomor pernah tidak seragam (template 'INV-2026-00' + angka): 0010 dan
+  // 010 adalah urutan yang sama dan tetap dianggap tabrakan.
+  check('nomor: urutan yang sama dengan lebar berbeda tetap tabrakan',
+    await N.cariUrutanBebas(10, buat, tanya(['T-00010'])) === 11);
+  check('nomor: embel lain tidak menahan kandidat (penyaring kolom tak dikenal)',
+    await N.cariUrutanBebas(1, buat, tanya(['TRX-2026-001', 'INV-2026-001'])) === 1);
+  check('nomor: mulai dari nilai < 1 tidak menghasilkan urutan 0',
+    await N.cariUrutanBebas(0, buat, tanya([])) === 1
+    && await N.cariUrutanBebas(-5, buat, tanya([])) === 1);
+
+  // Mode browser (tidak ada electronAPI): hanya array di memori yang bisa dibaca.
+  check('nomor: tanpa database, saran bersumber dari array maksimum',
+    await N.nomorBerikut('sales', 'orderNo', [{ orderNo: 'SO-2026-004' }], buat) === 'T-005');
+  check('nomor: array kosong tanpa database memberi nomor pertama',
+    await N.nomorBerikut('sales', 'orderNo', [], buat) === 'T-001');
+  check('nomor: keadaan awal form tidak pernah bernomor 000',
+    N.nomorSementara([], 'no', buat) === 'T-001'
+    && N.nomorSementara([{ no: 'T-007' }], 'no', buat) === 'T-008');
+
+  // ── penjaga statis: tidak ada lagi nomor yang lahir dari panjang array ──
+  const HALAMAN = fs.readdirSync(path.join(ROOT, 'src', 'pages'))
+    .filter(f => /\.tsx$/.test(f)).map(f => path.join(ROOT, 'src', 'pages', f));
+  const DARI_LENGTH = [];
+  const PANGGILAN = [];
+  for (const f of HALAMAN) {
+    const teks = fs.readFileSync(f, 'utf8');
+    teks.split(/\r?\n/).forEach((baris, i) => {
+      if (/\.length\s*\+\s*\d/.test(baris) && /No|nomor|Number|Nomor/.test(baris)) {
+        DARI_LENGTH.push(path.basename(f) + ':' + (i + 1) + '  ' + baris.trim());
+      }
+      for (const m of baris.matchAll(/nomorBerikut\(\s*'([A-Za-z]+)'\s*,\s*'([A-Za-z0-9]+)'/g)) {
+        PANGGILAN.push({ berkas: path.basename(f), collection: m[1], field: m[2] });
+      }
+    });
+  }
+  check('halaman: tidak ada nomor dokumen yang dibangun dari panjang array',
+    DARI_LENGTH.length === 0, { DARI_LENGTH });
+  const PERLU = ['approvals', 'breakdowns', 'deliveries', 'invoices', 'operators', 'purchases',
+    'rentals', 'sales', 'services', 'technicians', 'warehouse'];
+  const colect = [...new Set(PANGGILAN.map(p => p.collection))];
+  check('halaman: sebelas nomor bisnis diturunkan lewat nomorBerikut',
+    PERLU.every(c => colect.includes(c)), { belum: PERLU.filter(c => !colect.includes(c)) });
+  try {
+    const SCHEMA = require('../../dist-electron/dbSchema.js');
+    const kolom = (c) => new Set((SCHEMA.SPEC_BY_NAME[c] || { columns: [] }).columns.map(x => x.col));
+    const salah = PANGGILAN.filter(p => !kolom(p.collection).has(p.field));
+    // Kalau field-nya bukan kolom SQL, WHERE diabaikan dan file mengembalikan baris
+    // apa saja: nomor bisa tertahan palsu atau, lebih buruk, tabrakan tidak terlihat.
+    check('nomorBerikut: setiap collection/field nyata ada sebagai kolom SQL',
+      salah.length === 0, { salah });
+  } catch (err) {
+    console.log('LOMPONG: dist-electron/dbSchema.js belum dibangun, kolom nomor tidak dibandingkan dengan skema');
+  }
+})().then(() => {
+  fs.rmSync(outfile, { force: true });
+  console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);
+  process.exit(failed === 0 ? 0 : 1);
+});

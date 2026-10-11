@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { usePagedCollection } from '../hooks/usePagedCollection';
-import { useCollectionCount } from '../hooks/useCollectionTotals';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import Pager from '../components/Pager';
 
 interface WarehouseMutation {
@@ -47,13 +47,15 @@ export default function Warehouse() {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [showModal, setShowModal] = useState(false);
-  // Nomor transaksi mengikuti jumlah baris di FILE. `data.length` bukan dasar yang
-  // benar lagi: rute gudang tidak memuat seluruh array ke memori (#38), jadi
-  // length-nya 0 dan setiap mutasi baru ditawari nomor yang sudah dipakai.
-  const jumlahMutasi = useCollectionCount('warehouse', undefined, data, savedTick.warehouse);
+  /** Saran nomor transaksi berikutnya. Dasarnya nomor tertinggi di FILE, bukan
+   *  jumlah baris: rute gudang tidak memuat seluruh array ke memori (#38) dan
+   *  satu mutasi yang terhapus meninggalkan celah, sehingga "jumlah + 1" bisa
+   *  menawarkan nomor yang masih terpakai. Kandidatnya diperiksa ke file dulu. */
+  const nomorTrx = (urutan: number) =>
+    `TRX-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
 
-  const [form, setForm] = useState({
-    trxNo: `TRX-${new Date().getFullYear()}-001`,
+  const formKosong = {
+    trxNo: nomorSementara(data, 'trxNo', nomorTrx),
     type: 'INBOUND' as 'INBOUND' | 'OUTBOUND' | 'TRANSFER',
     warehouseName: 'Yard Cikande Main Hub',
     itemDescription: '',
@@ -63,7 +65,8 @@ export default function Warehouse() {
     date: new Date().toISOString().split('T')[0],
     pic: 'Rudi Hermawan',
     notes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   // Baris yang disunting dipegang utuh supaya field di luar formulir tidak
   // hilang saat satu mutasi ditulis ulang.
   const [editing, setEditing] = useState<WarehouseMutation | null>(null);
@@ -124,12 +127,6 @@ export default function Warehouse() {
     notes: form.notes,
   });
 
-  /** Saran nomor transaksi berikutnya. Hanya label dan masih bisa diedit sebelum
-   *  simpan, tapi dasarnya harus jumlah baris di file agar tidak menawar ulang
-   *  nomor yang sudah dipakai mutasi lama. */
-  const nomorTrx = (n: number) =>
-    `TRX-${new Date().getFullYear()}-${String(Math.max(1, n)).padStart(3, '0')}`;
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.itemDescription) {
@@ -140,7 +137,7 @@ export default function Warehouse() {
     await commit(editing ? toRow(editing, editing.id) : toRow(null, Date.now().toString()));
     setShowModal(false);
     setEditing(null);
-    setForm({ trxNo: nomorTrx(jumlahMutasi + 2), type: 'INBOUND', warehouseName: 'Yard Cikande Main Hub', itemDescription: '', qty: 1, unit: 'Unit', referenceDoc: '', date: new Date().toISOString().split('T')[0], pic: 'Rudi Hermawan', notes: '' });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: WarehouseMutation) => {
@@ -153,9 +150,10 @@ export default function Warehouse() {
     if (confirm('Hapus data mutasi gudang ini?')) await drop(id);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditing(null);
-    setForm({ trxNo: nomorTrx(jumlahMutasi + 1), type: 'INBOUND', warehouseName: 'Yard Cikande Main Hub', itemDescription: '', qty: 1, unit: 'Unit', referenceDoc: '', date: new Date().toISOString().split('T')[0], pic: 'Rudi Hermawan', notes: '' });
+    const trxNo = await nomorBerikut('warehouse', 'trxNo', data, nomorTrx);
+    setForm({ ...formKosong, trxNo });
     setShowModal(true);
   };
 

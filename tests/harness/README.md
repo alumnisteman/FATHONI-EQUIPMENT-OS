@@ -4,21 +4,25 @@ Jalankan dari folder proyek, setelah `npm run build` dan `npm run build:electron
 
 ```
 node tests/harness/migration-check.cjs
+node tests/harness/validation-check.cjs
 npx electron tests/harness/auth-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/gui  npx electron tests/harness/gui-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/flow npx electron tests/harness/flow-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/handoff npx electron tests/harness/handoff-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui     npx electron tests/harness/gui-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow    npx electron tests/harness/flow-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff npx electron tests/harness/handoff-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable  npx electron tests/harness/usable-check.cjs
 npx electron tests/harness/db-check.cjs
+npx electron tests/harness/integrity-check.cjs
 npx electron tests/harness/compat-check.cjs
 npx electron tests/harness/perf-check.cjs
 node tests/harness/db-store-run.cjs
 node tests/harness/db-backup-run.cjs
+node tests/harness/smoke-paket-check.cjs
 ```
 
-Satu perintah untuk semuanya: `sh tests/harness/regressi.sh` — menjalankan sepuluh
-harness di atas secara BERURUTAN (mesin 3,8 GB RAM; dua harness Electron paralel membuat
+Satu perintah untuk semuanya: `sh tests/harness/regressi.sh` — menjalankan keempat belas
+harness di atas plus `npm audit` secara BERURUTAN (mesin 3,8 GB RAM; dua harness Electron paralel membuat
 yang kedua macet di tengah layar), membersihkan folder `HEMS_DATA_DIR` milik gui/flow/
-handoff lebih dulu, menyimpan log lengkap di `D:/SANY/tmp-harness/logs/<nama>.log`, dan
+handoff/usable lebih dulu, menyimpan log lengkap di `D:/SANY/tmp-harness/logs/<nama>.log`, dan
 mencetak satu baris ringkasan per harness (`exit`, jumlah `FAIL`, baris "N lulus, M gagal").
 Rantai keluar non-zero bila ada harness yang gagal.
 
@@ -55,8 +59,11 @@ Rantai keluar non-zero bila ada harness yang gagal.
   hanya memindahkan sebagian baris dari file (delta, karena harness sendiri memakai
   muat penuh untuk membaca kondisi), foto base64 benar-benar berpindah ke berkas saat
   halaman Unit dibuka meski array `units` di memori kosong, modal foto menyebut nomor
-  sasis kartu yang diklik, nomor rangka ganda ditolak, dan saran No. Bukti Mutasi
-  Gudang sama dengan `jumlah baris warehouse di SQLite + 1`. Bagian 10.18 menekan
+  sasis kartu yang diklik, nomor rangka ganda ditolak, dan usulan No. Bukti Mutasi
+  Gudang melanjutkan nomor tertinggi di file (ditanami `TRX-<tahun>-888` yang tidak
+  ada di array halaman, lalu usulan harus lewat dari 888). Bagian 10.19 menekan tombol
+  "Buat SPK Baru" dengan tiga SPK bernomor 901–903 di file dan baris tertinggi sudah
+  dihapus: usulan harus 903, bukan jumlah baris. Bagian 10.18 menekan
   tombol hapus di menu Teknisi dan Operator untuk satu orang yang namanya masih
   tertulis di dokumen: yang diharapkan bukan hanya "gagal", tapi alert menyebut
   menunya (Work Order Servis / Surat Jalan) sementara barisnya dan dokumennya dua
@@ -146,10 +153,10 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan: migration-check 49 lulus, auth-check 58 lulus, gui-check 59 lulus,
-flow-check 30 lulus, handoff-check 92 lulus, db-check 136 lulus, compat-check 30 lulus,
-perf-check 37 lulus, db-store-run 47 lulus, db-backup-run 87 lulus — tanpa FAIL.
-Delapan jenis uji yang diminta terpetakan begitu: unit (auth-check, db-check), fungsional
+Hasil yang diharapkan (rantai 2026-10-11): migration 49, unit/`validation-check` 258,
+auth 58, gui 72, flow 30, handoff 123, usable 33, db 136, integritas 68, compat 30,
+perf 37, store 47, backup 87, smoke-paket 28 — seluruhnya tanpa FAIL.
+Delapan jenis uji yang diminta terpetakan begitu: unit (validation-check, auth-check, db-check), fungsional
 (flow-check, handoff-check), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7),
 keamanan (gui-check bagian 11 dan 13, db-check bagian 12), kegunaan (flow-check menuntun
 login wajib ganti password, handoff 7.8 keadaan kosong, compat B.3 petunjuk mode demo),
@@ -279,8 +286,11 @@ kosong di desktop. Empat tempat masih membacanya seperti dulu:
   handoff-check 9.8 dengan sengaja mengirim `hand-sy-001` huruf kecil dan menuntut
   peringatan muncul tanpa satu baris pun bertambah.
 - saran `TRX-<tahun>-<n>` Gudang memakai `data.length` → selalu `-001` dan
-  menabrak bukti yang sudah ada. Sekarang `useCollectionCount('warehouse', …)`,
-  dijaga handoff-check 9.9 (saran = jumlah baris di file + 1).
+  menabrak bukti yang sudah ada; setelah #49 memakai jumlah baris, yang masih salah
+  bila ada bukti yang dihapus atau nomor tidak berurutan. Sejak #71 source-nya satu:
+  `nomorBerikut()` (`src/utils/nomorBerikut.ts`) membaca nomor tertinggi di file lalu
+  memeriksa kandidat (`WHERE trxNo IN (...)`, terindeks) sampai benar-benar bebas.
+  Dijaga handoff-check 9.9 + 9.9b dan validation 23.
 
 `DERIVED_REVISION` (`electron/db.ts`) kini diekspor supaya harness membandingkan
 revisi di file dengan revisi kode, bukan menyalin angka yang selalu berganti
@@ -487,6 +497,7 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Boot menyalin seluruh store ke renderer — waktu buka aplikasi dan memori renderer tumbuh mengikuti jumlah record | perf P.3b (nol baris lewat IPC di profil 25.000 baris) dan P.12b (membuka layar Unit 12.000 unit menggeser nol baris), gui 15.4, handoff 9.1–9.2 |
 | Nama collection asing atau argumen bukan daftar pada `db-load` diterima lalu dilewati diam-diam, sehingga halaman mengira collection itu kosong dan menimpanya dengan kosong | gui-check 15.1–15.3 dan 15.5, db-check 15.1–15.3 |
 | Handler layar Unit / Gudang membaca array store yang sejak #38 memang kosong: upload dan hapus foto tidak melakukan apa pun, nomor rangka ganda terasa unik, saran nomor mutasi selalu `-001` | handoff 9.6–9.9 |
+| Usulan nomor dokumen dihitung dari `array.length + 1` di 11 menu: nomor rangkap atau melompat, padahal nomor bisnis itulah kunci rujukan lintas menu (`electron/referential.ts`) | handoff 9.9 + 9.9b (bukti mutasi harus melewati nomor tanam `TRX-<tahun>-888` yang tidak ada di array halaman) dan 10.19a–d (SPK berlanjut dari 902 walau baris tertinggi sudah dihapus; usulan terbukti tidak ada di file), validation 23 (celah sesudah hapus, 60 nomor terisi → 61, `T-00010` tetap menghalangi 10, embel asing tidak menghalangi, mode browser) + penjaga statis: tidak ada `.length + n` pada baris bernomor di `src/pages`, ke-11 collection wajib dipanggil lewat `nomorBerikut`, dan pasangannya wajib kolom SQL sungguhan di `dbSchema` |
 | Migrasi foto base64 tidak pernah berjalan lagi karena memindai array `units` yang belum termuat | handoff 9.3–9.5 (kolom turunan `inlinePhoto` + jalur sungguhnya), db-check 15.4–15.5 (paritas SQLite vs `inlinePhotoOf`) |
 | Handoff antar menu patah (Pembelian→Gudang/Pemasok/Kas, Servis→Part/Invoice, Invoice→Kas) | handoff-check bagian 1–6 |
 | Angka kartu Dasbor berbeda dari isi database setelah pindah ke query | handoff 6.5b (kartu DEALER vs hitungan penuh), db-check 13.1–13.10 |

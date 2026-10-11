@@ -5,17 +5,17 @@
 ## Verdict
 
 Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
-**15 langkah, 1.036 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
+**15 langkah, 1.056 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
 `npm audit` 0 kerentanan tinggi/kritis.
 
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 243 |
+| unit (`validation-check`) | 258 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 72 |
 | flow (fungsional) | 30 |
-| handoff (integrasi lintas menu) | 118 |
+| handoff (integrasi lintas menu) | 123 |
 | usable (usability + ukuran layar) | 33 |
 | db (SQLite + paritas SQL) | 136 |
 | integritas (atomisitas + rollback + hapus dirujuk) | 68 |
@@ -45,6 +45,12 @@ Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
 - **Satu baris aneh tidak membekukan aplikasi**: nilai di luar peta status/severity,
   dan kolom angka/array yang kosong, kini tampil apa adanya alih-alih meruntuhkan
   seluruh menu (ini penyebab "aplikasi macet" yang paling sering dilaporkan).
+- **Nomor dokumen tidak rangkap**: usulan nomor di 11 menu (SPK, rental, PO, WO, surat
+  jalan, invoice, kerusakan, permohonan, operator, teknisi, bukti mutasi) berlanjut dari
+  nomor tertinggi di `fathoni.db` lalu diperiksa sampai benar-benar bebas — bukan dari
+  array di memori yang sejak #38 hanya sebagian. Nomor bisnis adalah kunci rujukan
+  lintas menu (`electron/referential.ts`), jadi ini perlindungan integritas data, bukan
+  kenyamanan mengetik (QA_REPORT §4.7).
 - **Paket**: `dist-installer/FATHONI-Setup-3.0.0.exe` (79,3 MiB), asar hanya berisi
   `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
   dipertahankan.

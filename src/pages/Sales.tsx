@@ -5,6 +5,7 @@ import { useDataStore } from '../store/dataStore';
 import type { OrderStatus } from '../types';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateAmount,
@@ -34,8 +35,13 @@ export default function Sales() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Bentuk nomor SPK satu tempat: lebar angka ikut tumbuh (001, 002, ... 1000)
+  // dan sumber angkanya dari file, bukan dari panjang array halaman.
+  const nomorSPK = (urutan: number) =>
+    `SO-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
   const emptyForm = {
-    orderNo: `SO-2026-00${data.length + 1}`,
+    orderNo: nomorSementara(data, 'orderNo', nomorSPK),
     customerName: '',
     unitModel: 'SANY SY215C Excavator',
     serialNumber: '',
@@ -156,7 +162,7 @@ export default function Sales() {
       addSale(newItem);
     }    setShowModal(false);
     setEditingId(null);
-    setForm({ ...emptyForm, orderNo: `SO-${new Date().getFullYear()}-${String(data.length + 2).padStart(3,'0')}` });
+    setForm(emptyForm);
   };
 
   const handleEdit = (item: SalesOrder) => {
@@ -200,9 +206,10 @@ export default function Sales() {
     }
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditingId(null);
-    setForm({ ...emptyForm, orderNo: `SO-${new Date().getFullYear()}-${String(data.length + 1).padStart(3,'0')}` });
+    const orderNo = await nomorBerikut('sales', 'orderNo', data, nomorSPK);
+    setForm({ ...emptyForm, orderNo });
     setShowModal(true);
   };
 

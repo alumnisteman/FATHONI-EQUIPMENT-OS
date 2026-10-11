@@ -5,6 +5,7 @@ import { useDataStore } from '../store/dataStore';
 import { Operator, OperatorStatus } from '../types';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateName,
@@ -26,8 +27,11 @@ export default function Operators() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  const [form, setForm] = useState({
-    operatorNumber: `OP-${new Date().getFullYear()}-${String(operators.length + 1).padStart(3, '0')}`,
+  const nomorOperator = (urutan: number) =>
+    `OP-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    operatorNumber: nomorSementara(operators, 'operatorNumber', nomorOperator),
     name: '',
     phone: '',
     email: '',
@@ -40,8 +44,16 @@ export default function Operators() {
     licenseNumber: '',
     licenseExpiry: '',
     notes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const openCreateModal = async () => {
+    setEditingId(null);
+    const operatorNumber = await nomorBerikut('operators', 'operatorNumber', operators, nomorOperator);
+    setForm({ ...formKosong, operatorNumber });
+    setShowModal(true);
+  };
 
   const filtered = operators.filter(item => {
     const matchSearch = matchesQuery([item.operatorNumber, item.name, item.phone, item.assignedUnit], search);
@@ -132,21 +144,7 @@ export default function Operators() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({
-      operatorNumber: `OP-${new Date().getFullYear()}-${String(operators.length + 1).padStart(3, '0')}`,
-      name: '',
-      phone: '',
-      email: '',
-      nik: '',
-      status: 'ACTIVE',
-      assignedUnit: '',
-      assignedProject: '',
-      totalHours: 0,
-      startDate: '',
-      licenseNumber: '',
-      licenseExpiry: '',
-      notes: '',
-    });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: Operator) => {
@@ -347,7 +345,7 @@ export default function Operators() {
           <option value="ON_LEAVE">Cuti</option>
           <option value="SUSPENDED">Suspensi</option>
         </select>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+        <button onClick={openCreateModal} className="btn btn-primary">
           + Tambah Operator
         </button>
       </div>

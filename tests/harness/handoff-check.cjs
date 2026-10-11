@@ -1052,31 +1052,63 @@ async function run(wc) {
     if (b) b.click();
     return !!b;`);
 
-  // ── 9.9 #49: saran nomor bukti mutasi Gudang ──
-  // Halaman Gudang juga tidak menghidrasi collection-nya sendiri, jadi versi lama
-  // yang memakai data.length selalu menyarankan TRX-<tahun>-001 dan menabrak
-  // bukti yang sudah ada.
+  // ── 9.9 #49 + #71: saran nomor bukti mutasi Gudang ──
+  // Halaman Gudang tidak menghidrasi seluruh collection-nya, jadi versi lama yang
+  // memakai data.length menyarankan nomor yang sudah ada di file. Kontraknya sekarang:
+  // usulan melanjutkan nomor tertinggi di FILE dan tidak pernah dipakai.
+  // Dibuktikan dengan menanami satu bukti bernomor besar (TRX-<tahun>-888) yang tidak
+  // ada di array halaman — rumus lama (jumlah baris + 1) mustahil menghasilkan 889.
+  const tahun9 = new Date().getFullYear();
+  const tanam9 = 'TRX-' + tahun9 + '-888';
+  const polaSrc9 = '^TRX-' + tahun9 + '-\\d{3,}$';
+  const pola9 = new RegExp(polaSrc9);
+  const hasilTanam9 = await ev(wc, `
+    const sebelum = await window.electronAPI.dbQuery({ collection: 'warehouse', limit: 1 });
+    await window.electronAPI.dbPatch({ warehouse: { upsert: [{
+      id: 'H9TRX', trxNo: ${JSON.stringify(tanam9)}, type: 'Masuk',
+      warehouseName: 'Gudang Uji', itemDescription: 'Uji nomor bukti',
+      date: '2026-01-05', qty: 1,
+    }], removeIds: [] } });
+    const sesudah = await window.electronAPI.dbQuery({ collection: 'warehouse', limit: 1 });
+    return { sebelum: sebelum.total, sesudah: sesudah.total };`);
   await ev(wc, `window.location.hash = '#/warehouse'; return true;`);
   await waitFor(wc, `!!document.querySelector('#warehouse-search')`, 'halaman Gudang terbuka (lagi)', 30000);
   const mutasiSql = await ev(wc, `
     const r = await window.electronAPI.dbQuery({ collection: 'warehouse', limit: 1 });
     return r.total;`);
-  const diharapkan9 = 'TRX-' + new Date().getFullYear() + '-'
-    + String(Math.max(1, mutasiSql + 1)).padStart(3, '0');
-  // Penanda halaman harus sudah menunjukkan jumlah dari SQLite sebelum formulir
-  // dibuka: jumlah itu berasal dari pembacaan asinkron yang sama, dan saran nomor
-  // dihitung dari angkanya pada saat tombol diklik.
+  // Nomor yang sudah ada di file, dibaca sendiri tanpa menyalin algoritma halaman.
+  const dasar9 = await ev(wc, `
+    const r = await window.electronAPI.dbQuery({ collection: 'warehouse', limit: 500 });
+    const angka = r.rows.map(x => /(\\d+)$/.exec(String(x.trxNo || '').trim())).filter(Boolean).map(m => Number(m[1]));
+    return { tertinggi: angka.length ? Math.max(...angka) : 0, nomor: r.rows.map(x => String(x.trxNo || '')) };`);
+  // Penanda halaman harus sudah selesai membaca file sebelum formulir dibuka: usulan
+  // dihitung dari isi file pada saat tombol diklik.
   const gudangSiap = await waitFor(wc,
     `/dari ${mutasiSql} record/.test((document.querySelector('#pager-info') || {}).innerText || '')`,
     'halaman Gudang selesai membaca jumlahnya', 20000);
   const bukaMutasi = await ev(wc, `const b = byText(/Catat Mutasi Stok/); if (b) b.click(); return !!b;`);
   const trxSiap = await waitFor(wc,
-    `((document.querySelector('.modal input') || {}).value || '') === ${JSON.stringify(diharapkan9)}`,
-    'saran nomor bukti mengikuti jumlah baris di SQLite', 20000);
+    `(()=>{const v=(document.querySelector('.modal input')||{}).value||'';`
+    + `return new RegExp(${JSON.stringify(polaSrc9)}).test(v)`
+    + `&&!${JSON.stringify(dasar9.nomor)}.includes(v);})()`,
+    'saran nomor bukti bebas tumbukan dan melewati nomor tertinggi di file', 20000);
   const trxNilai = await ev(wc, `return (document.querySelector('.modal input') || {}).value;`);
-  ok('9.9 saran No. Bukti Mutasi dihitung dari jumlah baris di file, bukan dari array yang kosong',
-    mutasiSql > 0 && gudangSiap && bukaMutasi && trxSiap && trxNilai === diharapkan9,
-    { mutasiSql, gudangSiap, diharapkan9, trxNilai });
+  const cocok9 = /(\d+)$/.exec(String(trxNilai));
+  const urutan9 = cocok9 ? Number(cocok9[1]) : -1;
+  const cek9 = await ev(wc, `
+    const r = await window.electronAPI.dbQuery({ collection: 'warehouse', where: { trxNo: ${JSON.stringify(trxNilai)} }, limit: 1 });
+    return r.total;`);
+  ok('9.9 saran No. Bukti Mutasi berlanjut dari nomor tertinggi di file, bukan dari jumlah baris yang terlihat',
+    hasilTanam9.sebelum + 1 === hasilTanam9.sesudah && mutasiSql === hasilTanam9.sesudah
+    && gudangSiap && bukaMutasi && trxSiap
+    && pola9.test(trxNilai) && urutan9 > 888 && cek9 === 0,
+    { hasilTanam9, mutasiSql, tertinggi: dasar9.tinggi, nomorLama: dasar9.nomor, urutan9, trxNilai, sudahDipakai: cek9 });
+  const cabut9 = await ev(wc, `
+    await window.electronAPI.dbPatch({ warehouse: { upsert: [], removeIds: ['H9TRX'] } });
+    const r = await window.electronAPI.dbQuery({ collection: 'warehouse', limit: 1 });
+    return r.total;`);
+  ok('9.9b bukti uji nomor dibersihkan dan jumlah mutasi kembali seperti semula',
+    cabut9 === hasilTanam9.sebelum, { cabut9, semula: hasilTanam9.sebelum });
 
   // Bersihkan unit foto uji supaya bagian 9 tidak meninggalkan jejak.
   const bersihkan9 = await ev(wc, `
@@ -1420,6 +1452,60 @@ async function run(wc) {
       && bersihkan18.services.deleted === 1 && bersihkan18.deliveries.deleted === 1
       && sehat18.ok === true,
     { masukOrang, bersihkan18, quickCheck: sehat18.quickCheck });
+
+  // ── 10.19 usulan nomor dokumen diambil dari nomor tertinggi di file ──
+  // Nomor SPK adalah kunci yang dibaca menu lain (Surat Jalan dan Invoice menunjuk
+  // salesOrderRef). Dulu calon nomor dihitung dari panjang array yang dipegang
+  // halaman: satu SPK terhapus meninggalkan celah dan usulan berikutnya menabrak
+  // nomor yang masih ada di file, sedangkan array halaman tidak pernah lengkap
+  // lagi sejak hidrasi per menu (#38).
+  const TAHUN19 = new Date().getFullYear();
+  const N19 = (n) => `SO-${TAHUN19}-${String(n).padStart(3, '0')}`;
+  const BARIS19 = [901, 902, 903].map(n => ({
+    id: 'H19' + n, orderNo: N19(n), customerName: 'PT Uji Nomor',
+    unitModel: 'SANY SY215C', serialNumber: 'RANGKA-UJI-19-' + n,
+    orderDate: '2026-06-01', totalPrice: 1000, downPayment: 0,
+    paymentScheme: 'CASH', status: 'CONFIRMED', salesPerson: 'Uji',
+  }));
+  const MASUK19 = await ev(wc, `
+    return await window.electronAPI.dbPatch({ sales: { upsert: ${JSON.stringify(BARIS19)}, removeIds: [] } });`);
+  ok('10.19a tiga SPK uji bernomor 901..903 masuk ke file',
+    MASUK19.sales.inserted === 3, MASUK19);
+
+  const HAPUS19 = await ev(wc, `
+    return await window.electronAPI.dbPatch({ sales: { upsert: [], removeIds: ['H19903'] } });`);
+  ok('10.19b SPK bernomor tertinggi dihapus, menyisakan celah di ujung nomor',
+    HAPUS19.sales.deleted === 1, HAPUS19);
+
+  await wc.reload();
+  const masuk19 = await masukLagi();
+  await ev(wc, `window.location.hash = '#/sales'; return true;`);
+  const tabel19 = await waitFor(wc,
+    `[...document.querySelectorAll('tbody tr')].some(r => /${N19(902)}/.test(r.innerText))`,
+    'daftar SPK uji tampil', 25000);
+  const tombol19 = await ev(wc, `
+    const b = byText(/Buat SPK/i); if (b) b.click(); return !!b;`);
+  const modal19 = await waitFor(wc, `!!document.querySelector('.modal')`, 'modal tambah SPK', 25000);
+  const usulan19 = await ev(wc, `
+    const lab = [...document.querySelectorAll('.modal label')].find(l => /Nomor SPK/.test(l.innerText || ''));
+    const inp = lab && lab.parentElement.querySelector('input');
+    return inp ? inp.value : null;`);
+  const file19 = await ev(wc, `
+    const tabrak = await window.electronAPI.dbQuery({ collection: 'sales', where: { orderNo: ${JSON.stringify(String(usulan19 || ''))} }, limit: 5 });
+    const semua = await window.electronAPI.dbQuery({ collection: 'sales', limit: 1 });
+    return { tabrakan: tabrak.total, jumlahBaris: semua.total };`);
+  ok('10.19c usulan nomor SPK melanjutkan nomor tertinggi di file, bukan jumlah baris',
+    masuk19 === true && tabel19 === true && tombol19 === true && modal19 === true
+      && usulan19 === N19(903) && file19.tabrakan === 0
+      && Number(String(usulan19).slice(-3)) > file19.jumlahBaris,
+    { usulan: usulan19, diharapkan: N19(903), tabrakan: file19.tabrakan, jumlahBaris: file19.jumlahBaris });
+
+  const bersihkan19 = await ev(wc, `
+    return await window.electronAPI.dbPatch({ sales: { upsert: [], removeIds: ['H19901', 'H19902'] } });`);
+  const sehat19 = await ev(wc, `return window.electronAPI.dbIntegrity();`);
+  ok('10.19d baris uji nomor dibersihkan dan database tetap utuh',
+    bersihkan19.sales.deleted === 2 && sehat19.ok === true,
+    { bersihkan: bersihkan19.sales, quickCheck: sehat19.quickCheck });
 
   console.log(`\n=== handoff-check: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);

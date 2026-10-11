@@ -5,6 +5,7 @@ import { useDataStore } from '../store/dataStore';
 import { Technician, TechnicianStatus } from '../types';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateName,
@@ -26,8 +27,11 @@ export default function Technicians() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  const [form, setForm] = useState({
-    technicianNumber: `TECH-${new Date().getFullYear()}-${String(technicians.length + 1).padStart(3, '0')}`,
+  const nomorTeknisi = (urutan: number) =>
+    `TECH-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    technicianNumber: nomorSementara(technicians, 'technicianNumber', nomorTeknisi),
     name: '',
     phone: '',
     email: '',
@@ -39,8 +43,16 @@ export default function Technicians() {
     totalHours: 0,
     startDate: '',
     notes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const openCreateModal = async () => {
+    setEditingId(null);
+    const technicianNumber = await nomorBerikut('technicians', 'technicianNumber', technicians, nomorTeknisi);
+    setForm({ ...formKosong, technicianNumber });
+    setShowModal(true);
+  };
 
   const filtered = technicians.filter(item => {
     const matchSearch = matchesQuery([item.technicianNumber, item.name, item.phone, ...(item.specializations || [])], search);
@@ -129,20 +141,7 @@ export default function Technicians() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({
-      technicianNumber: `TECH-${new Date().getFullYear()}-${String(technicians.length + 1).padStart(3, '0')}`,
-      name: '',
-      phone: '',
-      email: '',
-      nik: '',
-      status: 'ACTIVE',
-      specializations: [],
-      skills: [],
-      totalWorkOrders: 0,
-      totalHours: 0,
-      startDate: '',
-      notes: '',
-    });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: Technician) => {
@@ -370,7 +369,7 @@ export default function Technicians() {
           <option value="ON_LEAVE">Cuti</option>
           <option value="SUSPENDED">Suspensi</option>
         </select>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+        <button onClick={openCreateModal} className="btn btn-primary">
           + Tambah Teknisi
         </button>
       </div>

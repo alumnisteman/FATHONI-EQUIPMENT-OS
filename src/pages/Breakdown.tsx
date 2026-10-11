@@ -6,6 +6,7 @@ import type { Breakdown, BreakdownSeverity, BreakdownStatus } from '../types';
 import { UnitStatus } from '../types';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
+import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
 import {
   validateField,
   validateAmount,
@@ -45,8 +46,11 @@ export default function Breakdown() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
 
-  const [form, setForm] = useState({
-    breakdownNumber: `BD-${new Date().getFullYear()}-${String(breakdowns.length + 1).padStart(3, '0')}`,
+  const nomorBD = (urutan: number) =>
+    `BD-${new Date().getFullYear()}-${String(urutan).padStart(3, '0')}`;
+
+  const formKosong = {
+    breakdownNumber: nomorSementara(breakdowns, 'breakdownNumber', nomorBD),
     unitSerialNumber: '',
     unitModel: '',
     location: '',
@@ -61,8 +65,16 @@ export default function Breakdown() {
     startTime: '',
     endTime: '',
     resolutionNotes: '',
-  });
+  };
+  const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const openCreateModal = async () => {
+    setEditingId(null);
+    const breakdownNumber = await nomorBerikut('breakdowns', 'breakdownNumber', breakdowns, nomorBD);
+    setForm({ ...formKosong, breakdownNumber });
+    setShowModal(true);
+  };
 
   const filtered = breakdowns.filter(item => {
     const matchSearch = matchesQuery([item.breakdownNumber, item.unitSerialNumber, item.unitModel, item.reportedBy], search);
@@ -246,23 +258,7 @@ export default function Breakdown() {
     }
     setShowModal(false);
     setEditingId(null);
-    setForm({
-      breakdownNumber: `BD-${new Date().getFullYear()}-${String(breakdowns.length + 1).padStart(3, '0')}`,
-      unitSerialNumber: '',
-      unitModel: '',
-      location: '',
-      reportedBy: '',
-      severity: 'MAJOR',
-      status: 'REPORTED',
-      description: '',
-      diagnosis: '',
-      assignedTechnician: '',
-      estimatedRepairCost: 0,
-      actualRepairCost: 0,
-      startTime: '',
-      endTime: '',
-      resolutionNotes: '',
-    });
+    setForm(formKosong);
   };
 
   const handleEdit = (item: Breakdown) => {
@@ -546,7 +542,7 @@ export default function Breakdown() {
           <option value="RESOLVED">Selesai</option>
           <option value="CANCELLED">Dibatalkan</option>
         </select>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+        <button onClick={openCreateModal} className="btn btn-primary">
           + Lapor Breakdown
         </button>
       </div>
