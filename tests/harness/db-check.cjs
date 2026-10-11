@@ -926,14 +926,17 @@ function main() {
   // Peta kebutuhan rute: rute yang angkanya lahir di query tidak boleh meminta
   // array penuh, dan rute yang tidak dikenal harus meminta SEMUANYA (lebih baik
   // memuat berlebih daripada menulis array yang belum pernah dibacakan).
+  // `/maintenance` sekarang kosong: halamannya hanya membaca query, dan satu-satunya
+  // aksi yang menyapu semua collection (muat data contoh) memanggil ensureLoaded di
+  // handler tombolnya — dijaga statis validation §26.
   ok('15.11 peta rute hanya memuat collection yang benar-benar dibaca halamannya',
     T.needsForPath('/units').length === 0 && T.needsForPath('/warehouse').length === 0
       && T.needsForPath('/dashboard').length === 0
       && T.needsForPath('/sales').includes('units') && T.needsForPath('/sales').includes('kas')
-      && T.needsForPath('/maintenance').length === T.COLLECTION_KEYS.length
+      && T.needsForPath('/maintenance').length === 0
       && T.needsForPath('/rute-baru-yang-belum-didaftarkan').length === T.COLLECTION_KEYS.length
       && T.routeKeys().length >= 20 && T.STORAGE_KEY === 'hems_data_store_v1',
-    { units: T.needsForPath('/units'), sales: T.needsForPath('/sales'), kunci: T.routeKeys().length });
+    { units: T.needsForPath('/units'), sales: T.needsForPath('/sales'), maintenance: T.needsForPath('/maintenance'), kunci: T.routeKeys().length });
   const petaSort = [...T.COLLECTION_KEYS].sort().join();
   const fileSort = DB.collectionNames().sort().join();
   ok('15.12 daftar collection peta sama persis dengan tabel yang ada di file',

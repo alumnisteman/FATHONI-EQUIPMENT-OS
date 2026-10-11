@@ -1,6 +1,6 @@
 #!/bin/sh
 # tests/harness/regressi.sh
-# Rantai regresi lengkap: empatbelas harness berjalan BERURUTAN, ditambah satu
+# Rantai regresi lengkap: limabelas harness berjalan BERURUTAN, ditambah satu
 # audit dependensi. Urutan bukan hiasan — mesin ini hanya 3,8 GB RAM, dua
 # harness Electron paralel langsung membuat yang kedua macet di tengah layar.
 # Setiap harness electron membuka profil baru (HEMS_DATA_DIR dibersihkan lebih
@@ -96,6 +96,8 @@ jalan gui env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui npx electron tests/harness
 jalan flow env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow npx electron tests/harness/flow-check.cjs
 jalan handoff env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff npx electron tests/harness/handoff-check.cjs
 jalan usable env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable npx electron tests/harness/usable-check.cjs
+# cetak-check membuat folder datanya sendiri (mkdtemp) seperti db-check/compat/perf.
+jalan cetak npx electron tests/harness/cetak-check.cjs
 jalan db npx electron tests/harness/db-check.cjs
 jalan integritas npx electron tests/harness/integrity-check.cjs
 jalan compat npx electron tests/harness/compat-check.cjs

@@ -51,6 +51,9 @@ const JUMLAH_UNIT = 12000;
 const JUMLAH_KAS = 6000;
 const JUMLAH_PART = 4000;
 const JUMLAH_INVOICE = 3000;
+// Bagian 11 (kapasitas 100.000/collection) hanya jalan kalau diminta: ia menulis
+// 400.000 baris dan memakan menit, sementara rantai regresi harus tetap cepat.
+const KAPASITAS = process.env.HEMS_PERF_KAPASITAS === '1';
 const MEREK = ['SANY', 'TADANO', 'KOBELCO', 'HYUNDAI', 'XCMG'];
 const MODEL = ['SY215C', 'AD10', 'SK200', 'LC130E', 'XE215C'];
 
@@ -76,38 +79,50 @@ function unitBanyak(n, prefix) {
   return Array.from({ length: n }, (_x, i) => unitRow(i, prefix));
 }
 
+function partBanyak(n, prefix) {
+  return Array.from({ length: n }, (_x, i) => ({
+    id: prefix + '-P' + (i + 1),
+    name: 'Filter uji kinerja ' + (i % 50),
+    sku: prefix + 'SKU' + String(i + 1).padStart(5, '0'),
+    category: 'FILTER',
+    compatibleBrands: MEREK[i % MEREK.length] + ' ' + MODEL[i % MODEL.length],
+    rackLocation: 'RAK-' + (i % 40),
+    stock: i % 30, minStock: 3, unit: 'Pcs', price: 100000 + i, sellingPrice: 150000 + i,
+  }));
+}
+
+function kasBanyak(n, prefix) {
+  return Array.from({ length: n }, (_x, i) => ({
+    id: prefix + '-K' + (i + 1),
+    tanggal: '2026-10-0' + (1 + (i % 8)),
+    keterangan: i % 2 === 0 ? 'Pembayaran penjualan ' + i : 'Belai suku cadang ' + i,
+    kategori: i % 2 === 0 ? 'PENJUALAN' : 'PEMBELIAN',
+    tipe: i % 2 === 0 ? 'MASUK' : 'KELUAR',
+    jumlah: 100000 + (i % 900) * 1000,
+    rekening: 'Kas Tunai',
+    referensi: 'REF-' + i,
+  }));
+}
+
+function invoiceBanyak(n, prefix) {
+  return Array.from({ length: n }, (_x, i) => ({
+    id: prefix + '-INV' + (i + 1),
+    nomor: 'INV-' + prefix + '-' + String(i + 1).padStart(5, '0'),
+    pelanggan: 'Pelanggan ' + (i % 300),
+    tanggal: '2026-10-0' + (1 + (i % 8)),
+    jatuhTempo: '2026-11-01',
+    total: 500000 + (i % 400) * 25000,
+    status: i % 3 === 0 ? 'PAID' : 'UNPAID',
+  }));
+}
+
 function seedProfil() {
   DB.openDatabase(dir);
   DB.saveStore({
     units: unitBanyak(JUMLAH_UNIT, 'PRF'),
-    spareParts: Array.from({ length: JUMLAH_PART }, (_x, i) => ({
-      id: 'PRF-P' + (i + 1),
-      name: 'Filter uji kinerja ' + (i % 50),
-      sku: 'PERFSKU' + String(i + 1).padStart(5, '0'),
-      category: 'FILTER',
-      compatibleBrands: MEREK[i % MEREK.length] + ' ' + MODEL[i % MODEL.length],
-      rackLocation: 'RAK-' + (i % 40),
-      stock: i % 30, minStock: 3, unit: 'Pcs', price: 100000 + i, sellingPrice: 150000 + i,
-    })),
-    kas: Array.from({ length: JUMLAH_KAS }, (_x, i) => ({
-      id: 'PRF-K' + (i + 1),
-      tanggal: '2026-10-0' + (1 + (i % 8)),
-      keterangan: i % 2 === 0 ? 'Pembayaran penjualan ' + i : 'Belai suku cadang ' + i,
-      kategori: i % 2 === 0 ? 'PENJUALAN' : 'PEMBELIAN',
-      tipe: i % 2 === 0 ? 'MASUK' : 'KELUAR',
-      jumlah: 100000 + (i % 900) * 1000,
-      rekening: 'Kas Tunai',
-      referensi: 'REF-' + i,
-    })),
-    invoices: Array.from({ length: JUMLAH_INVOICE }, (_x, i) => ({
-      id: 'PRF-INV' + (i + 1),
-      nomor: 'INV-PERF-' + String(i + 1).padStart(5, '0'),
-      pelanggan: 'Pelanggan ' + (i % 300),
-      tanggal: '2026-10-0' + (1 + (i % 8)),
-      jatuhTempo: '2026-11-01',
-      total: 500000 + (i % 400) * 25000,
-      status: i % 3 === 0 ? 'PAID' : 'UNPAID',
-    })),
+    spareParts: partBanyak(JUMLAH_PART, 'PRF'),
+    kas: kasBanyak(JUMLAH_KAS, 'PRF'),
+    invoices: invoiceBanyak(JUMLAH_INVOICE, 'PRF'),
   });
   DB.closeDatabase();
 }
@@ -309,6 +324,35 @@ async function run(wc) {
     pindahUnit);
   catat('baris store yang lewat IPC sejak login sampai layar Unit terbuka', pindahUnit.baris);
 
+  // Menu Perawatan Sistem adalah rute yang paling mahal di aplikasi ini SAMPAI #77:
+  // peta hidrasi memetakannya ke SEMUA_COLLECTION, jadi membukanya — yang hanya
+  // menampilkan kesehatan, daftar cadangan dan pemakaian ruang dari query — memindahkan
+  // seluruh isi file ke renderer. Aksi penyapu (muat data contoh) sekarang meminta
+  // hidrasinya sendiri di handler tombolnya, jadi delta di bawah harus nol.
+  await ev(wc, `window.location.hash = '#/maintenance'; return true;`);
+  const maintSiap = await waitFor(wc,
+    `document.body.innerText.includes('Muat Data Contoh')`, 'menu Perawatan Sistem terisi', 60000);
+  const bacaSetelahMaint = await ev(wc, `return (await window.electronAPI.dbStats()).reads;`);
+  const pindahMaint = {
+    penuh: bacaSetelahMaint.fullCalls - bacaSetelahUnit.fullCalls,
+    sebagian: bacaSetelahMaint.subsetCalls - bacaSetelahUnit.subsetCalls,
+    baris: bacaSetelahMaint.rows - bacaSetelahUnit.rows,
+  };
+  ok('P.12c membuka menu Perawatan Sistem tidak memindahkan satu baris store pun',
+    maintSiap && pindahMaint.penuh === 0 && pindahMaint.baris === 0, pindahMaint);
+  const labelMaint = await ev(wc, `
+    const b = [...document.querySelectorAll('button')].find(x => /Muat Data Contoh/.test(x.textContent));
+    return b ? (b.getAttribute('disabled') === null ? 'aktif' : 'nonaktif') : 'tidak ada';`);
+  ok('P.12d tombol muat contoh masih ada dan menunggu dalam keadaan jelas (bukan diam-diam)',
+    labelMaint === 'aktif', labelMaint);
+  catat('baris store yang lewat IPC hanya untuk membuka menu Perawatan Sistem', pindahMaint.baris);
+
+  // Bagian 5 mengukur layar Unit, jadi kembali ke sana dan pastikan layarnya
+  // benar-benar sudah ada sebelum mengukur — kalau tidak, setVal dapat null.
+  await ev(wc, `window.location.hash = '#/units'; return true;`);
+  const unitLagi = await waitFor(wc, `!!document.querySelector('#units-search')`, 'layar Unit terbuka lagi', 60000);
+  ok('P.12e layar Unit dapat dibuka kembali sesudah menu Perawatan Sistem', unitLagi, unitLagi);
+
   // ══ 5. Respons pencarian dari DALAM renderer ═════════════════════════════
   const kueri = ['SANY SY215C', 'TADANO AD10', 'HYUNDAI LC130E', 'PRFISN000777', 'KOBELCO SK200'];
   const waktuCari = [];
@@ -486,7 +530,181 @@ async function run(wc) {
   catat('total baris di seluruh collection', stats ? stats.totalRows : 'n/a');
 
   ok('P.34 tidak ada error renderer sepanjang uji kinerja', appErrors.length === 0, appErrors.slice(0, 4));
-  ok('P.35 total waktu harness di bawah 5 menit', Date.now() - AWAL_PROSES < 300000, { detik: Math.round((Date.now() - AWAL_PROSES) / 1000) });
+  ok('P.35 rantai dasar (sampai 50.000 baris) selesai < 5 menit', Date.now() - AWAL_PROSES < 300000, { detik: Math.round((Date.now() - AWAL_PROSES) / 1000) });
+
+  // ══ 11. KAPASITAS: 100.000 baris per collection besar (HEMS_PERF_KAPASITAS=1) ══
+  // Pertanyaan "database kuat tampung berapa banyak, dan tetap ringan?" dijawab
+  // dengan angka, bukan asumsi: 100.000 unit + 100.000 kas + 100.000 suku cadang
+  // + 100.000 invoice (400.000 baris) lalu boot, buka layar, cari, agregat KPI,
+  // tulis satu baris dan kesehatan file diukur ulang. Semua angka dilaporkan apa
+  // adanya di QA_REPORT §3; ambang di bawah sengaja longgar (±3x yang terukur)
+  // supaya yang gagal nanti adalah regresi, bukan mesin yang kurang cepat.
+  if (KAPASITAS) {
+    const tK = Date.now();
+    DB.saveStore({ units: unitBanyak(100000, 'KAP') });
+    DB.saveStore({ kas: kasBanyak(100000, 'KAP') });
+    DB.saveStore({ spareParts: partBanyak(100000, 'KAP') });
+    DB.saveStore({ invoices: invoiceBanyak(100000, 'KAP') });
+    const msTulisK = Date.now() - tK;
+    const jumlahK = {
+      units: DB.rowCount('units'), kas: DB.rowCount('kas'),
+      spareParts: DB.rowCount('spareParts'), invoices: DB.rowCount('invoices'),
+    };
+    const totalK = Object.values(jumlahK).reduce((a, b) => a + b, 0);
+    ok('P.36 400.000 baris (100.000 per collection besar) tertulis sampai ke file',
+      jumlahK.units === 100000 && jumlahK.kas === 100000 && jumlahK.spareParts === 100000 && jumlahK.invoices === 100000,
+      { jumlahK, msTulisK });
+    catat('waktu main process menulis 400.000 baris (ms)', msTulisK);
+
+    // Boot adalah angka yang paling menakutkan: di sinilah aplikasi dulu menyalin
+    // seluruh isi file ke renderer. Kalau hidrasi per menu (#38) bekerja, biaya
+    // boot tidak boleh tumbuh mengikuti jumlah baris.
+    wc.reload();
+    const tBoot = Date.now();
+    const bootK = await waitFor(wc, `/Dasbor|Armada|Kontrol/i.test(document.body.innerText)`, 'boot pada 400.000 baris', 120000);
+    const bootMs = Date.now() - tBoot;
+    ok('P.37 boot pada 400.000 baris tetap < 20 s dan tanpa error',
+      bootK === true && bootMs < 20000 && appErrors.length === 0, { bootMs, appErrors: appErrors.slice(0, 3) });
+    catat('boot ulang pada 400.000 baris (ms)', bootMs);
+
+    const bacaBoot = await ev(wc, `return (await window.electronAPI.dbStats()).reads;`);
+
+    // LIKE '%…%' tidak bisa memakai indeks: SQLite memindai seluruh blob pencarian.
+    // Kueri ini dijalankan SEBELUM ada kueri lain mengisi cache halaman berkas, jadi
+    // inilah angka "dingin" yang benar-benar dilihat pengguna sesudah komputer nyala.
+    const dinginMentah = await ev(wc, `
+      const t = performance.now();
+      const s = await window.electronAPI.dbQuery({ collection: 'units', search: 'SANY SY215C', limit: 12, offset: 0 });
+      return { ms: Math.round(performance.now() - t), total: s.total };`);
+    ok('P.37b kueri pencarian pertama sesudah boot di 100.000 unit dijawab < 20 s dan jumlahnya benar',
+      dinginMentah.ms < 20000 && dinginMentah.total === 20000, dinginMentah);
+    catat('dbQuery pencarian pertama sesudah boot pada 100.000 unit, cache dingin (ms)', dinginMentah.ms);
+    await ev(wc, `window.location.hash = '#/dashboard'; return true;`);
+    await wait(400);
+    const bukaUnitK = await ev(wc, `
+      const t = performance.now();
+      window.location.hash = '#/units';
+      let dapat = false;
+      while (performance.now() - t < 60000) {
+        if (/dari 100000 record/.test(txt('#pager-info'))) { dapat = true; break; }
+        await tick(16);
+      }
+      return { ms: Math.round(performance.now() - t), dapat,
+               kartu: document.querySelectorAll('#units-grid .card').length, info: txt('#pager-info') };`);
+    ok('P.38 membuka layar Armada di 100.000 unit menampilkan halaman pertama < 4 s',
+      bukaUnitK.dapat === true && bukaUnitK.ms < 4000 && bukaUnitK.kartu > 0 && bukaUnitK.kartu <= 12, bukaUnitK);
+    ok('P.38b membuka layar Armada di 100.000 unit tidak memindahkan baris store',
+      (await ev(wc, `return (await window.electronAPI.dbStats()).reads;`)).rows === bacaBoot.rows,
+      { saatBoot: bacaBoot.rows, setelahBuka: (await ev(wc, `return (await window.electronAPI.dbStats()).reads;`)).rows });
+    catat('waktu membuka layar Armada pada 100.000 unit (ms)', bukaUnitK.ms);
+
+    // Tiap kueri HARUS dimulai dari daftar penuh. Kalau tidak, teks pager hasil
+    // kueri sebelumnya terbaca sebagai jawaban baru — dan di data uji ini dua kueri
+    // berbeda ('SANY SY215C' dan 'TADANO AD10') menghasilkan angka yang sama
+    // persis (20.000), jadi "teks sudah berubah" tidak bisa dipakai sebagai tanda.
+    const jalaniCari = async (q) => {
+      await ev(wc, `setVal(document.querySelector('#units-search'), ''); return true;`);
+      const bersih = await waitFor(wc, `/dari 100000 record/.test(txt('#pager-info'))`, 'kembali ke daftar penuh', 60000);
+      if (!bersih) return { q, dapat: false, ms: -1, total: -1, harapan: -1, info: await ev(wc, `return txt('#pager-info');`) };
+      const r = await ev(wc, `
+        const t = performance.now();
+        setVal(document.querySelector('#units-search'), ${JSON.stringify(q)});
+        let dapat = false;
+        while (performance.now() - t < 30000) {
+          const s = txt('#pager-info');
+          if (!/memuat/.test(s) && !/dari 100000 record/.test(s)) { dapat = true; break; }
+          await tick(16);
+        }
+        return { ms: Math.round(performance.now() - t), dapat, info: txt('#pager-info') };`);
+      const angka = r.info.match(/dari (\d+) record/);
+      const total = angka ? Number(angka[1]) : (/Tidak ada/i.test(r.info) ? 0 : -1);
+      // Paritas: jumlah yang dilihat pengguna harus sama dengan yang dihitung
+      // SQLite untuk kueri yang sama — kalau tidak, pencariannya tidak diterapkan.
+      const harapan = DB.queryCollection({ collection: 'units', search: q, limit: 12, offset: 0 }).total;
+      return { q, ...r, total, harapan };
+    };
+    const KUER = ['SANY SY215C', 'KAPISN000777', 'TADANO AD10'];
+    const dingin = [];
+    for (const q of KUER) dingin.push(await jalaniCari(q));
+    ok('P.39 pencarian di 100.000 unit dijawab dan jumlah recordnya sama dengan SQLite',
+      dingin.every(r => r.dapat === true && r.total >= 0 && r.total === r.harapan), dingin);
+    ok('P.39b setiap kueri pencarian di 100.000 unit dijawab < 3 s (dari daftar penuh)',
+      dingin.every(r => r.ms >= 0 && r.ms < 3000), dingin.map(r => [r.q, r.ms]));
+    catat('waktu cari per kueri pada 100.000 unit, lintasan pertama (ms)', JSON.stringify(dingin.map(r => [r.q, r.ms])));
+
+    // Putaran kedua mengulang kueri yang sama. Perhatikan bahwa putaran PERTAMA pun
+    // sudah hangat: setiap kueri didahului COUNT daftar penuh yang membaca blob
+    // pencarian. Angka cache dingin yang sebenarnya ada di P.37b.
+    const hangat = [];
+    for (const q of KUER) hangat.push(await jalaniCari(q));
+    const medHangat = median(hangat.map(r => r.ms));
+    ok('P.39c kueri yang sama diulang (cache hangat) dijawab < 1.500 ms (median)',
+      medHangat < 1500 && hangat.every(r => r.dapat === true && r.total === r.harapan), { medHangat, hangat: hangat.map(r => [r.q, r.ms]) });
+    catat('median waktu cari per kueri pada 100.000 unit, lintasan kedua (ms)', medHangat);
+    await ev(wc, `setVal(document.querySelector('#units-search'), ''); return true;`);
+
+    const mentahK = await ev(wc, `
+      const arr = [];
+      for (let i = 0; i < 11; i++) {
+        const t = performance.now();
+        await window.electronAPI.dbQuery({ collection: 'units', search: 'SANY SY215C', sort: 'purchaseDate', limit: 12, offset: 0 });
+        arr.push(Math.round(performance.now() - t));
+      }
+      return arr;`);
+    ok('P.40 kueri berindeks di atas 100.000 baris tetap < 1,2 s (median)', median(mentahK) < 1200, { med: median(mentahK), mentahK });
+    catat('median dbQuery telanjang pada 100.000 unit (ms)', median(mentahK));
+
+    const harapanK = { masuk: DB.sumCollection('kas', 'jumlah', { tipe: 'MASUK' }) };
+    const agregatK = await ev(wc, `
+      const arr = [];
+      for (let i = 0; i < 9; i++) {
+        const t = performance.now();
+        const s = await window.electronAPI.dbSum('kas', 'jumlah', { tipe: 'MASUK' });
+        arr.push(Math.round(performance.now() - t));
+        if (i === 0) window.__nilai = s;
+      }
+      return { arr, nilai: window.__nilai };`);
+    ok('P.41 agregat KPI di atas 100.000 baris kas benar dan < 1,5 s (median)',
+      agregatK.nilai === harapanK.masuk && median(agregatK.arr) < 1500, { nilai: agregatK.nilai, harapan: harapanK.masuk, med: median(agregatK.arr) });
+    catat('median dbSum kas pada 100.000 baris (ms)', median(agregatK.arr));
+
+    const tulisK = await ev(wc, `
+      const arr = [];
+      const id = 'KAP-U50000';
+      for (let i = 0; i < 9; i++) {
+        const s = await window.electronAPI.dbQuery({ collection: 'units', where: { id }, limit: 1 });
+        const baris = s.rows[0];
+        baris.hourMeter = 2000 + i;
+        const t = performance.now();
+        await window.electronAPI.dbPatch({ units: { upsert: [baris], removeIds: [] } });
+        arr.push(Math.round(performance.now() - t));
+      }
+      const cek = await window.electronAPI.dbQuery({ collection: 'units', where: { id }, limit: 1 });
+      return { arr, hourMeter: cek.rows[0] && cek.rows[0].hourMeter };`);
+    ok('P.42 menyimpan SATU baris di profil 400.000 baris tetap < 400 ms dan sampai ke file',
+      median(tulisK.arr) < 400 && tulisK.hourMeter === 2008, { med: median(tulisK.arr), hourMeter: tulisK.hourMeter });
+    catat('median tulis satu baris pada 400.000 baris (ms)', median(tulisK.arr));
+
+    const statsK = await ev(wc, `return await window.electronAPI.dbStats();`);
+    const sehatK = await ev(wc, `return await window.electronAPI.dbIntegrity();`);
+    const memoriK = memoriProses();
+    const heapK = await ev(wc, `
+      const m = performance.memory || {};
+      return { js: Math.round((m.usedJSHeapSize || 0) / 1048576) };`);
+    ok('P.43 file dan integritas tetap sehat pada 400.000 baris',
+      sehatK && sehatK.ok === true && statsK && statsK.journalMode === 'wal' && statsK.totalRows >= 400000,
+      { ok: sehatK && sehatK.ok, totalRows: statsK && statsK.totalRows, mode: statsK && statsK.journalMode });
+    ok('P.44 memori tidak tumbuh mengikuti isi file (renderer < 500 MB, tiap proses < 1.100 MB)',
+      heapK.js < 500 && (memoriK.tab || 0) < 1100 && (memoriK.browser || 0) < 1100, { heapK, memoriK });
+    catat('ukuran file SQLite pada 400.000 baris (MB)', statsK ? (statsK.sizeBytes / 1048576).toFixed(2) : 'n/a');
+    catat('total baris seluruh collection', statsK ? statsK.totalRows : 'n/a');
+    catat('working set per proses pada 400.000 baris (MB)', JSON.stringify(memoriK));
+    catat('heap JS renderer pada 400.000 baris (MB)', heapK.js);
+    ok('P.45 tidak ada error renderer sepanjang uji kapasitas', appErrors.length === 0, appErrors.slice(0, 4));
+    const detikK = Math.round((Date.now() - AWAL_PROSES) / 1000);
+    ok('P.46 seluruh rantai plus uji kapasitas selesai < 5 menit', detikK < 300, { detikK });
+    catat('total waktu harness termasuk uji kapasitas (detik)', detikK);
+  }
 
   console.log(`\n=== perf-check: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);

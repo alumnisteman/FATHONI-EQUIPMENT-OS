@@ -1,32 +1,32 @@
-# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.0.1
+# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.0.2
 **Tanggal**: 2026-10-11
 **Rincian**: `QA_REPORT.md` (laporan lengkap) dan `tests/harness/README.md` (matriks assertion per cacat)
 
 ## Verdict
 
-Rilis 3.0.1 terverifikasi pada mesin Windows ini, dan yang diuji adalah **paket jadi**
-(bukan jalur dev): seluruh rantai dijalankan terhadap `dist-app/win-unpacked` hasil
-build 2026-10-11 09:59, yang manifest di dalam `app.asar`-nya berbunyi 3.0.1.
-Installer `FATHONI-Setup-3.0.0.exe` (dibangun 2026-10-10 23:20) berisi sumber sebelum
-perbaikan #71–#75 masuk, jadi paket itu tidak boleh dinyatakan lulus atas nama versi
-hari ini — karena itu versi dinaikkan dan rantai diulang dari nol. Hasilnya sama
-hijau seperti rantai sumber pagi tadi:
-**15 langkah, 1.079 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
-`npm audit` 0 kerentanan tinggi/kritis.
+Rilis 3.0.2 terverifikasi pada mesin Windows ini, dan yang diuji adalah paket yang
+diedarkan: `dist-app/win-unpacked` + `dist-installer/FATHONI-Setup-3.0.2.exe` (build
+2026-10-11 12:44, manifest di dalam `app.asar` berbunyi 3.0.2, `FileVersion`/
+`ProductVersion` `FATHONI.exe` 3.0.2, asar tanpa satu pun `.map`/`.pdb`). Sumber berubah
+SESUDAH paket 3.0.1 dibangun, jadi bukti 3.0.1 tidak dipinjam: versi dinaikkan, paket
+dibangun ulang, lalu rantai diulang dari nol. Hasilnya **16 langkah, 1.153 assertion,
+0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`, `npm audit` 0 kerentanan
+tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`, 55 lulus).
 
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 277 |
+| unit (`validation-check`) | 281 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 72 |
 | flow (fungsional) | 30 |
 | handoff (integrasi lintas menu) | 123 |
 | usable (usability + ukuran layar) | 37 |
+| **cetak (dokumen cetak runtime)** | **67** |
 | db (SQLite + paritas SQL) | 136 |
 | integritas (atomisitas + rollback + hapus dirujuk) | 68 |
 | compat (profil lama + mode browser) | 30 |
-| perf (beban + stres) | 37 |
+| perf (beban + stres) | 40 |
 | store (rencana tulis per collection) | 47 |
 | backup (snapshot + restore) | 87 |
 | paket (uji asap FATHONI.exe jadi) | 28 |
@@ -40,8 +40,23 @@ hijau seperti rantai sumber pagi tadi:
   namanya di Work Order, atau operator yang masih membawa Surat Jalan, sekarang
   ditolak dengan alasan yang menyebut dokumennya (handoff 10.18).
 - **Ringan walau data tumbuh**: boot memindahkan 0 baris lewat IPC; tabel 50.000 baris
-  tetap 12 kartu DOM; pencarian median 275 ms; kueri telanjang 86 ms; tulis satu baris
-  median 1 ms.
+  tetap 12 kartu DOM; pencarian median 229 ms; kueri telanjang 7 ms; tulis satu baris
+  median 1 ms. Dan ini bukan ekstrapolasi: **400.000 baris** (100.000 unit + 100.000 kas
+  + 100.000 suku cadang + 100.000 invoice, berkas 233 MB) sudah diukur — boot 966 ms,
+  membuka layar Armada 475 ms, pencarian 0,4–0,7 s dengan jumlah record sama persis dengan
+  `COUNT(*)` SQLite, agregat KPI 69 ms, tulis satu baris 1 ms, heap renderer tetap 10 MB
+  (QA_REPORT §3.1).
+- **Dokumen cetak dibuktikan sampai jendelanya**: `cetak-check` mengklik tombol cetak di
+  10 layar (Penjualan, Pembelian, Rental, Invoice, Pengiriman, Servis, Breakdown, Operator,
+  Teknisi, Persetujuan) dan memeriksa jendela cetak sungguhan: isinya dokumen (bukan
+  aplikasi), `print()` sekali dengan A4 + latar, jendela ditutup lagi, tanpa artefak
+  `undefined`/`[object`, baris rusak hasil suntingan tangan tetap tercetak, skrip di dalam
+  data tampil sebagai teks, jendela cetak tidak punya `electronAPI` dan CSP-nya
+  `default-src 'none'`, dokumen > 1 MB ditolak dengan pesan. Yang TIDAK dibuktikan: kertas
+  keluar dari printer (dialog cetak asli `silent: false` tidak bisa dijalankan otomatis).
+- **Membuka menu tidak lagi memuat seluruh database**: `/maintenance` dulu dipetakan ke
+  SEMUA collection; sekarang nol kebutuhan, dan tombol "Muat data contoh" meminta hidrasi
+  untuk dirinya sendiri dengan label menunggu yang jelas (QA_REPORT §4.9).
 - **Aman**: akun ter-hash di main process, balasan login tanpa kredensial, lockout 5x,
   CSP + sandbox, `accounts.json` tanpa plaintext, CSV meng-escape dan menahan injeksi
   formula, uji asap paket berjalan di sandbox dan membuktikan profil nyata tidak berubah.
@@ -51,9 +66,10 @@ hijau seperti rantai sumber pagi tadi:
 - **Satu baris aneh tidak membekukan aplikasi**: nilai di luar peta status/severity,
   dan kolom angka/array yang kosong, kini tampil apa adanya alih-alih meruntuhkan
   seluruh menu (ini penyebab "aplikasi macet" yang paling sering dilaporkan). Field
-  array pada dokumen cetak (sertifikat operator/teknisi, parts dipakai) ikut dinormalkan
-  `Array.isArray`, karena `item.X && item.X.length > 0` tidak menahan nilai berbentuk
-  teks — dijaga statis validation 24.
+  array pada dokumen cetak (sertifikat operator/teknisi, parts dipakai) ikut dinormalkan,
+  karena `item.X && item.X.length > 0` tidak menahan nilai berbentuk teks — kini dibuktikan
+  RUNTIME (cetak 12 menanam baris rusak lalu mengklik cetak) dan dijaga statis per kolom
+  (validation 24). Dari sanalah cacat di layar Teknisi ditemukan dan ditutup (QA_REPORT §4.10).
 - **Nomor dokumen tidak rangkap**: usulan nomor di 11 menu (SPK, rental, PO, WO, surat
   jalan, invoice, kerusakan, permohonan, operator, teknisi, bukti mutasi) berlanjut dari
   nomor tertinggi di `fathoni.db` lalu diperiksa sampai benar-benar bebas — bukan dari
@@ -69,36 +85,48 @@ hijau seperti rantai sumber pagi tadi:
   layar pada profil DEALER (usable 7.1–7.4: palette == sidebar sebutir-butir, kata
   kunci "onderdil" membuka `/spareparts`, "sewa" tidak membocorkan `/rental`) dan
   dikunci validation 25 (QA_REPORT §4.8).
-- **Paket**: `dist-installer/FATHONI-Setup-3.0.1.exe` (79,3 MiB), asar hanya berisi
+- **Paket**: `dist-installer/FATHONI-Setup-3.0.2.exe` (79,3 MiB), asar hanya berisi
   `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
-  dipertahankan. `FileVersion`/`ProductVersion` pada `FATHONI.exe` 3.0.1, dan
-  `2.0.0`/`3.0.0` dibiarkan utuh di `dist-installer/` — hanya 3.0.1 yang layak edar.
+  dipertahankan. `build-installer.ps1` kini punya jalur signing opsional
+  (`HEMS_SIGN_PFX`/`HEMS_SIGN_PASS` → `signtool sign` SHA256 + timestamp + `verify /pa`,
+  dan laporan akhir menyebut status tanda tangan); tanpa sertifikat ia mencetak
+  `LEWAT sign` dan paket dilaporkan apa adanya sebagai **TIDAK TERSIGN**.
+  `2.0.0`/`3.0.0`/`3.0.1` dibiarkan utuh di `dist-installer/` — hanya 3.0.2 yang layak edar.
 
 ## Yang belum terbukti (jangan dinyatakan lulus)
 
-macOS/Linux · scaling DPI dan ukuran layar lain · printer/perangkat keras sejati ·
-code signing (SmartScreen akan memperingatkan) · walkthrough usability oleh manusia ·
-kapasitas di atas 50.000 baris per collection · anggaran performa yang masih dilonggarkan.
+macOS/Linux · scaling DPI dan ukuran layar lain · kertas keluar dari printer sejati
+(`print()` hanya dibuktikan dipanggil dengan opsi yang benar) · perangkat keras lapangan ·
+**tanda tangan kode** — plumbing-nya ada, sertifikatnya belum dibeli, jadi SmartScreen akan
+memperingatkan · walkthrough usability oleh manusia · lebih dari 400.000 baris (dan
+khususnya biaya `LIKE '%token%'` yang linear di atas jumlah itu) · anggaran performa yang
+masih dilonggarkan.
 
 ## Yang menunggu keputusan
 
-1. **Operator ↔ kontrak rental**: `rentals` tidak menyimpan identitas operator sama
+1. **Sertifikat code signing (OV vs EV)** — pembelian + organisasi; tanpa itu distribusi
+   luas tetap memunculkan peringatan SmartScreen.
+2. **Layar Rental dibuka pada mode Timeline**, yang tidak punya tombol cetak — harness
+   harus memindahkan ke "📊 Tabel" dulu. Ubah bawaan ke Tabel, atau tambahkan cetak di
+   Timeline? Ini keputusan tata letak, bukan bug.
+3. **Operator ↔ kontrak rental**: `rentals` tidak menyimpan identitas operator sama
    sekali (hanya `operatorIncluded` Ya/Tidak, dan `operatorName` cuma ada di tipe tanpa
    pernah ditulis layar). Menahannya berarti menambah kolom/blob baru → backfill
    profil live (`ensureColumns`, `DERIVED_REVISION` 5→6). Teknisi/operator vs dokumen
    lain sudah ditutup tanpa migrasi (aturan blob, QA_REPORT §4.6); batas yang tersisa:
    nama satu kata di bawah ambang token 6 huruf tidak tertahan.
-2. **Prisma tidak dipakai** (~111 MB) — penghapusan butuh persetujuan.
-3. **`auto-fix.ps1` di root** — merusak (`rm dist*/node_modules/package-lock` +
+4. **Prisma tidak dipakai** (~111 MB) — penghapusan butuh persetujuan.
+5. **`auto-fix.ps1` di root** — merusak (`rm dist*/node_modules/package-lock` +
    `git reset/clean`).
-4. **Artefak lama** — `HEMS-Setup-*.exe` dan `dist-electron-portable` (156 MB,
-   `app.asar` terkunci proses).
+6. **Artefak lama** — `HEMS-Setup-*.exe`, `FATHONI-Setup-2.0.0/3.0.0/3.0.1.exe` dan
+   `dist-electron-portable` (156 MB, `app.asar` terkunci proses).
 
 ## Jalur reproduksi
 
 ```bash
 npm run build && npm run build:electron
-sh tests/harness/regressi.sh
+sh tests/harness/regressi.sh                                  # 16 langkah
+HEMS_PERF_KAPASITAS=1 npx electron tests/harness/perf-check.cjs # kapasitas 400.000 baris
 ```
 
 Satu instance Electron per jalan; harness profil memakai

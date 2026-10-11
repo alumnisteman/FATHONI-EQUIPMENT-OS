@@ -20,6 +20,11 @@ const STATUS_MAP: Record<TechnicianStatus, { label: string; badge: string }> = {
   SUSPENDED: { label: 'Suspensi', badge: 'badge-danger' },
 };
 
+// Kolom daftar pada baris lama atau hasil restore bisa terisi teks, bukan
+// daftar. Tanpa penjaga ini `.map`/`.slice().map` melempar — di layar daftar
+// seluruh halaman ikut runtuh, di dokumen cetak dokumennya tidak pernah jadi.
+const daftar = (nilai: any): any[] => (Array.isArray(nilai) ? nilai : []);
+
 export default function Technicians() {
   const { technicians, setTechnicians, removeRow } = useDataStore();
 
@@ -197,7 +202,7 @@ export default function Technicians() {
     if (confirm(`Cetak Technician Profile ${item.technicianNumber}?`)) {
       const companyName = getCompanyName();
       // Sama seperti Operator: sertifikat bisa tidak ada atau berbentuk teks.
-      const sertifikat = Array.isArray(item.certifications) ? item.certifications : [];
+      const sertifikat = daftar(item.certifications);
 
       const htmlContent = `
         <html>
@@ -272,14 +277,14 @@ export default function Technicians() {
             <div class="section">
               <h3>Specializations</h3>
               <div class="tags">
-                ${(item.specializations ?? []).map(spec => `<span class="tag">${sanitize(spec)}</span>`).join('')}
+                ${daftar(item.specializations).map(spec => `<span class="tag">${sanitize(spec)}</span>`).join('')}
               </div>
             </div>
 
             <div class="section">
               <h3>Skills</h3>
               <div class="tags">
-                ${(item.skills ?? []).map(skill => `<span class="tag">${sanitize(skill)}</span>`).join('')}
+                ${daftar(item.skills).map(skill => `<span class="tag">${sanitize(skill)}</span>`).join('')}
               </div>
             </div>
 
@@ -404,13 +409,13 @@ export default function Technicians() {
                 <td>{item.phone}</td>
                 <td>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {(item.specializations ?? []).slice(0, 2).map((spec, i) => (
+                    {daftar(item.specializations).slice(0, 2).map((spec, i) => (
                       <span key={i} style={{ fontSize: 10, background: '#e0e0e0', padding: '2px 8px', borderRadius: 12 }}>
                         {spec}
                       </span>
                     ))}
-                    {(item.specializations ?? []).length > 2 && (
-                      <span style={{ fontSize: 10, color: '#666' }}>+{(item.specializations ?? []).length - 2}</span>
+                    {daftar(item.specializations).length > 2 && (
+                      <span style={{ fontSize: 10, color: '#666' }}>+{daftar(item.specializations).length - 2}</span>
                     )}
                   </div>
                 </td>

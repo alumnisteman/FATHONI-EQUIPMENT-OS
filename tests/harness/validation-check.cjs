@@ -766,11 +766,23 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
     TANPA_NORMALIASI.length === 0, { TANPA_NORMALIASI });
   // cetak adalah satu-satunya jalan yang membaca sertifikat/partsUsed, dan ia dibangun
   // dari htmlContent di dalam handlePrint — jadi bentuk normalisasinya dikunci statis.
+  // Dua bentuk yang diterima: normalisasi INLINE di dalam template, atau satu PENJAGA
+  // LOKAL yang memakai Array.isArray lalu dipanggil untuk kolom itu. Yang harus tetap
+  // ditolak adalah membaca kolom array mentah — string dari baris lama atau hasil
+  // suntingan tangan lolos `item.X && item.X.length > 0`, lalu `.map` melempar dan
+  // seluruh layar/rute ikut runtuh.
+  const PENJAGA_LOKAL = /const\s+(\w+)\s*=\s*\([^)]*\)\s*:[^=]*=>\s*\(?\s*Array\.isArray\s*\(/;
+  const KOLOM_ARRAY_CETAK = ['certifications', 'partsUsed', 'specializations', 'skills'];
   const TERCETAK = [];
   for (const f of ['src/pages/Operators.tsx', 'src/pages/Technicians.tsx', 'src/pages/Breakdown.tsx']) {
     const teks = fs.readFileSync(path.join(ROOT, f), 'utf8');
-    if (!/Array\.isArray\(item\.(certifications|partsUsed)\)\s*\?\s*item\.\1\s*:\s*\[\]/.test(teks)) {
-      TERCETAK.push(f);
+    const penjaga = teks.match(PENJAGA_LOKAL);
+    for (const kolom of KOLOM_ARRAY_CETAK) {
+      // Hanya kolom yang memang disebut di file ini yang ditagih.
+      if (!new RegExp('item\\.' + kolom + '\\b').test(teks)) continue;
+      const inline = new RegExp('Array\\.isArray\\(\\s*item\\.' + kolom + '\\s*\\)\\s*\\?\\s*item\\.' + kolom + '\\s*:\\s*\\[\\]').test(teks);
+      const lewat = !!penjaga && new RegExp('\\b' + penjaga[1] + '\\s*\\(\\s*item\\.' + kolom + '\\b').test(teks);
+      if (!inline && !lewat) TERCETAK.push(f + ' -> ' + kolom);
     }
   }
   check('template cetak Operator/Teknisi/Breakdown menormalkan array sebelum template',
@@ -922,6 +934,36 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   const TANPA_PETA = [...new Set(URUT_SIDEBAR.map(p => p.replace(/^\//, '')))].filter(k => !KUNCI_NEEDS.includes(k));
   check('peta hidrasi: setiap menu sidebar punya kunci kebutuhan collection',
     TANPA_PETA.length === 0, TANPA_PETA);
+
+  // ── 26. tidak ada rute yang memuat seluruh file hanya untuk dibuka ─────
+  // SEMUA_COLLECTION di dalam NEEDS berarti membuka menu itu memindahkan seluruh
+  // isi file ke renderer. Itu bukan lagi kebutuhan render mana pun: yang menulis
+  // array penuh dari seluruh collection adalah SATU aksi ber-tombol (muat data
+  // contoh di Perawatan Sistem), dan handler tombol itu wajib meminta hidrasinya
+  // sendiri. Rute tak dikenal tetap boleh jatuh ke SEMUA_COLLECTION di needsForPath
+  // — itu penjaga, bukan kemalasan.
+  const NEEDS_TEKS = fs.readFileSync(path.join(ROOT, 'src', 'store', 'collectionNeeds.ts'), 'utf8');
+  const AWAL_NEEDS = NEEDS_TEKS.indexOf('const NEEDS');
+  const BLOK_NEEDS = NEEDS_TEKS.slice(AWAL_NEEDS, NEEDS_TEKS.indexOf('\n};', AWAL_NEEDS));
+  const RUTE_SEMUA = [...BLOK_NEEDS.matchAll(/^\s{2}'?([a-z][a-z-]*)'?:\s*SEMUA_COLLECTION/gm)].map(m => m[1]);
+  check('peta hidrasi: tidak ada rute yang memetakan SEMUA collection (hanya fallback fungsi)',
+    AWAL_NEEDS > 0 && RUTE_SEMUA.length === 0, { rute: RUTE_SEMUA });
+  check('peta hidrasi: rute yang tidak dikenal tetap jatuh ke SEMUA collection',
+    /NEEDS\[segmen\]\s*\?\?\s*SEMUA_COLLECTION/.test(NEEDS_TEKS), NEEDS_TEKS.slice(NEEDS_TEKS.indexOf('needsForPath'), 400));
+  // Aksi yang menulis array penuh di semua collection tanpa hidrasi = menulis
+  // collection yang belum pernah dibacakan. Yang boleh menulis penuh hanya jalan
+  // yang sudah memanggil ensureLoaded lebih dulu.
+  const HALAMAN_SEMUA = fs.readdirSync(path.join(ROOT, 'src', 'pages'))
+    .filter(f => /\.(tsx|ts)$/.test(f))
+    .map(f => ({ f, teks: fs.readFileSync(path.join(ROOT, 'src', 'pages', f), 'utf8') }))
+    .filter(x => /loadSampleData\s*\(/.test(x.teks))
+    .filter(x => !/ensureLoaded\s*\(/.test(x.teks))
+    .map(x => x.f);
+  check('halaman yang menulis seluruh collection meminta hidrasinya sendiri',
+    HALAMAN_SEMUA.length === 0, HALAMAN_SEMUA);
+  check('Perawatan Sistem: hidrasi diminta tepat sebelum data contoh ditulis',
+    /await ensureLoaded\(SEMUA_COLLECTION\)[\s\S]{0,160}loadSampleData\(\)/
+      .test(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'SystemMaintenance.tsx'), 'utf8')));
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

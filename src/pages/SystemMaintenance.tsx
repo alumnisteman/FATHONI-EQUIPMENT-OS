@@ -6,6 +6,7 @@ import { getErrorHandler } from '../utils/errorHandler';
 import { getDataRecovery } from '../utils/dataRecovery';
 import { getHealthCheck } from '../utils/healthCheck';
 import { formatBytes, useDataStore } from '../store/dataStore';
+import { SEMUA_COLLECTION } from '../store/collectionNeeds';
 
 function sumRecords(counts: Record<string, number>): number {
   return Object.values(counts || {}).reduce((a, n) => a + (Number(n) || 0), 0);
@@ -40,12 +41,22 @@ export default function SystemMaintenance() {
   const errorHandler = getErrorHandler();
   const dataRecovery = getDataRecovery();
   const healthCheck = getHealthCheck();
-  const { loadSampleData, migrationReport } = useDataStore();
+  const { loadSampleData, migrationReport, ensureLoaded } = useDataStore();
 
-  const handleLoadSampleData = () => {
+  // Data contoh ditulis sebagai array penuh di semua collection, jadi collection
+  // diminta di sini — bukan di gerbang rute. Membuka menu ini sekarang tidak
+  // memindahkan apa pun dari file ke renderer; yang memindahkannya hanya tombol
+  // ini, dan pemakai melihat indikator berjalan selama hidrasi.
+  const handleLoadSampleData = async () => {
     if (!confirm('Muat data contoh ke database? Record yang id-nya sudah dipakai tidak ditimpa.')) return;
-    const added = loadSampleData();
-    alert(added > 0 ? `${added} record contoh ditambahkan.` : 'Data contoh sudah ada semua di database.');
+    setIsRunning(true);
+    try {
+      await ensureLoaded(SEMUA_COLLECTION);
+      const added = loadSampleData();
+      alert(added > 0 ? `${added} record contoh ditambahkan.` : 'Data contoh sudah ada semua di database.');
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   useEffect(() => {
@@ -293,8 +304,8 @@ export default function SystemMaintenance() {
           Database mulai kosong dan hanya berisi data yang Anda input. Data contoh tidak
           dimuat otomatis; gunakan tombol di bawah bila membutuhkan contoh untuk uji coba.
         </p>
-        <button onClick={handleLoadSampleData} className="btn btn-secondary">
-          📦 Muat Data Contoh
+        <button onClick={handleLoadSampleData} className="btn btn-secondary" disabled={isRunning}>
+          {isRunning ? '⏳ Memuat collection dari database...' : '📦 Muat Data Contoh'}
         </button>
 
         {migrationReport && (

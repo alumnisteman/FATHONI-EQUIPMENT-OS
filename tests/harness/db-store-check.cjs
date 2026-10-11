@@ -94,7 +94,15 @@ function buildSeed() {
 // ── Buka halaman Unit lewat UI ──────────────────────────────────────────────
 async function openUnits(wc) {
   await ev(wc, `window.location.hash = '#/units'; return true;`);
-  return waitFor(wc, `/Manajemen Armada/.test(document.body.innerText)`, 'halaman Unit', 40000);
+  // Judul "Manajemen Armada" sudah tampil SEBELUM kueri halaman selesai: selama itu
+  // penanda halaman masih berbunyi "Tidak ada record · memuat..." dan daftarnya kosong.
+  // Yang ditunggu adalah KUERNYA, bukan judulnya — aturan yang sama dicatat di README
+  // untuk halaman berpaginasi. Tanpa ini pembacaan berikutnya bisa menangkap keadaan
+  // loading dan terlihat seperti data hilang dari file.
+  return waitFor(wc, `/Manajemen Armada/.test(document.body.innerText)
+    && !/memuat/.test((document.querySelector('#pager-info') || {}).innerText || '')
+    && /dari [1-9][0-9]* record/.test((document.querySelector('#pager-info') || {}).innerText || '')`,
+    'halaman Unit terisi dari file', 40000);
 }
 
 async function addUnit(wc, serial, model) {

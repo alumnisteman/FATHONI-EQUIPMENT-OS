@@ -10,16 +10,18 @@ HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui     npx electron tests/harness/gui-check
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow    npx electron tests/harness/flow-check.cjs
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff npx electron tests/harness/handoff-check.cjs
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable  npx electron tests/harness/usable-check.cjs
+npx electron tests/harness/cetak-check.cjs
 npx electron tests/harness/db-check.cjs
 npx electron tests/harness/integrity-check.cjs
 npx electron tests/harness/compat-check.cjs
 npx electron tests/harness/perf-check.cjs
+HEMS_PERF_KAPASITAS=1 npx electron tests/harness/perf-check.cjs   # bagian 11: 400.000 baris, ±2 menit
 node tests/harness/db-store-run.cjs
 node tests/harness/db-backup-run.cjs
 node tests/harness/smoke-paket-check.cjs
 ```
 
-Satu perintah untuk semuanya: `sh tests/harness/regressi.sh` — menjalankan keempat belas
+Satu perintah untuk semuanya: `sh tests/harness/regressi.sh` — menjalankan kelima belas
 harness di atas plus `npm audit` secara BERURUTAN (mesin 3,8 GB RAM; dua harness Electron paralel membuat
 yang kedua macet di tengah layar), membersihkan folder `HEMS_DATA_DIR` milik gui/flow/
 handoff/usable lebih dulu, menyimpan log lengkap di `D:/SANY/tmp-harness/logs/<nama>.log`, dan
@@ -68,6 +70,25 @@ Rantai keluar non-zero bila ada harness yang gagal.
   tertulis di dokumen: yang diharapkan bukan hanya "gagal", tapi alert menyebut
   menunya (Work Order Servis / Surat Jalan) sementara barisnya dan dokumennya dua
   duanya masih ada di file.
+- `cetak-check.cjs` — dokumen cetak dijalankan SUNGGUHAN, bukan hanya dijaga statis.
+  Harness memasang telinga pada `app.on('web-contents-created')`: jendela aplikasi dicari
+  dulu, lalu setiap `BrowserWindow` yang muncul sesudahnya adalah jendela cetak dan
+  `webContents.print` milik jendela itu diganti dengan perekam (opsi + callback), sehingga
+  harness yang menutup jendela tanpa menunggu printer. Untuk 10 dokumen baris
+  (Penjualan, Pembelian, Rental, Invoice, Pengiriman, Servis, Breakdown, Operator, Teknisi,
+  Persetujuan) harness mengklik tombol cetak yang paling dekat dengan nomor dokumen —
+  bukan sembarang tombol "Cetak" di toolbar — lalu menuntut: jendela cetak terisi, isinya
+  DOKUMEN (nama perusahaan ada, `#root` aplikasi tidak, url `data:text/html`), `print()`
+  dipanggil sekali dengan A4 + `printBackground`, jendela ditutup lagi, tidak ada alert
+  "Gagal mencetak", dan tidak ada artefak template (`undefined`/`[object`). Baris rusak
+  hasil suntingan tangan (kolom array berupa string, kolom array hilang) tetap harus bisa
+  dicetak — dari sinilah cacat `Technicians.tsx` ditemukan. Empat keadaan berbahaya ikut
+  dikunci: XSS di nama/email/ catatan ditampilkan sebagai teks (0 `<script>`, 0 `<img>`,
+  `window.__cetakBocor` tak pernah terdefinisi), jendela cetak membawa CSP
+  `default-src 'none'` dan TIDAK punya `electronAPI` (tanpa preload), serta penjaga main
+  process menolak dokumen kosong/bukan string/1,1 MB dengan pesan yang disebut ke renderer
+  tanpa membuka jendela baru. Sisa jendela harus tepat satu dan aplikasi tetap sehat.
+  Folder datanya dibuat sendiri (`mkdtemp`), jadi tidak menyentuh profil pengguna.
 - `db-check.cjs` — lapisan SQLite di main process: skema, write-behind berbasis hash,
   paginasi/filter, patch per baris (`saveRows`), kesamaan hasil pencarian dengan
   renderer, migrasi kolom turunan pada profil lama (`ALTER TABLE` + indeks),
@@ -114,11 +135,21 @@ Rantai keluar non-zero bila ada harness yang gagal.
   baris, lalu tabel unit ditumbuhkan 12.000 → 50.000 dan seluruh pengukuran diulang.
   Angkanya dicetak sebagai `CATATAN`; ambang assertions ±3x nilai yang terukur supaya
   regresi tertangkap tanpa flaky di mesin 3,8 GB RAM.
+  **Bagian 11 hanya jalan dengan `HEMS_PERF_KAPASITAS=1`**: ia menulis 100.000 baris ke
+  masing-masing units/kas/spareParts/invoices (400.000 baris, berkas ±233 MB) lalu mengukur
+  boot, membuka layar Armada, pencarian (dilanjutkan dari daftar penuh supaya teks pager
+  dari kueri sebelumnya tidak dibaca sebagai jawaban — dua kueri berbeda bisa menghasilkan
+  jumlah yang sama persis), jumlah record UI dibandingkan `COUNT(*)` SQLite, agregat KPI,
+  tulis satu baris, kesehatan file dan memori. Angka nyatanya ada di QA_REPORT §3.1.
 - `db-store-run.cjs` + `db-store-check.cjs` — integrasi end-to-end Fase 4 dalam tiga
   fase pada satu folder data sementara: tanam profil lama (seed) → boot pertama dengan
   SQLite (impor sekali + edit lewat UI + quit di tengah jendela debounce) → boot ulang
   dari file yang sama. Fase `import` sengaja berhenti mendadak: hanya handshake
   `db-flush-request`/`db-flush-done` yang bisa menyelamatkan perubahan terakhir.
+  `openUnits()` di fase `verify` menunggu **kueri halaman** selesai (`#pager-info` tidak
+  berbunyi "memuat" dan menyebut jumlah record), bukan sekadar judul "Manajemen Armada" —
+  pernah satu kali fase ini membaca keadaan loading dan melaporkan "daftar unit kosong",
+  padahal file baik-baik saja; itu flaky harness, bukan hilangnya data.
 - `db-backup-run.cjs` + `db-backup-check.cjs` — cadangan Fase 4 di level berkas, juga
   tiga fase pada satu folder sementara. Fase `snapshots` menguji lapisan
   `electron/backup.ts` lewat IPC: checksum sha1, snapshot berdiri sendiri tanpa `-wal`,
@@ -153,16 +184,24 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11 terhadap **paket 3.0.1**, bukan jalur dev):
-migration 49, unit/`validation-check` 277,
-auth 58, gui 72, flow 30, handoff 123, usable 37, db 136, integritas 68, compat 30,
-perf 37, store 47, backup 87, smoke-paket 28 — 1.079 assertion, seluruhnya tanpa FAIL.
-Angka yang sama keluar sebelum paket dibangun (rantai sumber pagi itu); langkah
-`smoke-paket` adalah yang membuktikan paket jadi ikut sekuat sumber, dan itulah
-sebabnya installer lama 3.0.0 tidak dipakai sebagai bukti rilis.
+Hasil yang diharapkan (rantai 2026-10-11 terhadap **paket 3.0.2** — `dist`/`dist-electron`
+yang dibundel ke asar paket itu, dibuktikan byte-identik dengan hasil build):
+migration 49, unit/`validation-check` 281,
+auth 58, gui 72, flow 30, handoff 123, usable 37, cetak 67, db 136, integritas 68, compat 30,
+perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.153 assertion, seluruhnya tanpa FAIL,
+`rusak: tidak`, `proses keluar tidak bersih: tidak`.
+Lapisan kapasitas TIDAK ikut angka di atas: `HEMS_PERF_KAPASITAS=1 npx electron
+tests/harness/perf-check.cjs` menambah bagian 11 (400.000 baris) menjadi 55 lulus dan
+memakan ±2 menit — angka nyatanya ada di QA_REPORT §3.1.
+Langkah `smoke-paket` adalah yang membuktikan paket jadi ikut sekuat sumber, dan itulah
+sebabnya installer lama (3.0.0 dan 3.0.1, keduanya dibangun sebelum perbaikan terbaru)
+tidak dipakai sebagai bukti rilis.
 Delapan jenis uji yang diminta terpetakan begitu: unit (validation-check, auth-check, db-check), fungsional
-(flow-check, handoff-check), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7),
-keamanan (gui-check bagian 11 dan 13, db-check bagian 12), kegunaan (flow-check menuntun
+(flow-check, handoff-check, cetak-check yang mengklik tombol cetak di 10 layar), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7,
+perf-check bagian 11 untuk kapasitas),
+keamanan (gui-check bagian 11 dan 13, db-check bagian 12, cetak-check 10–15 untuk jendela
+cetak: CSP `default-src 'none'`, tanpa `electronAPI`, XSS sebagai teks, penolakan dokumen
+> 1 MB), kegunaan (flow-check menuntun
 login wajib ganti password, handoff 7.8 keadaan kosong, compat B.3 petunjuk mode demo),
 kompatibilitas (compat-check A, ditambah db-check 13.20–13.22 dan 14.1/14.3–14.7 yang
 membuktikan sisi renderer dan sisi SQLite menghitung kolom serta angka yang sama),
