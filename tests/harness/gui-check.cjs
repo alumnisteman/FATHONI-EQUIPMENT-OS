@@ -1,10 +1,21 @@
-// TEMP harness #2 (dihapus setelah dipakai): menguji aplikasi desktop sungguhan —
+// Harness fungsional/keamanan permanen: menguji aplikasi desktop sungguhan —
 // main.js + preload.js + dist build — lewat renderer yang sudah di-sandbox.
-// APPDATA diarahkan ke folder sementara supaya data pengguna yang asli tidak tersentuh.
-const { app, BrowserWindow } = require('electron');
+// HEMS_DATA_DIR diarahkan ke folder sementara supaya data pengguna yang asli tidak
+// tersentuh (lihat tests/harness/regressi.sh).
+const { app, BrowserWindow, shell } = require('electron');
 const selesai = require('./selesai.cjs');
 const fs = require('fs');
 const path = require('path');
+
+// Bagian 8 menguji apa yang terjadi kalau halaman mencoba membuka tautan luar.
+// Handler main process menyerahkannya ke shell.openExternal — yang di mesin ini
+// berarti Chrome sungguhan terbuka ke https://example.com SETIAP KALI langkah 'gui'
+// dijalankan, di desktop orang yang sedang bekerja. Jadi openExternal ditambal lebih
+// dulu dengan perekam: tidak ada browser yang terbuka, dan penyerahan URL-nya justru
+// bisa dinyatakan sebagai assertion (sebelum ini hanya dibuktikan lewat jendela yang
+// muncul di layar pengguna).
+const luarDiserahkan = [];
+shell.openExternal = (url) => { luarDiserahkan.push(String(url)); return Promise.resolve(true); };
 
 let pass = 0, fail = 0;
 const lines = [];
@@ -105,9 +116,12 @@ async function run(wc) {
   const forged = await evalIn(wc, `return window.electronAPI.session('a'.repeat(64));`);
   ok('token palsu ditolak', forged.success === false, forged);
 
-  // 8. popup eksternal diblokir
+  // 8. popup eksternal diblokir, dan tautannya diserahkan ke browser sistem
   const popup = await evalIn(wc, `return window.open('https://example.com') === null;`);
   ok('window.open ke situs luar diblokir', popup === true, popup);
+  ok('8.1b URL luar diteruskan ke browser sistem, bukan dijadikan jendela Electron',
+    luarDiserahkan.length === 1 && luarDiserahkan[0].replace(/\/$/, '') === 'https://example.com',
+    luarDiserahkan);
 
   // 9. validasi berkas pada channel sensitif
   const printEmpty = await evalIn(wc, `return window.electronAPI.printDocument('', {});`);

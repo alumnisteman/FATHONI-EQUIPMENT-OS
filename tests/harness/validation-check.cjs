@@ -1094,6 +1094,65 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   const SESUDAH_AF = GARIS_AF.slice(BATAS_AF).join('\n');
   check('auto-fix.ps1: cabang -Apply benar-benar menjalankan perbaikan (penjaga tidak vakum)',
     /\bnpm\s+(run|install)/.test(SESUDAH_AF) && /\$viteCache/.test(SESUDAH_AF), undefined);
+
+  // ── 28. harness tidak boleh membaca keadaan "memuat" sebagai data ─────
+  // Pager.tsx menampilkan "Tidak ada record" selama total masih 0 — yaitu selama
+  // debounce 200 ms dan selama kueri pertama masih berjalan, dengan akhiran
+  // " · memuat...". Jadi `/record/.test(pager)` BUKAN tanda selesai: kalimatnya
+  // benar untuk halaman kosong DAN untuk halaman yang sedang memuat. Rantai pernah
+  // jatuh karena ini (rantai-302f, handoff 8.1: sql=2 tapi kartu=0 — pembacaan
+  // terjadi di keadaan loading). Setiap waitFor yang menyentuh #pager-info wajib
+  // memakai salah satu dari dua tanda selesai yang sah: mengecualikan "memuat",
+  // atau menguji frasa "dari N record" yang tidak mungkin ada di keadaan loading.
+  const BERSIH_KOMENTAR = (t) => t
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split(/\r?\n/).filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  /** Potong satu panggilan lengkap mulai dari '(' pembuka — kurung dalam kondisi
+   *  ini selalu seimbang, termasuk di dalam template literal. */
+  function PARENS(t, mulai) {
+    let d = 0;
+    for (let i = mulai; i < t.length; i++) {
+      if (t[i] === '(') d++;
+      else if (t[i] === ')' && --d === 0) return t.slice(mulai, i + 1);
+    }
+    return t.slice(mulai);
+  }
+  const WAIT_PAGER = [], TERLAMBAU = [];
+  const HARNESS_LIHAT = fs.readdirSync(__dirname)
+    .filter((f) => /-check\.cjs$/.test(f) && f !== 'validation-check.cjs');
+  for (const f of HARNESS_LIHAT) {
+    const t = BERSIH_KOMENTAR(fs.readFileSync(path.join(__dirname, f), 'utf8'));
+    for (const m of t.matchAll(/\bwaitFor\(/g)) {
+      const call = PARENS(t, m.index + 'waitFor'.length - 1);
+      if (!call.includes('#pager-info')) continue;
+      WAIT_PAGER.push({ f, call });
+      const sah = /!\s*\/memuat\b/.test(call) || /\/dari\s/.test(call);
+      if (!sah) TERLAMBAU.push({ f, call: call.replace(/\s+/g, ' ').slice(0, 240) });
+    }
+  }
+  check('wait pager: setiap waitFor yang membaca #pager-info mengecualikan keadaan loading',
+    TERLAMBAU.length === 0, TERLAMBAU);
+  const UJI_REKOR = WAIT_PAGER.filter((x) => /\/record\//.test(x.call)).length;
+  check('wait pager: penjaga tidak vakum — harness benar-benar menunggu penanda halaman',
+    WAIT_PAGER.length >= 15 && UJI_REKOR >= 3, { WAIT: WAIT_PAGER.length, UJI_REKOR });
+
+  // Satu kelas kegagalan yang sama, efek yang berbeda: window.open di renderer
+  // diblokir oleh setWindowOpenHandler, lalu URL-nya diserahkan ke
+  // shell.openExternal — di desktop manusia itu berarti Chrome sungguhan terbuka
+  // tiap langkah 'gui' dijalankan. Karena itu harness yang memanggil window.open
+  // wajib menambal openExternal dengan perekam lebih dulu, supaya sisi efeknya
+  // dinyatakan sebagai assertion, bukan dibuktikan lewat jendela pengguna.
+  const BROWSER_JAHIL = [];
+  for (const f of HARNESS_LIHAT) {
+    const t = BERSIH_KOMENTAR(fs.readFileSync(path.join(__dirname, f), 'utf8'));
+    const pakai = /window\.open\(/.test(t);
+    if (pakai && !/shell\.openExternal\s*=/.test(t)) BROWSER_JAHIL.push(f);
+  }
+  check('harness: yang memanggil window.open menambal shell.openExternal lebih dulu',
+    BROWSER_JAHIL.length === 0, BROWSER_JAHIL);
+  check('harness: penambalan openExternal benar-benar dipakai sebagai assertion (tidak vakum)',
+    /shell\.openExternal\s*=/.test(BERSIH_KOMENTAR(fs.readFileSync(path.join(__dirname, 'gui-check.cjs'), 'utf8'))),
+    undefined);
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

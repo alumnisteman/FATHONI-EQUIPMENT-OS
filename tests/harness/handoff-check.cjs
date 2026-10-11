@@ -808,7 +808,13 @@ async function run(wc) {
   // ── 8. Halaman besar lain ikut dibaca per halaman: Unit, Suku Cadang, Invoice ──
   await ev(wc, `window.location.hash = '#/units'; return true;`);
   await waitFor(wc, `!!document.querySelector('#units-search')`, 'halaman Unit terbuka', 30000);
-  await waitFor(wc, `/record/.test((document.querySelector('#pager-info') || {}).innerText || '')`,
+  // Catatan: `/record/` SAJA bukan tanda selesai. Selama debounce 200 ms dan kueri
+  // pertama berjalan, total masih 0 sehingga Pager berbunyi "Tidak ada record ·
+  // memuat..." — kalimat yang juga mengandung "record". Menunggu itu membuat assertion
+  // membaca keadaan loading (pernah jatuh di rantai-302f: sql=2, kartu=0).
+  await waitFor(wc, `!!document.querySelector('#pager-info')
+    && !/memuat/.test((document.querySelector('#pager-info') || {}).innerText || '')
+    && /record/.test((document.querySelector('#pager-info') || {}).innerText || '')`,
     'penanda halaman Unit terisi', 30000);
   const unitAwal = await ev(wc, `
     const s = await readStore();
@@ -902,7 +908,9 @@ async function run(wc) {
 
   await ev(wc, `window.location.hash = '#/invoices'; return true;`);
   await waitFor(wc, `!!document.querySelector('#invoice-search')`, 'halaman invoice terbuka', 30000);
-  await waitFor(wc, `/record/.test((document.querySelector('#pager-info') || {}).innerText || '')`,
+  await waitFor(wc, `!!document.querySelector('#pager-info')
+    && !/memuat/.test((document.querySelector('#pager-info') || {}).innerText || '')
+    && /record/.test((document.querySelector('#pager-info') || {}).innerText || '')`,
     'penanda halaman invoice terisi', 30000);
   const jumlahInv = await ev(wc, `
     const s = await readStore();

@@ -218,14 +218,19 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11 `tmp-harness/logs/rantai-302e.log` terhadap
+Hasil yang diharapkan (rantai 2026-10-11 `tmp-harness/logs/rantai-302h.log` terhadap
 **paket 3.0.2** — `dist`/`dist-electron` yang dibundel ke asar paket itu, dibuktikan
 byte-identik dengan hasil build):
-migration 49, unit/`validation-check` 293,
-auth 58, gui 72, flow 30, handoff 123, usable 37, cetak 67, db 136, integritas 68, compat 30,
-perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.165 assertion, seluruhnya tanpa FAIL,
+migration 49, unit/`validation-check` 297,
+auth 58, gui 73, flow 30, handoff 123, usable 37, cetak 67, db 136, integritas 68, compat 30,
+perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.170 assertion, seluruhnya tanpa FAIL,
 `rusak: tidak`, `proses keluar tidak bersih: tidak`, dan `exit=0` di setiap langkah
 (ini baru bermakna sejak rantai memanggil `electron.exe` langsung, bukan `npx`).
+Rantai penuh memakan ±15 menit dan **tidak boleh dijalankan dua-duanya sekaligus**:
+`rantai-302g` adalah contoh kegagalannya — dua rantai bertumpuk, dan hanya uji waktu yang
+jatuh (db 7.2: pencarian 50.000 baris 3.462 ms terhadap anggaran 1.000 ms) sementara
+15 langkah lainnya hijau. Yang jatuh saat itu adalah lingkungan pengukurannya, bukan
+aplikasinya — QA_REPORT §3 mencatat hitungan mundurnya.
 Lapisan kapasitas TIDAK ikut angka di atas: `HEMS_PERF_KAPASITAS=1 "$ELEKTRON"
 tests/harness/perf-check.cjs` menambah bagian 11 (400.000 baris) menjadi 55 lulus dan
 memakan ±2 menit — angka nyatanya ada di QA_REPORT §3.1.
@@ -264,12 +269,26 @@ harness tidak perlu memalsukan IPC: handoff-check 7.12 dan 7.14 mengukur satu ak
 dan menuntut tepat satu baris/ satu id lewat patch dengan `fullCalls` tidak bergerak,
 sedangkan db-check 13.24 membuktikan pemisahan pencatatan itu di sisi SQLite.
 
-Tiga hal yang harus dijaga supaya harness tetap berarti:
+Empat hal yang harus dijaga supaya harness tetap berarti:
 - Harness yang pindah ke halaman berpaginasi harus menunggu kueri halaman **selesai**,
   bukan menunggu elemennya ada: `usePagedCollection` punya debounce 200 ms dan selama
   itu `#pager-info` berbunyi "… memuat", yang di halaman kosong terbaca persis seperti
   kegagalan sungguhan. handoff-check 6.8g menuntut teks itu hilang sebelum bagian 7
-  membaca penanda halaman.
+  membaca penanda halaman. **Yang tidak boleh dipakai sebagai tanda selesai:** menguji
+  `/record/` saja. `Pager.tsx` menulis "Tidak ada record" selama `total` masih 0 — jadi
+  saat debounce berjalan dan saat kueri pertama belum kembali — sehingga kalimat
+  loading-nya pun mengandung kata "record". Tanda yang sah hanyalah `!/memuat/` atau
+  frasa `/dari … record/` (rantai-302f jatuh di handoff 8.1 dengan `sql=2, kartu=0`
+  persis karena wait yang lemah; rantai-302g memperkuat kedua wait itu). *Penjaga*:
+  unit 28 memeriksa isi setiap `waitFor` yang menyebut `#pager-info` di semua harness,
+  dengan kontrol positif bahwa ia memang menemukan ≥15 wait dan ≥3 di antaranya
+  menguji `/record/` apa adanya — dimutasi dengan menghapus satu klausul `!/memuat/`.
+- Harness tidak boleh membuka browser atau jendela nyata di desktop manusia.
+  `window.open` di renderer diblokir `setWindowOpenHandler`, lalu URL-nya diserahkan ke
+  `shell.openExternal` — yang di mesin pengembangan berarti Chrome sungguhan terbuka ke
+  example.com setiap langkah `gui` dijalankan. `gui-check` menambal `shell.openExternal`
+  dengan perekam lebih dulu, dan penyerahan URL itu menjadi assertion 8.1b. *Penjaga*:
+  unit 28 mewajibkan setiap harness yang memanggil `window.open` menambalnya lebih dulu.
 - Halaman hanya boleh mengambil ulang datanya SETELAH tulisan masuk file. Karena itu
   store menaikkan `savedTick[namaCollection]` sesudah simpanan berhasil, dan halaman
   memakainya sebagai `revision`. Menjadikan identitas array store sebagai pemicu akan
@@ -625,6 +644,8 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Skrip perawatan di root repo menghapus `node_modules` / `package-lock.json` / `dist*` lalu `git reset --hard` + `git clean -fd` tanpa konfirmasi — di repo yang data penggunanya hidup dan satu-satunya konfigurasi build ada di `package.json` | unit 27: semua `.ps1`/`.sh`/`.cmd`/`.bat` di root dibaca setelah komentar dan string literal dibuang, daftar hitam perintah + daftar putih sasaran hapus (hanya temp, `node_modules/.vite`, `tmp-harness`), tindakan di luar temp wajib berada setelah gerbang `-Apply`, tidak boleh ada `npm run` sebelum gerbang itu, dan ada kontrol positif bahwa cabang `-Apply` benar-benar berisi perbaikan (supaya penjaga tidak hijau pada skrip yang dilumpuhkan) |
 | `.ps1` non-ASCII tanpa BOM: Windows PowerShell 5.1 membaca UTF-8 sebagai cp1252, em-dash menjadi byte 0x94 = kutip kiri yang menutup string di tengah baris — error parse yang terlihat tidak berhubungan dengan isinya | unit 27: setiap `.ps1` di root yang mengandung non-ASCII wajib diawali `EF BB BF` (dimutasi dengan mengupas BOM `build-installer.ps1` — penjaga jatuh, sumber dipulihkan, hijau kembali) |
 | ISCC dipanggil dengan `installer.iss` basi di root (`Source` menunjuk `dist-electron-portable`, `AppVersion "1.0.0"`): paket berisi folder mati dan tetap lulus compile | unit 14: `build-installer.ps1` wajib menyebut `installer\FATHONI-InnoSetup.iss`, dan tidak ada berkas jalur build yang boleh memanggil `.iss` root (dimutasi dengan membelokkan jalur ISCC — kedua penjaga jatuh) |
+| Wait harness menguji `/record/` pada `#pager-info` sebagai "kueri selesai", padahal `Pager.tsx` juga menulis "Tidak ada record" selama `total` masih 0 — jadi teks loading pun cocok. Rantai-302f jatuh di handoff 8.1 (`sql=2, kartu=0`) karena ini, bukan karena aplikasinya | unit 28: setiap `waitFor` yang menyebut `#pager-info` wajib punya `!/memuat/` ATAU `/dari … record/`; kontrol positif menuntut ≥15 wait terdeteksi dan ≥3 di antaranya menguji `/record/` apa adanya (dimutasi dengan menghapus satu klausul `!/memuat/` di handoff-check — FAIL langsung, 296/1) |
+| Harness membuktikan dirinya lewat desktop manusia: `gui-check` bagian 8 membuka `window.open('https://example.com')`, handler menyerahkannya ke `shell.openExternal`, dan Chrome sungguhan terbuka setiap langkah `gui` dijalankan | unit 28: harness yang memanggil `window.open` wajib menambal `shell.openExternal` dengan perekam lebih dulu, dan hasil tambalan itu wajib dipakai sebagai assertion (gui 8.1b) — bukan dibuktikan dengan jendela yang muncul di layar pengguna |
 
 ## PREFLIGHT lingkungan (`auto-fix.ps1` di root repo)
 

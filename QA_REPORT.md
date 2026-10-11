@@ -2,10 +2,11 @@
 **Versi aplikasi**: 3.0.2 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
 **Status**: Rilis terverifikasi. Rantai regresi penuh hijau dijalankan setelah paket
-**3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.165 assertion, 0 gagal, `rusak: tidak`,
+**3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.170 assertion, 0 gagal, `rusak: tidak`,
 `proses keluar tidak bersih: tidak` — untuk pertama kalinya **setiap** langkah Electron
 juga keluar dengan kode 0, karena rantai tidak lagi memanggil Electron lewat `npx`
-(§4.12). `npm audit` 0 kerentanan tinggi/kritis. Langkah
+(§4.12). Rantai terakhir dijalankan terhadap paket yang sama: `rantai-302h.log`;
+`npm audit` 0 kerentanan tinggi/kritis. Langkah
 terakhir rantai (`smoke-paket`) menguji `FATHONI.exe` HASIL PAKET; harness lain menguji
 `dist/` + `dist-electron/` yang dibundel ke dalam asar paket itu — dibuktikan dengan mengekstrak
 `app.asar` ke folder sementara lalu `diff -r`: `dist/` dan `dist-electron/` di dalam paket
@@ -57,7 +58,12 @@ naik versi hanya akan mengaburkan fakta itu. Yang berubah adalah **cara bukti di
 rantai kini memanggil `electron.exe` langsung, `validation-check` bertambah sepuluh
 penjaga (291 ketika rantai dijalankan, 293 setelah dua penjaga `.iss` menyusul), dan satu
 skrip di root yang sebelumnya bisa memusnahkan paket + kunci build sekarang menjadi
-preflight non-destruktif (§4.11, §5).
+preflight non-destruktif (§4.11, §5). Siklus berikutnya (§4.13) juga hanya menyentuh
+`tests/harness/`: `gui-check` tidak lagi membuka browser sungguhan di desktop manusia dan
+dua wait `handoff-check` tidak lagi membaca keadaan loading sebagai data, plus empat
+penjaga baru di unit (297). Rantai penuh sesudah itu: **16 langkah, 1.170 assertion,
+0 gagal** (`rantai-302h.log`), dan `app.asar` paket dibandingkan ulang dengan hasil build
+sumber — tetap identik, jadi 3.0.2 masih versi yang dibuktikan.
 
 Sejarah kenaikan 3.0.1: artefak `FATHONI-Setup-3.0.0.exe` dibangun
 2026-10-10 23:20, sebelum empat perbaikan terakhir: #71 (nomor dokumen bersumber dari
@@ -70,16 +76,16 @@ pola yang sama berulang untuk 3.0.2 di atas.
 ## 2. Matriks jenis pengujian
 
 Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11
-terakhir (`tmp-harness/logs/rantai-302e.log`, yang pertama dijalankan setelah seluruh
-penjaga §5 masuk): 16 langkah, 1.165 assertion, `rusak: tidak`, dan **setiap langkah
+terakhir (`tmp-harness/logs/rantai-302h.log`, dijalankan setelah dua jebakan harness di
+§4.13 ditutup): 16 langkah, 1.170 assertion, `rusak: tidak`, dan **setiap langkah
 Electron keluar dengan kode 0** — bukan hanya "penanda bilang nol".
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 293 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), peta hidrasi per rute (§4.9), + penjaga statis (§5), termasuk tiga penjaga bentuk-kode terbaru (§5) |
+| **Unit** | `validation-check` | 297 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), peta hidrasi per rute (§4.9), + penjaga statis (§5), termasuk empat penjaga bentuk-kode terbaru (§5), dan dua penjaga cara harness menunggu/membuka jendela (§4.13) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
-| **Fungsional** | `gui-check`, `flow-check`, `usable-check`, `cetak-check` | 72 + 30 + 37 + 67 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16; tiga pintu masuk menu (sidebar, cari di topbar, Ctrl+K) menawarkan daftar yang sama dan sama-sama tergerbang profil/peran — usable 7.1–7.4; **sepuluh dokumen cetak benar-benar diklik** dan isi jendela cetak dibandingkan dengan aplikasi aslinya (cetak 1–9, §4.10) |
-| **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7) |
+| **Fungsional** | `gui-check`, `flow-check`, `usable-check`, `cetak-check` | 73 + 30 + 37 + 67 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16; tiga pintu masuk menu (sidebar, cari di topbar, Ctrl+K) menawarkan daftar yang sama dan sama-sama tergerbang profil/peran — usable 7.1–7.4; **sepuluh dokumen cetak benar-benar diklik** dan isi jendela cetak dibandingkan dengan aplikasi aslinya (cetak 1–9, §4.10); tautan luar diblokir sebagai jendela Electron **dan** URL-nya tercatat diserahkan ke browser sistem (gui 8.1 + 8.1b), tanpa ada browser yang benar-benar terbuka lagi (§4.13) |
+| **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7); dibaca hanya setelah penanda halaman benar-benar selesai, bukan saat masih "memuat" (§4.13) |
 | **Integritas & transaksi** | `db-check`, `integritas-check` | 136 + 68 | paritas SQL vs `matchesWhere`, `where` pada kunci `id`, rujukan saat hapus termasuk aturan ber-blob untuk orang, rollback penuh saat patch beracun, file tetap sehat setelah dibuka ulang |
 | **Keamanan** | `auth-check`, `cetak-check`, `npm audit` | 58 + (cetak 10–15) + 0 kerentanan | balasan login tanpa password/hash/salt, pesan generik, lockout, sesi palsu ditolak, CSP/sandbox/izin, injeksi formula CSV ditahan; jendela cetak diuji berdiri sendiri: CSP `default-src 'none'`, TIDAK ada `electronAPI` (tanpa preload), skrip di dalam data ditampilkan sebagai teks, dan dokumen kosong/bukan string/1,1 MB ditolak main process tanpa membuka jendela |
 | **Performa (beban + stres)** | `perf-check` | 40 + 55 (lintasan kapasitas) | angka di §3 dan §3.1: rantai dasar sampai 50.000 baris, lalu 400.000 baris (100.000 per collection besar) dengan `HEMS_PERF_KAPASITAS=1` |
@@ -122,6 +128,18 @@ simpan penuh") sudah diganti menjadi klaim bentuk (`inserted: 0, updated: 10, de
 yang ingin ditahan adalah sifat arsitekturnya, bukan waktu dinding yang bergantung pada
 mesin lain pada jam yang sama. Angka kapasitas §3.1 berasal dari lintasan terpisah pada
 mesin yang sama dan belum diulang di bawah tekanan RAM ini.
+
+Satu kejadian tercatat supaya tidak terlihat seperti regresi aplikasi: rantai
+`rantai-302g.log` mencetak **db-check 7.2 FAIL (pencarian 50.000 baris = 3.462 ms,
+anggaran 1.000 ms)** — dan hanya itu, 15 langkah lainnya hijau. Penyebabnya bukan kode:
+saya menyangka rantai pertama sudah berhenti karena batas waktu satu perintah, lalu
+menjalankan rantai kedua untuk langkah yang tersisa, sehingga **dua rantai Electron
+berjalan bersamaan** di mesin 3,8 GB ini — justru keadaan yang dilarang README dan
+`regressi.sh` di baris pertamanya. Rantai bersih sesudah itu (`rantai-302h.log`, satu
+proses, RAM longgar) mengukur titik yang sama: **162 ms** pencarian, simpan 50.000 unit
+1.276 ms, ubah-10-baris 269 ms, agregat 25 ms. Angka 3.462 ms itu karena itu dibiarkan
+tertinggal di log sebagai catatan apa adanya — tidak ada ambang yang dilonggarkan, dan
+`7.2` tetap 1.000 ms.
 
 ### 3.1 Kapasitas teruji sampai 400.000 baris (100.000 per collection besar)
 
@@ -359,7 +377,36 @@ menjadi detik-menit dan itu titik pertama yang harus diubah, misal dengan FTS5),
     menutup database sebelum `app.exit` dan mencetak penanda, dan `regressi.sh` tidak boleh
     kembali memakai `npx electron`.
 
-Pola yang menyatukan kedua belas temuan itu: yang rusak bukan satu menu, melainkan asumsi bahwa
+13. **Harness membuka browser sungguhan di desktop manusia, dan satu wait uji membaca
+    keadaan "memuat" sebagai data.** Dua efek dari sebab yang sama — uji mengukur efek
+    samping, bukan keadaan sebenarnya:
+    (a) `gui-check` bagian 8 menguji `window.open('https://example.com')`. Handler
+    `setWindowOpenHandler` di `electron/main.ts` memblokir jendelanya lalu menyerahkan
+    URL-nya ke `shell.openExternal` — di mesin pengembangan artinya **Chrome sungguhan
+    terbuka ke halaman IANA example.com setiap kali langkah `gui` dijalankan**, di
+    desktop orang yang sedang bekerja. Yang dibuktikan uji itu cuma separuhnya (popup
+    diblokir); penyerahan URL-nya hanya "terbukti" lewat jendela yang muncul di layar.
+    Sekarang `shell` ditambal dengan perekam sebelum uji berjalan, dan URL yang
+    diserahkan menjadi assertion baru (gui **8.1b**) — tidak ada browser yang terbuka
+    lagi, dan perilaku yang dulu hanya terlihat oleh mata itu justru kini dijaga.
+    (b) Rantai berikutnya (`rantai-302f`) jatuh di `handoff` 8.1 dengan `sql=2, kartu=0`
+    — bukan regresi
+    aplikasi, melainkan wait harness yang menguji `/record/.test(#pager-info)`.
+    `Pager.tsx` menampilkan "Tidak ada record" selama `total` masih 0, yaitu selama
+    debounce 200 ms dan selama kueri pertama berjalan, dengan akhiran " · memuat...".
+    Kalimat itu mengandung "record", jadi wait tersebut **benar saat halaman kosong dan
+    benar saat halaman sedang memuat** — ia tidak pernah menandai selesai. Kedua wait
+    (Unit dan invoice) diperketat menjadi `penanda ada && !/memuat/ && /record/`; semua
+    wait lain sudah memakai `/dari N record`, yang tidak mungkin cocok dengan teks
+    loading. *Penjaga*: validation 28 — setiap `waitFor` yang menyentuh `#pager-info`
+    wajib mengecualikan "memuat" atau menguji frasa "dari N record" (penjaga positif:
+    minimal 15 wait pager terdeteksi dan minimal 3 di antaranya menguji `/record/` apa
+    adanya, supaya tidak lolos kosong), dan setiap harness yang memanggil `window.open`
+    wajib menambal `shell.openExternal` lebih dulu. Kalibrasi: menghapus satu klausul
+    `!/memuat/` di `handoff-check` membuat penjaga ini FAIL dan unit turun ke 296/1;
+    setelah dikembalikan, 297/0.
+
+Pola yang menyatukan ketiga belas temuan itu: yang rusak bukan satu menu, melainkan asumsi bahwa
 data yang dibaca selalu lengkap, selalu berasal dari jalur yang sama, dan selalu
 diceritakan dengan cara yang sama di setiap tempat — dan bahwa alat yang dipakai untuk
 "merapikan" serta cara uji diakhiri sudah pasti aman.
@@ -367,7 +414,7 @@ diceritakan dengan cara yang sama di setiap tempat — dan bahwa alat yang dipak
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
 
-`validation-check` §12, §15–§27 menahan bentuk kode, bukan hanya hasilnya:
+`validation-check` §12, §15–§28 menahan bentuk kode, bukan hanya hasilnya:
 peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataStore`;
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
@@ -396,8 +443,8 @@ lalu dilihat FAIL) — bukan hanya hijau pada kode yang sudah benar. Dua penjaga
 dimutasi siklus ini: bacaan `daftar(item.certifications)` di Technicians sempat dikembalikan
 menjadi bacaan mentah dan §24 memang jatuh (280 lulus, 1 gagal) sebelum sumber dipulihkan.
 
-Tiga penjaga bentuk-kode baru menyusul setelah penutup §4.11–§4.12, dan ketiganya lahir
-dari temuan yang hampir tidak terlihat:
+Empat penjaga bentuk-kode baru menyusul setelah penutup §4.11–§4.13, dan keempatnya
+lahir dari temuan yang hampir tidak terlihat:
 
 - **§15 ditulis ulang supaya tidak bisa basi.** Daftar harness Electron dulunya
   daftar tulis-tangan, jadi menambah harness baru tanpa menambahkannya ke daftar
@@ -429,9 +476,21 @@ dari temuan yang hampir tidak terlihat:
   compile. Kini rantai build wajib menyebut `installer\FATHONI-InnoSetup.iss` secara
   eksplisit, dan tidak ada berkas jalur build yang boleh memanggil `.iss` root.
 
-Ketiga penjaga baru ini juga dimutasi, bukan hanya dilihat hijau: BOM `build-installer.ps1`
+- **§28 mengunci dua jebakan harness (§4.13).** Pertama: komentar atau string yang
+  mengandung kata "record" tidak lagi boleh dijadikan tanda selesai. Setiap `waitFor`
+  yang menyebut `#pager-info` di kedelapan harness pengguna renderer diperiksa isinya
+  — wajib ada `!/memuat/` atau frasa `/dari …record/`, dua bentuk yang tidak mungkin
+  cocok dengan teks loading. Kontrolnya dijaga agar tidak vakum: minimal 15 wait pager
+  harus terdeteksi dan minimal 3 di antaranya menguji `/record/` apa adanya. Kedua:
+  harness yang memanggil `window.open` dari renderer wajib menambal
+  `shell.openExternal` lebih dulu, supaya tidak ada uji yang lagi-lagi membuktikan
+  dirinya lewat jendela yang terbuka di desktop manusia.
+
+Keempat penjaga baru ini juga dimutasi, bukan hanya dilihat hijau: BOM `build-installer.ps1`
 dikupas sehingga §27 jatuh, dan jalur ISCC diubah menunjuk `installer.iss` sehingga kedua
-penjaga `.iss` jatuh — sumber lalu dipulihkan dari salinan dan hijau kembali.
+penjaga `.iss` jatuh. Untuk §28, klausul `!/memuat/` di salah satu wait `handoff-check`
+dihapus sengaja — penjaganya langsung FAIL dan unit turun ke 296 lulus / 1 gagal, dengan
+kutipan panggilan yang salah di daftar pelanggarannya; sumber dipulihkan dan hijau kembali.
 
 ## 6. Yang BELUM diverifikasi (perbatasan laporan ini)
 

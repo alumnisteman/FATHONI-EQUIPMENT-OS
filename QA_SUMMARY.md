@@ -9,8 +9,9 @@ diedarkan: `dist-app/win-unpacked` + `dist-installer/FATHONI-Setup-3.0.2.exe` (b
 2026-10-11 12:44, manifest di dalam `app.asar` berbunyi 3.0.2, `FileVersion`/
 `ProductVersion` `FATHONI.exe` 3.0.2, asar tanpa satu pun `.map`/`.pdb`). Sumber berubah
 SESUDAH paket 3.0.1 dibangun, jadi bukti 3.0.1 tidak dipinjam: versi dinaikkan, paket
-dibangun ulang, lalu rantai diulang dari nol. Hasilnya **16 langkah, 1.165 assertion,
-0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak` — dan untuk pertama kalinya
+dibangun ulang, lalu rantai diulang dari nol. Hasilnya **16 langkah, 1.170 assertion,
+0 gagal** (`tmp-harness/logs/rantai-302h.log`), `rusak: tidak`,
+`proses keluar tidak bersih: tidak` — dan untuk pertama kalinya
 baris `exit=` bernilai 0 di **setiap** langkah, termasuk sepuluh langkah Electron, karena
 rantai tidak lagi memanggil Electron lewat `npx` (QA_REPORT §4.12). `npm audit` 0 kerentanan
 tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`, 55 lulus).
@@ -18,9 +19,9 @@ tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 293 |
+| unit (`validation-check`) | 297 |
 | auth (keamanan) | 58 |
-| gui (fungsional) | 72 |
+| gui (fungsional) | 73 |
 | flow (fungsional) | 30 |
 | handoff (integrasi lintas menu) | 123 |
 | usable (usability + ukuran layar) | 37 |
@@ -87,6 +88,16 @@ tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`
   layar pada profil DEALER (usable 7.1–7.4: palette == sidebar sebutir-butir, kata
   kunci "onderdil" membuka `/spareparts`, "sewa" tidak membocorkan `/rental`) dan
   dikunci validation 25 (QA_REPORT §4.8).
+- **Harnessnya sendiri tidak lagi berbohong lewat efek samping.** `gui-check` pernah
+  membuat Chrome sungguhan terbuka ke example.com di desktop manusia setiap langkah `gui`
+  — sekarang `shell.openExternal` ditambal dengan perekam, dan penyerahan URL itu menjadi
+  assertion 8.1b. Dua wait `handoff-check` pernah membaca teks loading (`Pager.tsx`
+  menulis "Tidak ada record" selama `total` masih 0) sebagai "kueri selesai", yang
+  membuat rantai-302f jatuh dengan `sql=2, kartu=0` padahal aplikasinya sehat — sekarang
+  tanda selesainya wajib `!/memuat/` atau `/dari … record/`, dan kelas kegagalan itu
+  dikunci validation §28 untuk semua harness. Ini perubahan `tests/harness/` saja;
+  `src/` dan `electron/` tidak bergerak, dan `app.asar` paket dibandingkan ulang dengan
+  hasil build sumber: tetap identik byte per byte (QA_REPORT §4.13).
 - **Paket**: `dist-installer/FATHONI-Setup-3.0.2.exe` (79,3 MiB), asar hanya berisi
   `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
   dipertahankan. `build-installer.ps1` kini punya jalur signing opsional
@@ -124,6 +135,15 @@ masih dilonggarkan.
    tidak berbahaya selama dibiarkan; menghapusnya tetap keputusan pengguna.
 6. **Artefak lama** — `HEMS-Setup-*.exe`, `FATHONI-Setup-2.0.0/3.0.0/3.0.1.exe` dan
    `dist-electron-portable` (156 MB, `app.asar` terkunci proses).
+7. **Amaran loading di `Pager.tsx`** — selama debounce 200 ms dan kueri pertama belum
+   kembali, `total` masih 0 sehingga penanda halaman berbunyi **"Tidak ada record ·
+   memuat..."**. Kalimat itu bukan bug fungsi (datanya memang belum tiba), tetapi ia
+   menyesatkan: halaman yang sedang memuat mengaku kosong, dan frasa itu mengandung kata
+   "record" sehingga pernah menipu wait harness (QA_REPORT §4.13). Yang diperbaiki cycles
+   ini adalah sisinya yang bisa diperbaiki tanpa menyentuh paket: harness + penjaga
+   validation 28. Memperbaiki teksnya (`total === 0 && loading ? 'Memuat…' : ...`) adalah
+   perubahan `src/` — membatalkan bukti paket 3.0.2 dan berarti bangun ulang + packing +
+   rantai penuh, yani keputusan rilis 3.0.3, bukan sesuatu yang dilakukan diam-diam.
 
 Yang sudah selesai dan tidak lagi menunggu keputusan: **`auto-fix.ps1` di root**. Versi
 lamanya menghapus `dist*`, `node_modules`, `package-lock.json` dan menjalankan
