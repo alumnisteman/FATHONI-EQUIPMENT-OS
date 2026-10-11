@@ -9,14 +9,16 @@ diedarkan: `dist-app/win-unpacked` + `dist-installer/FATHONI-Setup-3.0.2.exe` (b
 2026-10-11 12:44, manifest di dalam `app.asar` berbunyi 3.0.2, `FileVersion`/
 `ProductVersion` `FATHONI.exe` 3.0.2, asar tanpa satu pun `.map`/`.pdb`). Sumber berubah
 SESUDAH paket 3.0.1 dibangun, jadi bukti 3.0.1 tidak dipinjam: versi dinaikkan, paket
-dibangun ulang, lalu rantai diulang dari nol. Hasilnya **16 langkah, 1.153 assertion,
-0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`, `npm audit` 0 kerentanan
+dibangun ulang, lalu rantai diulang dari nol. Hasilnya **16 langkah, 1.165 assertion,
+0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak` — dan untuk pertama kalinya
+baris `exit=` bernilai 0 di **setiap** langkah, termasuk sepuluh langkah Electron, karena
+rantai tidak lagi memanggil Electron lewat `npx` (QA_REPORT §4.12). `npm audit` 0 kerentanan
 tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`, 55 lulus).
 
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 281 |
+| unit (`validation-check`) | 293 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 72 |
 | flow (fungsional) | 30 |
@@ -116,18 +118,39 @@ masih dilonggarkan.
    lain sudah ditutup tanpa migrasi (aturan blob, QA_REPORT §4.6); batas yang tersisa:
    nama satu kata di bawah ambang token 6 huruf tidak tertahan.
 4. **Prisma tidak dipakai** (~111 MB) — penghapusan butuh persetujuan.
-5. **`auto-fix.ps1` di root** — merusak (`rm dist*/node_modules/package-lock` +
-   `git reset/clean`).
+5. **`installer.iss` di root** — duplikat basi dari installer resmi: `Source` menunjuk
+   `dist-electron-portable\win-unpacked` (folder yang ditinggalkan) dan `AppVersion
+   "1.0.0"`. Sudah dijaga agar tidak mungkin ikut ter-build (validation 14), jadi ia
+   tidak berbahaya selama dibiarkan; menghapusnya tetap keputusan pengguna.
 6. **Artefak lama** — `HEMS-Setup-*.exe`, `FATHONI-Setup-2.0.0/3.0.0/3.0.1.exe` dan
    `dist-electron-portable` (156 MB, `app.asar` terkunci proses).
+
+Yang sudah selesai dan tidak lagi menunggu keputusan: **`auto-fix.ps1` di root**. Versi
+lamanya menghapus `dist*`, `node_modules`, `package-lock.json` dan menjalankan
+`git reset --hard`/`git clean -fd` tanpa konfirmasi — di repo dengan data pengguna hidup
+dan satu-satunya konfigurasi build ada di `package.json`, itu alat yang lebih merusak
+daripada memperbaiki. Kini ia **PREFLIGHT**: 21 pemeriksaan baca-saja (node/npm, nama
+lockfile vs `package.json`, versi Electron, drift `.npmrc`, probe native sungguhan yang
+men-load `better-sqlite3` di dalam Electron, kesegaran `dist`/`dist-electron`/`app.asar`/
+installer, RAM, `NODE_OPTIONS`, proses Electron nyasar, status git), keluar dengan kode 1
+hanya kalau ada FAIL, dan satu-satunya tindakan tulis terjadi di balik `-Apply`: membersihkan
+`node_modules/.vite` lalu `npm run rebuild:native` / `npm run build` kalau memang sumbernya
+lebih baru. Bentuk destruktifnya dikunci validation §27 sehingga tidak bisa kembali, dan
+BOM UTF-8 `auto-fix.ps1` + `build-installer.ps1` ikut dijaga — tanpa BOM, PowerShell 5.1
+membaca em-dash sebagai cp1252 dan skrip build mati dengan error parse yang terlihat tidak
+berhubungan (QA_REPORT §4.11).
 
 ## Jalur reproduksi
 
 ```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File auto-fix.ps1   # PREFLIGHT baca-saja, 21 pemeriksaan
 npm run build && npm run build:electron
 sh tests/harness/regressi.sh                                  # 16 langkah
-HEMS_PERF_KAPASITAS=1 npx electron tests/harness/perf-check.cjs # kapasitas 400.000 baris
+HEMS_PERF_KAPASITAS=1 node_modules/electron/dist/electron.exe tests/harness/perf-check.cjs # kapasitas 400.000 baris
 ```
 
 Satu instance Electron per jalan; harness profil memakai
-`HEMS_DATA_DIR=D:/SANY/tmp-harness/r-<nama>` (paket: `--user-data-dir`).
+`HEMS_DATA_DIR=D:/SANY/tmp-harness/r-<nama>` (paket: `--user-data-dir`). Rantai memanggil
+`node_modules/electron/dist/electron.exe` langsung — `npx electron` pernah membuat rantai
+tampak rusak padahal 72 assertion lulus, karena pembungkus npm-nya mati tidak bersih
+setelah hasil tercetak.

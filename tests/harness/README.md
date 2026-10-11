@@ -1,21 +1,25 @@
 # Harness verifikasi Fase 2, 3 & 4
 
-Jalankan dari folder proyek, setelah `npm run build` dan `npm run build:electron`:
+Jalankan dari folder proyek, setelah `npm run build` dan `npm run build:electron`.
+Sepuluh harness bertenaga Electron dipanggil lewat biner Electron langsung, bukan
+`npx electron` — lihat catatan "cara mengakhiri proses" di bawah:
 
 ```
+ELEKTRON=node_modules/electron/dist/electron.exe
+
 node tests/harness/migration-check.cjs
 node tests/harness/validation-check.cjs
-npx electron tests/harness/auth-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui     npx electron tests/harness/gui-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow    npx electron tests/harness/flow-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff npx electron tests/harness/handoff-check.cjs
-HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable  npx electron tests/harness/usable-check.cjs
-npx electron tests/harness/cetak-check.cjs
-npx electron tests/harness/db-check.cjs
-npx electron tests/harness/integrity-check.cjs
-npx electron tests/harness/compat-check.cjs
-npx electron tests/harness/perf-check.cjs
-HEMS_PERF_KAPASITAS=1 npx electron tests/harness/perf-check.cjs   # bagian 11: 400.000 baris, ±2 menit
+"$ELEKTRON" tests/harness/auth-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui     "$ELEKTRON" tests/harness/gui-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow    "$ELEKTRON" tests/harness/flow-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff "$ELEKTRON" tests/harness/handoff-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable  "$ELEKTRON" tests/harness/usable-check.cjs
+"$ELEKTRON" tests/harness/cetak-check.cjs
+"$ELEKTRON" tests/harness/db-check.cjs
+"$ELEKTRON" tests/harness/integrity-check.cjs
+"$ELEKTRON" tests/harness/compat-check.cjs
+"$ELEKTRON" tests/harness/perf-check.cjs
+HEMS_PERF_KAPASITAS=1 "$ELEKTRON" tests/harness/perf-check.cjs   # bagian 11: 400.000 baris, ±2 menit
 node tests/harness/db-store-run.cjs
 node tests/harness/db-backup-run.cjs
 node tests/harness/smoke-paket-check.cjs
@@ -26,7 +30,37 @@ harness di atas plus `npm audit` secara BERURUTAN (mesin 3,8 GB RAM; dua harness
 yang kedua macet di tengah layar), membersihkan folder `HEMS_DATA_DIR` milik gui/flow/
 handoff/usable lebih dulu, menyimpan log lengkap di `D:/SANY/tmp-harness/logs/<nama>.log`, dan
 mencetak satu baris ringkasan per harness (`exit`, jumlah `FAIL`, baris "N lulus, M gagal").
-Rantai keluar non-zero bila ada harness yang gagal.
+Rantai keluar non-zero bila ada harness yang gagal. Rantai resolve
+`node_modules/electron/dist/electron.exe` sendiri dan berhenti dengan `RAMBU` + `exit 8`
+kalau berkas itu belum ada (belum `npm install`), alih-alih menjalankan separuh langkah
+dengan `npx` yang gagal di tengah.
+
+### Cara proses diakhiri menentukan rantai bisa dipercaya atau tidak
+
+Dulu `regressi.sh` memakai `npx electron tests/harness/<nama>.cjs`. Akibatnya ada proses
+node npm di antara rantai dan Electron: ia menambah ±60 MB di mesin 3,8 GB ini dan
+menyediakan satu tempat lagi untuk mati tidak bersih. Dan itu benar-benar terjadi —
+72 assertion gui-check lulus semua, tapi proses induknya keluar dengan `Segmentation fault`
+(139), sehingga rantai ditandai rusak tanpa satu pun uji yang gagal. Mitigasinya bukan
+menebak: harness wajib keluar lewat `tests/harness/selesai.cjs` (menutup koneksi SQLite lalu
+mencetak `SELESAI kode=N` sendiri), dan rantai menilai hasilnya dari baris penanda itu, bukan
+dari kode keluar. Setelah pemanggilan `electron.exe` langsung ditambahkan, 34 percobaan keluar
+proses (12 dengan koneksi ditutup, 12 dengan koneksi dibiarkan terbuka, 8 gui-check penuh)
+seluruhnya kode 0, dan rantai 16 langkah mencetak `proses keluar tidak bersih: tidak` —
+jadi baris `exit=` di log kini berarti sesuatu.
+
+Dua hal yang menahannya tetap benar (validation §15, diderivasi bukan ditulis tangan):
+- Daftar harness Electron dibaca dari baris `"$ELEKTRON" tests/harness/<nama>.cjs` di
+  `regressi.sh` ditambah harness yang di-spawn orkestrator `*-run.cjs`. Menambah langkah
+  rantai baru otomatis ikut wajib `selesai()`; tidak ada lagi daftar tulis-tangan yang
+  ketinggalan (cara `cetak-check` dulu lolos dari pemeriksaan ini).
+- Satu pengecualian dinyatakan eksplisit: `profile-inspect.cjs` adalah perkakas baca profil
+  untuk manusia, bukan langkah regresi, jadi ia boleh memakai `app.exit`.
+  `regressi.sh` sendiri juga tidak boleh kembali mengandung `npx electron`.
+
+`selesai.cjs` dinilai dari kodenya setelah komentar dibuang — kepala berkasnya sendiri
+membahas `app.exit()`, dan teks penjelasan tidak boleh membuat penjaga mengira kodenya
+mengandungi panggilan itu.
 
 - `migration-check.cjs` — logika murni (node, tanpa Electron): bundel `dataMigration`,
   `invoiceFactory`, dan `revenue` lewat esbuild dengan shim `localStorage`.
@@ -184,13 +218,15 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11 terhadap **paket 3.0.2** — `dist`/`dist-electron`
-yang dibundel ke asar paket itu, dibuktikan byte-identik dengan hasil build):
-migration 49, unit/`validation-check` 281,
+Hasil yang diharapkan (rantai 2026-10-11 `tmp-harness/logs/rantai-302e.log` terhadap
+**paket 3.0.2** — `dist`/`dist-electron` yang dibundel ke asar paket itu, dibuktikan
+byte-identik dengan hasil build):
+migration 49, unit/`validation-check` 293,
 auth 58, gui 72, flow 30, handoff 123, usable 37, cetak 67, db 136, integritas 68, compat 30,
-perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.153 assertion, seluruhnya tanpa FAIL,
-`rusak: tidak`, `proses keluar tidak bersih: tidak`.
-Lapisan kapasitas TIDAK ikut angka di atas: `HEMS_PERF_KAPASITAS=1 npx electron
+perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.165 assertion, seluruhnya tanpa FAIL,
+`rusak: tidak`, `proses keluar tidak bersih: tidak`, dan `exit=0` di setiap langkah
+(ini baru bermakna sejak rantai memanggil `electron.exe` langsung, bukan `npx`).
+Lapisan kapasitas TIDAK ikut angka di atas: `HEMS_PERF_KAPASITAS=1 "$ELEKTRON"
 tests/harness/perf-check.cjs` menambah bagian 11 (400.000 baris) menjadi 55 lulus dan
 memakan ±2 menit — angka nyatanya ada di QA_REPORT §3.1.
 Langkah `smoke-paket` adalah yang membuktikan paket jadi ikut sekuat sumber, dan itulah
@@ -585,6 +621,52 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Ada rute aplikasi yang tidak pernah dibuka satu harness UI pun, jadi kerusakannya tidak terlihat | unit 16 "cakupan UI: setiap rute aplikasi dilewati minimal satu harness" (daftar rute dibaca dari `App.tsx`) |
 | Health check mengira localStorage masih tempat data: probe tulis tiap siklus memperbesar arsip lama, dan file SQLite yang tidak terbuka tertutup status "localStorage bisa ditulis" | unit 18 (cek penyimpanan & integritas dialihkan ke `dbInfo`/`dbIntegrity`, probe hanya mode demo), smoke-paket 4.1–4.2 (kunci yang ditulis selama sesi) |
 | Uji asap paket mengganti password admin / menambah jejak audit pada profil pengguna nyata | unit 19 (`--user-data-dir` adalah satu-satunya jalan berpindah folder di paket), smoke-paket 7.1 (isi leveldb profil live dibandingkan sebelum/sesudah) |
+| Harness Electron keluar tanpa `selesai()` sehingga koneksi SQLite masih terbuka saat Windows membongkar DLL-nya — rantai pernah ditandai rusak padahal semua assertion lulus | unit 15: daftarnya **diderivasi** dari `regressi.sh` + orkestrator `*-run.cjs` (setiap pengguna `require('electron')` wajib jadi langkah rantai atau perkakas yang dinyatakan), `selesai.cjs` wajib menutup database sebelum `app.exit` dan mencetak penanda, dan `regressi.sh` tidak boleh kembali memakai `npx electron` |
+| Skrip perawatan di root repo menghapus `node_modules` / `package-lock.json` / `dist*` lalu `git reset --hard` + `git clean -fd` tanpa konfirmasi — di repo yang data penggunanya hidup dan satu-satunya konfigurasi build ada di `package.json` | unit 27: semua `.ps1`/`.sh`/`.cmd`/`.bat` di root dibaca setelah komentar dan string literal dibuang, daftar hitam perintah + daftar putih sasaran hapus (hanya temp, `node_modules/.vite`, `tmp-harness`), tindakan di luar temp wajib berada setelah gerbang `-Apply`, tidak boleh ada `npm run` sebelum gerbang itu, dan ada kontrol positif bahwa cabang `-Apply` benar-benar berisi perbaikan (supaya penjaga tidak hijau pada skrip yang dilumpuhkan) |
+| `.ps1` non-ASCII tanpa BOM: Windows PowerShell 5.1 membaca UTF-8 sebagai cp1252, em-dash menjadi byte 0x94 = kutip kiri yang menutup string di tengah baris — error parse yang terlihat tidak berhubungan dengan isinya | unit 27: setiap `.ps1` di root yang mengandung non-ASCII wajib diawali `EF BB BF` (dimutasi dengan mengupas BOM `build-installer.ps1` — penjaga jatuh, sumber dipulihkan, hijau kembali) |
+| ISCC dipanggil dengan `installer.iss` basi di root (`Source` menunjuk `dist-electron-portable`, `AppVersion "1.0.0"`): paket berisi folder mati dan tetap lulus compile | unit 14: `build-installer.ps1` wajib menyebut `installer\FATHONI-InnoSetup.iss`, dan tidak ada berkas jalur build yang boleh memanggil `.iss` root (dimutasi dengan membelokkan jalur ISCC — kedua penjaga jatuh) |
+
+## PREFLIGHT lingkungan (`auto-fix.ps1` di root repo)
+
+Sebelum menyalahkan harness atas kegagalan yang sebenarnya berasal dari lingkungan
+(Node salah, `.npmrc` bergeser dari ABI yang dipakai `better-sqlite3`, bundel basi, RAM
+habis, satu proses Electron nyasar memegang profil), jalankan skrip periksa ini. Ia
+**baca-saja** secara bawaan dan berhenti dengan kode 1 hanya kalau ada FAIL:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File auto-fix.ps1          # 21 pemeriksaan, tidak menulis apa pun
+powershell -NoProfile -ExecutionPolicy Bypass -File auto-fix.ps1 -Apply   # boleh menuntaskan: .vite cache + rebuild native/build
+```
+
+Yang diperiksa: node/npm dan `node_modules`; nama `package-lock.json` vs
+`package.json "name"` (kunci, bukan label — lihat QA_REPORT §7); versi Electron;
+drift `runtime`/`target` di `.npmrc` dibanding `package.json`; **probe native sungguhan**
+— skrip sementara yang dijalankan oleh Electron proyek dan benar-benar membuka
+`better-sqlite3` di database `:memory:` (ABI yang salah tidak bisa dideteksi dari teks);
+kesegaran `dist/index.html`, `dist-electron/main.js`, `app.asar` dan installer dibanding
+sumbernya; RAM bebas, `NODE_OPTIONS`, proses Electron/FATHONI yang masih hidup; status
+git (baca saja). Baris terakhir `FAIL=x WARN=y dari z pemeriksaan`.
+
+Tiga batas yang membuat skrip ini bisa dibiarkan ada di root repo:
+- **Ia tidak bisa menghancurkan.** Versi lamanya menghapus `dist*`, `node_modules`,
+  `package-lock.json` dan menjalankan `git reset --hard` + `git clean -fd` tanpa
+  konfirmasi. Penjaga validation §27 membaca semua skrip root (setelah komentar dan
+  string literal dibuang) dan menolak daftar hitam perintah maupun penghapusan di luar
+  path sementara; semua tindakan tulis wajib berada setelah gerbang `-Apply`.
+- **WARN bukan vonis.** Yang dibandingkan di sini adalah `mtime`, dan `mtime` sumber yang
+  lebih baru dari `app.asar` hanyalah kecurigaan — isinya bisa tetap identik. Verdict
+  sebenarnya tetap langkah `paket` di `regressi.sh`; FAIL hanya untuk berkas yang memang
+  tidak ada.
+- **Ia sendiri diuji.** Branch `-Apply` diverifikasi hanya menyentuh `node_modules/.vite`
+  dan membangun ulang, dengan `node_modules`, lockfile, `app.asar`, basis data dan profil
+  pengguna tetap utuh; kontrol positif di §27 memastikan cabang itu tidak dilumpuhkan
+  supaya penjaganya tidak hijau kosong.
+
+Catatan teknis yang menyelamatkan satu sesi build: `.ps1` non-ASCII di root **wajib
+ber-BOM UTF-8**. Windows PowerShell 5.1 membaca berkas tanpa BOM sebagai cp1252, sehingga
+tanda em-dash (`E2 80 94`) terurai menjadi tiga karakter dan byte terakhirnya (0x94)
+adalah tanda kutip kiri — string tertutup di tengah baris dan skrip mati dengan error
+parse yang terlihat tidak berhubungan dengan isinya. Aturan itu ikut dijaga §27.
 
 ## Uji asap terhadap paket (`smoke-paket-check.cjs`)
 
@@ -631,6 +713,6 @@ jadi terlihat persis apa yang akan berubah sebelum migrasi berjalan sungguhan.
 
 ```
 cp -r "$APPDATA/hems-heavy-equipment-system" D:/SANY/tmp-harness/livecopy
-HEMS_DATA_DIR=D:/SANY/tmp-harness/livecopy npx electron tests/harness/profile-inspect.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/livecopy node_modules/electron/dist/electron.exe tests/harness/profile-inspect.cjs
 node tests/harness/migration-dryrun.cjs D:/SANY/tmp-harness/livecopy/localStorage-dump.json
 ```

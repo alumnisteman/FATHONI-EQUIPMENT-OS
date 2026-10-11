@@ -1,4 +1,4 @@
-# build-installer.ps1
+﻿# build-installer.ps1
 # Script otomatis: Build Electron + Compile Inno Setup -> FATHONI-Setup-<versi>.exe
 # Versi installer selalu diambil dari package.json, tidak ditulis di sini.
 # Enam langkah berurutan. Langkah 5 dan penandatanganan installer bersifat

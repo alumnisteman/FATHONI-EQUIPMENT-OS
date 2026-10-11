@@ -14,10 +14,16 @@
 # (--user-data-dir), sehingga rantai tidak pernah menyentuh data pengguna nyata.
 #
 # Hasil tiap harness dibaca dari baris "SELESAI kode=N" yang dicetak harness itu
-# sendiri (tests/harness/selesai.cjs), bukan dari kode keluar proses: pembungkus
-# node/npx di mesin ini sesekali mati tidak bersih SETELAH semua assertion
-# lulus. Kode keluar tetap dipakai sebagai cadangan untuk harness node murni
-# dan dilaporkan terpisah kalau tidak bersih.
+# sendiri (tests/harness/selesai.cjs), bukan dari kode keluar proses: rantai ini
+# pernah ditandai rusak karena `Segmentation fault` (139) yang muncul TEPAT
+# SETELAH semua assertion tercetak lulus. Sejak harness menutup koneksi SQLite
+# lebih dulu, 24 keluar proses sengaja (12 dengan koneksi ditutup, 12 dibiarkan
+# terbuka) dan 8 gui-check penuh keluar bersih — jadi yang tersisa hanya lapisan
+# di antara rantai dan Electron: `npx`. Lapisan itu adalah proses node npm yang
+# menunggu electron.exe, dan ia menambah satu proses ~60 MB di mesin 3,8 GB ini
+# sekaligus satu tempat baru untuk mati tidak bersih. Karena itu rantai memanggil
+# electron.exe langsung: kode keluar yang sekarang selalu milik Electron, dan
+# langkah yang tidak bersih tinggal dituduh ke satu suspects saja.
 #
 # Jalankan dari folder proyek setelah `npm run build && npm run build:electron`:
 #   sh tests/harness/regressi.sh
@@ -28,6 +34,14 @@ cd "$(dirname "$0")/../.." || exit 9
 LOG=D:/SANY/tmp-harness/logs
 mkdir -p "$LOG" /d/SANY/tmp-harness
 
+# electron.exe dipakai langsung, bukan lewat npx (lihat catatan di atas).
+ELEKTRON=node_modules/electron/dist/electron.exe
+if [ ! -f "$ELEKTRON" ]; then
+  echo "RAMBU: $ELEKTRON tidak ada — jalankan npm install lebih dulu, rantai tidak dijalankan."
+  exit 8
+fi
+
+
 jalan() {
   nama=$1; shift
   echo "=== MULAI $nama"
@@ -36,10 +50,9 @@ jalan() {
   baris=$(grep -E 'lulus, [0-9]+ gagal' "$LOG/$nama.log" | tail -1)
   gagal=$(grep -c '^FAIL' "$LOG/$nama.log")
   # Penanda dari harness sendiri (tests/harness/selesai.cjs) lebih dipercaya
-  # daripada kode keluar proses: di mesin ini pembungkus node/npx pernah mati
-  # dengan Segmentation fault (139) TEPAT SETELAH semua assertion tercetak
-  # lulus, sehingga rantai seolah-olah rusak tanpa ada uji yang gagal.
-  # Harness tanpa penanda (jalur node murni) tetap dinilai dari kode keluar.
+  # daripada kode keluar proses: rantai ini pernah ditandai rusak oleh
+  # Segmentation fault (139) yang keluar TEPAT SETELAH semua assertion tercetak
+  # lulus. Harness tanpa penanda (jalur node murni) tetap dinilai dari kode keluar.
   tutup=$(grep -E '^SELESAI kode=[0-9]+' "$LOG/$nama.log" | tail -1)
   if [ -n "$tutup" ]; then
     hasil=${tutup##*kode=}
@@ -91,17 +104,17 @@ KOTOR=''
 rm -rf /d/SANY/tmp-harness/r-gui /d/SANY/tmp-harness/r-flow /d/SANY/tmp-harness/r-handoff /d/SANY/tmp-harness/r-usable
 jalan migration node tests/harness/migration-check.cjs
 jalan unit node tests/harness/validation-check.cjs
-jalan auth npx electron tests/harness/auth-check.cjs
-jalan gui env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui npx electron tests/harness/gui-check.cjs
-jalan flow env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow npx electron tests/harness/flow-check.cjs
-jalan handoff env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff npx electron tests/harness/handoff-check.cjs
-jalan usable env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable npx electron tests/harness/usable-check.cjs
+jalan auth "$ELEKTRON" tests/harness/auth-check.cjs
+jalan gui env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui "$ELEKTRON" tests/harness/gui-check.cjs
+jalan flow env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow "$ELEKTRON" tests/harness/flow-check.cjs
+jalan handoff env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff "$ELEKTRON" tests/harness/handoff-check.cjs
+jalan usable env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable "$ELEKTRON" tests/harness/usable-check.cjs
 # cetak-check membuat folder datanya sendiri (mkdtemp) seperti db-check/compat/perf.
-jalan cetak npx electron tests/harness/cetak-check.cjs
-jalan db npx electron tests/harness/db-check.cjs
-jalan integritas npx electron tests/harness/integrity-check.cjs
-jalan compat npx electron tests/harness/compat-check.cjs
-jalan perf npx electron tests/harness/perf-check.cjs
+jalan cetak "$ELEKTRON" tests/harness/cetak-check.cjs
+jalan db "$ELEKTRON" tests/harness/db-check.cjs
+jalan integritas "$ELEKTRON" tests/harness/integrity-check.cjs
+jalan compat "$ELEKTRON" tests/harness/compat-check.cjs
+jalan perf "$ELEKTRON" tests/harness/perf-check.cjs
 jalan store node tests/harness/db-store-run.cjs
 jalan backup node tests/harness/db-backup-run.cjs
 jalan paket node tests/harness/smoke-paket-check.cjs

@@ -475,22 +475,78 @@ check('packaging: satu ikon yang sama untuk installer dan exe aplikasi',
   ISS.includes('SetupIconFile=assets\\fathoni.ico') && BRI.includes("'fathoni.ico'")
     && fs.existsSync(path.join(ROOT, 'installer', 'assets', 'fathoni.ico')));
 
+// Masih ada berkas .iss KEDUA di root, warisan sebelum pengemasan dirapikan:
+// installer.iss mengemas dari dist-electron-portable/win-unpacked — folder yang
+// ditinggalkan karena app.asar-nya ikut membungkus seluruh node_modules (147 MB) —
+// dengan AppVersion "1.0.0" tertulis mati dan OutputDir ke dist-installer. Kalau
+// sampai dikompilasi, hasilnya installer "versi hantu" yang mendarat di folder
+// rilis bersama yang 3.0.2. Berkasnya sendiri tidak dihapus (keputusan pengguna),
+// tapi tidak boleh ada satu pun jalur build yang memanggilnya.
+const ISS_LAMA = fs.existsSync(path.join(ROOT, 'installer.iss'))
+  ? fs.readFileSync(path.join(ROOT, 'installer.iss'), 'utf8') : '';
+const JALUR_BUILD = PS1 + ' ' + Object.values(PKG.scripts || {}).join(' ');
+check('packaging: ISCC hanya dipanggil dengan installer resmi (installer\\FATHONI-InnoSetup.iss)',
+  /\$iscc[\s\S]*installer\\FATHONI-InnoSetup\.iss/.test(PS1), PS1.match(/\$iscc.*/g));
+check('packaging: tidak ada jalur build yang memanggil .iss lama di root',
+  !/(^|["'\s\\/])installer\.iss\b/.test(JALUR_BUILD)
+    && (!ISS_LAMA || /dist-electron-portable/.test(ISS_LAMA)),
+  { referensi: JALUR_BUILD.match(/(^|["'\s\\/])installer\.iss\b/g), sumberIssLama: (ISS_LAMA.match(/Source:\s*"([^"]+)"/) || [])[1] });
+
+
 // ── 15. penjaga cara harness mengakhiri proses ────────────────
 // app.exit() melompati before-quit main.js, jadi koneksi SQLite tetap terbuka
 // saat Windows membongkar DLL-nya. Hasilnya pernah terlihat di rantai regresi:
 // 72 assertion lulus semua, tapi proses keluar dengan Segmentation fault (139)
 // sehingga rantai ditandai rusak. Semua harness Electron karena itu wajib lewat
 // tests/harness/selesai.cjs.
-const HARNESS_ELECTRON = [
-  'auth-check.cjs', 'compat-check.cjs', 'db-backup-check.cjs', 'db-check.cjs',
-  'db-store-check.cjs', 'flow-check.cjs', 'gui-check.cjs', 'handoff-check.cjs',
-  'integrity-check.cjs', 'perf-check.cjs', 'usable-check.cjs',
-];
+//
+// Daftarnya DERIVASI dari cara rantai benar-benar memanggil harness: baris
+// "$ELEKTRON" di regressi.sh, ditambah harness yang di-spawn orkestrator
+// (*-run.cjs) lewat electron/cli.js. Bukan daftar tulis tangan — daftar tulis
+// pernah tertinggal satu harness (cetak-check) persis seperti komplain yang kami
+// buat untuk menu di §16: penjaga yang daftarnya harus disenyorkan manual tidak
+// menjaga apa-apa.
+const REGRESH = fs.readFileSync(path.join(__dirname, 'regressi.sh'), 'utf8');
+const PANGGIL = [...REGRESH.matchAll(/"\$ELEKTRON"\s+tests\/harness\/([\w.-]+\.cjs)/g)].map((m) => m[1]);
+for (const f of fs.readdirSync(__dirname).filter((x) => /-run\.cjs$/.test(x))) {
+  const t = fs.readFileSync(path.join(__dirname, f), 'utf8');
+  for (const m of t.matchAll(/path\.join\(__dirname,\s*'([\w.-]+\.cjs)'\)/g)) {
+    if (m[1] !== f) PANGGIL.push(m[1]);
+  }
+}
+const HARNESS_ELECTRON = [...new Set(PANGGIL)];
+check('harness: rantai menyebut dua belas harness Electron (daftar tidak kosong)',
+  HARNESS_ELECTRON.length >= 12, HARNESS_ELECTRON);
+// Selain langkah rantai, satu-satunya pengguna electron yang boleh keluar sendiri
+// adalah perkakas inspeksi manual (tidak mencetak assertion, tidak dinilai rantai).
+const DI_LUAR_RANTAI = { 'profile-inspect.cjs': 'perkakas baca profil untuk manusia, bukan langkah regresi' };
+const PEMAKAI_ELECTRON = fs.readdirSync(__dirname)
+  .filter((f) => /\.cjs$/.test(f) && !/^selesai\.cjs$/.test(f))
+  .filter((f) => /require\('electron'\)/.test(fs.readFileSync(path.join(__dirname, f), 'utf8')));
+check('harness: setiap pengguna electron adalah langkah rantai atau perkakas yang dinyatakan',
+  PEMAKAI_ELECTRON.every((f) => HARNESS_ELECTRON.includes(f) || DI_LUAR_RANTAI[f]),
+  PEMAKAI_ELECTRON.filter((f) => !HARNESS_ELECTRON.includes(f) && !DI_LUAR_RANTAI[f]));
 for (const f of HARNESS_ELECTRON) {
   const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
   check(`${f}: keluar lewat selesai(), tidak app.exit() langsung`,
     !/[^.]app\.exit\(/.test(src) && src.includes("require('./selesai.cjs')"));
 }
+// selesai() wajib menutup koneksi sebelum app.exit(), dan wajib mengumumkan
+// hasilnya sendiri supaya rantai tidak menilai uji dari kode keluar proses.
+const SELESAI_SRC = fs.readFileSync(path.join(__dirname, 'selesai.cjs'), 'utf8');
+// Komentar kepala berkas menyebut app.exit() sebagai hal yang dilarang; yang
+// dibandingkan di sini hanya baris kode.
+const SELESAI_KODE = SELESAI_SRC.replace(/^\s*\/\/.*$/gm, '');
+check('selesai.cjs: menutup database sebelum app.exit dan mencetak penanda',
+  /closeDatabase\(\)/.test(SELESAI_KODE) && /SELESAI kode=/.test(SELESAI_SRC)
+  && SELESAI_KODE.indexOf('closeDatabase()') < SELESAI_KODE.indexOf('app.exit('));
+
+// Rantai memanggil electron.exe langsung (satu proses node npm lebih sedikit di
+// mesin 3,8 GB, dan kode keluar tidak lagi bisa berasal dari pembungkus).
+check('regressi: harness Electron dipanggil lewat electron.exe, bukan npx',
+  /ELEKTRON=node_modules\/electron\/dist\/electron\.exe/.test(REGRESH)
+  && !/npx\s+electron/.test(REGRESH.replace(/^\s*#.*$/gm, '')), REGRESH.match(/npx\s+electron/));
+
 
 // ── 16. penjaga cakupan rute di harness UI ────────────────────
 // "Semua layar sudah diuji ukurannya" selama ini hanya berarti 16 dari 25 menu
@@ -964,6 +1020,80 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   check('Perawatan Sistem: hidrasi diminta tepat sebelum data contoh ditulis',
     /await ensureLoaded\(SEMUA_COLLECTION\)[\s\S]{0,160}loadSampleData\(\)/
       .test(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'SystemMaintenance.tsx'), 'utf8')));
+
+  // ── 27. skrip di root tidak boleh menghancurkan repository ───────────
+  // auto-fix.ps1 versi 1 menghapus node_modules dan package-lock.json,
+  // menjalankan `npm cache clean --force`, lalu `git reset` + `git clean -fd`
+  // — otomatis, tanpa diminta. Di proyek ini perintah itu memusnahkan tiga hal
+  // yang TIDAK bisa dibangun ulang dari kode: kunci ABI modul native
+  // (package-lock.json + .npmrc bersama-sama menentukan prebuild electron-v123),
+  // paket yang sedang diuji (dist-app/ dan dist-installer/ keduanya tak terlacak
+  // git, jadi git clean menghapus bukti rilis), dan cache prebuild yang dipakai
+  // saat mesin offline. Penjaga ini membandingkan setiap skrip root dengan daftar
+  // hitam, dan memaksa jalur tulis/ubah berada di belakang gerbang -Apply.
+  const SKRIP_ROOT = fs.readdirSync(ROOT).filter((f) => /\.(ps1|sh|cmd|bat)$/.test(f));
+  /** Potong komentar dan string: teks penjelasan tidak boleh dianggap perintah. */
+  const KODE_BERSIH = (teks) => teks
+    .replace(/<#[\s\S]*?#>/g, '')
+    .split(/\r?\n/).filter((l) => !/^\s*#/.test(l)).join('\n')
+    .replace(/'[^']*'/g, "''");
+  const KODE_BERSIH2 = (teks) => KODE_BERSIH(teks).replace(/"[^"]*"/g, '""');
+  const HITAM = [
+    [/\bgit\s+clean\b/i, 'git clean (menghapus berkas tak-terlacak: paket + log uji)'],
+    [/\bgit\s+reset\b/i, 'git reset (membuang staging pekerjaan yang belum di-commit)'],
+    [/\bnpm\s+cache\s+clean\b/i, 'npm cache clean (membuang prebuild electron; mesin ini sering offline)'],
+    [/\bnpm(?:\s+\S+)*?\s+(?:install|ci)\b/i, 'npm install/ci buta (mengunci ulang versi native harus keputusan, bukan efek samping)'],
+  ];
+  const HAPUS = /(Remove-Item|Remove-PSItem|\bdel\b|\bri\b|\brm\b|rmdir|\bunlink\b)/i;
+  const TERLINDUNG = /(node_modules|package-lock\.json|app\.asar|dist-app|dist-installer|fathoni\.db|\.npmrc|\bsrc\b|APPDATA)/i;
+  // Yang boleh dihapus hanya hasil build yang memang regenerable atau berkas sementara.
+  const BOLEH_HAPUS = /\$probe\b|\$viteCache\b|tmp-harness|GetTempPath/i;
+  const PELANGGARAN = [];
+  for (const f of SKRIP_ROOT) {
+    const kode = KODE_BERSIH(fs.readFileSync(path.join(ROOT, f), 'utf8'));
+    for (const baris of kode.split(/\r?\n/)) {
+      for (const [re, nama] of HITAM) {
+        if (re.test(baris)) PELANGGARAN.push(f + ': ' + nama + ' -> ' + baris.trim());
+      }
+      if (HAPUS.test(baris)) {
+        if (TERLINDUNG.test(baris)) PELANGGARAN.push(f + ': hapus berkas terlindungi -> ' + baris.trim());
+        if (!BOLEH_HAPUS.test(baris)) PELANGGARAN.push(f + ': hapus di luar daftar yang boleh -> ' + baris.trim());
+      }
+    }
+  }
+  check('skrip root: tidak ada perintah yang memusnahkan kunci build, paket, atau pekerjaan git',
+    SKRIP_ROOT.length >= 2 && PELANGGARAN.length === 0, { SKRIP_ROOT, PELANGGARAN });
+
+  // Enkoding: Windows PowerShell 5.1 membaca .ps1 tanpa BOM sebagai cp1252, jadi
+  // satu tanda hubung panjang (E2 80 94) pecah menjadi tiga karakter — dan byte
+  // terakhirnya adalah 0x94, yang di cp1252 adalah tanda kutip kiri. Tanda kutip
+  // itu menutup string di tengah baris, dan skrip build mati dengan error parse
+  // yang terlihat tidak berhubungan. Temuan nyata saat auto-fix.ps1 ditulis
+  // ulang: build-installer.ps1 juga mengandung byte non-ASCII tanpa BOM.
+  const TANPA_BOM = fs.readdirSync(ROOT)
+    .filter((f) => /\.ps1$/.test(f))
+    .map((f) => ({ f, b: fs.readFileSync(path.join(ROOT, f)) }))
+    .filter((x) => [...x.b].some((byte) => byte >= 0x80))
+    .filter((x) => !(x.b[0] === 0xEF && x.b[1] === 0xBB && x.b[2] === 0xBF))
+    .map((x) => x.f);
+  check('skrip root: .ps1 dengan karakter non-ASCII memakai BOM UTF-8',
+    TANPA_BOM.length === 0, TANPA_BOM);
+
+  const AUTOFIX = fs.readFileSync(path.join(ROOT, 'auto-fix.ps1'), 'utf8');
+  const GARIS_AF = KODE_BERSIH2(AUTOFIX).split(/\r?\n/);
+  const BATAS_AF = GARIS_AF.findIndex((l) => /-not\s+\$Apply/.test(l));
+  check('auto-fix.ps1: memeriksa saja secara default, memperbaiki hanya dengan -Apply',
+    /\[switch\]\s*\$Apply/.test(AUTOFIX) && BATAS_AF > 0, { BATAS_AF });
+  // Berkas sementara hasil probe (temp) boleh dibersihkan sebelum gerbang;
+  // yang tidak boleh adalah perintah build dan penghapusan apa pun yang nyata.
+  const SEBELUM_AF = GARIS_AF.slice(0, BATAS_AF)
+    .map((l) => l.trim())
+    .filter((l) => /\bnpm\s+(run|install|ci)\b/.test(l) || (/Remove-Item/.test(l) && !/\$probe\b/.test(l)));
+  check('auto-fix.ps1: tidak ada tulis/hapus/npm sebelum gerbang -Apply',
+    SEBELUM_AF.length === 0, SEBELUM_AF);
+  const SESUDAH_AF = GARIS_AF.slice(BATAS_AF).join('\n');
+  check('auto-fix.ps1: cabang -Apply benar-benar menjalankan perbaikan (penjaga tidak vakum)',
+    /\bnpm\s+(run|install)/.test(SESUDAH_AF) && /\$viteCache/.test(SESUDAH_AF), undefined);
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

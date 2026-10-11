@@ -2,12 +2,17 @@
 **Versi aplikasi**: 3.0.2 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
 **Status**: Rilis terverifikasi. Rantai regresi penuh hijau dijalankan setelah paket
-**3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.153 assertion, 0 gagal, `rusak: tidak`,
-`proses keluar tidak bersih: tidak`, `npm audit` 0 kerentanan tinggi/kritis. Langkah
+**3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.165 assertion, 0 gagal, `rusak: tidak`,
+`proses keluar tidak bersih: tidak` — untuk pertama kalinya **setiap** langkah Electron
+juga keluar dengan kode 0, karena rantai tidak lagi memanggil Electron lewat `npx`
+(§5). `npm audit` 0 kerentanan tinggi/kritis. Langkah
 terakhir rantai (`smoke-paket`) menguji `FATHONI.exe` HASIL PAKET; harness lain menguji
 `dist/` + `dist-electron/` yang dibundel ke dalam asar paket itu — dibuktikan dengan mengekstrak
 `app.asar` ke folder sementara lalu `diff -r`: `dist/` dan `dist-electron/` di dalam paket
-IDENTIK byte-for-byte dengan hasil build sumber hari ini.
+IDENTIK byte-for-byte dengan hasil build sumber hari ini. Bukti itu diulang setelah
+pekerjaan #61/#62 (hanya berkas harness + skrip root yang berubah, tidak ada satu byte
+pun di `src/` atau `electron/`), dan hasilnya masih identik: versi tetap 3.0.2, paket
+tetap layak edar tanpa dibangun ulang.
 
 Laporan ini menggantikan laporan 2026-09-23 (HEMS 1.0.0). Laporan lama itu sudah tidak
 berlaku dan sengaja ditulis ulang, bukan ditambal: ia menyebut localStorage sebagai
@@ -37,10 +42,22 @@ perapihan dua penjaga harness (§5). Aturan yang dipakai laporan ini sejak 3.0.0
 **bukti rilis adalah rantai yang dijalankan terhadap paket yang diedarkan** — begitu
 sumber berubah setelah pemaketan, bukti lama tidak berlaku lagi. Jadi versi dinaikkan,
 paket + installer dibangun ulang (`dist-app/win-unpacked` + `dist-installer/FATHONI-Setup-3.0.2.exe`,
-build 2026-10-11 12:44), lalu rantai diulang dari nol: 16 langkah, 1.153 assertion, 0 gagal.
+build 2026-10-11 12:44), lalu rantai diulang dari nol: 16 langkah, 1.165 assertion, 0 gagal.
 `FileVersion`/`ProductVersion` pada `FATHONI.exe` 3.0.2 dan manifest di dalam `app.asar`
 berbunyi `3.0.2`; artefak 2.0.0/3.0.0/3.0.1 dibiarkan utuh di `dist-installer/` sebagai
 catatan sejarah — hanya 3.0.2 yang layak edar.
+
+**Siklus sesudah 3.0.2 (penutup #61 dan #62) tidak menaikkan versi, dan itu keputusan
+yang ada alasannya.** Yang berubah hanya berkas harness (`tests/harness/*`) dan skrip
+root (`auto-fix.ps1`, BOM pada `build-installer.ps1`): tidak satu byte pun di `src/`
+atau `electron/`. Isi `app.asar` kemudian dibandingkan lagi dengan hasil build sumber
+(`@electron/asar` `extractAll` ke folder sementara, lalu `diff -r` kedua folder) dan
+keluar identik — jadi paket 3.0.2 hari ini masih paket yang sama dengan yang diuji, dan
+naik versi hanya akan mengaburkan fakta itu. Yang berubah adalah **cara bukti dihasilkan**:
+rantai kini memanggil `electron.exe` langsung, `validation-check` bertambah sepuluh
+penjaga (291 ketika rantai dijalankan, 293 setelah dua penjaga `.iss` menyusul), dan satu
+skrip di root yang sebelumnya bisa memusnahkan paket + kunci build sekarang menjadi
+preflight non-destruktif (§4.11, §5).
 
 Sejarah kenaikan 3.0.1: artefak `FATHONI-Setup-3.0.0.exe` dibangun
 2026-10-10 23:20, sebelum empat perbaikan terakhir: #71 (nomor dokumen bersumber dari
@@ -53,11 +70,13 @@ pola yang sama berulang untuk 3.0.2 di atas.
 ## 2. Matriks jenis pengujian
 
 Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11
-(`tmp-harness/logs/rantai-302c.log`): 16 langkah, 1.153 assertion, `rusak: tidak`.
+terakhir (`tmp-harness/logs/rantai-302e.log`, yang pertama dijalankan setelah seluruh
+penjaga §5 masuk): 16 langkah, 1.165 assertion, `rusak: tidak`, dan **setiap langkah
+Electron keluar dengan kode 0** — bukan hanya "penanda bilang nol".
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 281 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), peta hidrasi per rute (§4.9), + penjaga statis (§5) |
+| **Unit** | `validation-check` | 293 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), peta hidrasi per rute (§4.9), + penjaga statis (§5), termasuk tiga penjaga bentuk-kode terbaru (§5) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
 | **Fungsional** | `gui-check`, `flow-check`, `usable-check`, `cetak-check` | 72 + 30 + 37 + 67 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16; tiga pintu masuk menu (sidebar, cari di topbar, Ctrl+K) menawarkan daftar yang sama dan sama-sama tergerbang profil/peran — usable 7.1–7.4; **sepuluh dokumen cetak benar-benar diklik** dan isi jendela cetak dibandingkan dengan aplikasi aslinya (cetak 1–9, §4.10) |
 | **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7) |
@@ -65,7 +84,7 @@ Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11
 | **Keamanan** | `auth-check`, `cetak-check`, `npm audit` | 58 + (cetak 10–15) + 0 kerentanan | balasan login tanpa password/hash/salt, pesan generik, lockout, sesi palsu ditolak, CSP/sandbox/izin, injeksi formula CSV ditahan; jendela cetak diuji berdiri sendiri: CSP `default-src 'none'`, TIDAK ada `electronAPI` (tanpa preload), skrip di dalam data ditampilkan sebagai teks, dan dokumen kosong/bukan string/1,1 MB ditolak main process tanpa membuka jendela |
 | **Performa (beban + stres)** | `perf-check` | 40 + 55 (lintasan kapasitas) | angka di §3 dan §3.1: rantai dasar sampai 50.000 baris, lalu 400.000 baris (100.000 per collection besar) dengan `HEMS_PERF_KAPASITAS=1` |
 | **Kompatibilitas** | `compat-check`, `usable-check`, `smoke-paket` | 30 + (ukuran) + 28 | boot di profil lama hasil upgrade (kolom turunan dibuat + dihitung ulang), mode browser tanpa `electronAPI` (login demo, nol error renderer), jendela 1200 px tanpa pemotongan tabel, paket jadi FATHONI.exe di sandbox |
-| **Regresi** | `regressi.sh` | 16 langkah | seluruh rantai di atas dijalankan berurutan; hasil dibaca dari penanda `SELESAI kode=N` milik harness, bukan kode keluar `npx` (pernah segfault 139 setelah semua assertion lulus) |
+| **Regresi** | `regressi.sh` | 16 langkah | seluruh rantai di atas dijalankan berurutan; hasil dibaca dari penanda `SELESAI kode=N` milik harness, dan rantai memanggil `node_modules/electron/dist/electron.exe` langsung — bukan lewat `npx`, yang dulu menyisakan proses pembungkus tempat kode keluar bisa mati tidak bersih setelah semua assertion lulus (§5) |
 
 ## 3. Kapasitas: berapa banyak record yang tahan
 
@@ -88,6 +107,21 @@ bawah dari rantai 2026-10-11 (`perf-check` jalur default, 40 assertion lulus):
 | Ukuran DOM tabel | tetap **12 kartu** saat tabel tumbuh ke 50.000 baris |
 | Memori | heap JS renderer **10 MB**, working set 173–175 MB per proses |
 | Total baris profil uji | 63.000 di seluruh 18 collection, berkas **44,71 MB** |
+
+Tabel di atas adalah angka dari jalan dengan kepala RAM longgar. Rantai ulang terakhir
+(`rantai-302e.log`, dijalankan ketika RAM tinggal ±0,3 GB) mencetak 40 assertion tetap
+lulus dengan waktu yang berbeda: boot proses 1.872 ms, `domContentLoaded` 350 ms, cari
+12.000 baris median 251 ms, kueri telanjang 22 ms, berganti halaman 240 ms, tulis satu
+baris 1 ms, `saveStore` 50.000 unit 1.937 ms, dan cari pada 50.000 baris 639 ms (vs 284 ms
+di jalan ringan). Selisih terbesar persis di titik yang paling sensitif beban mesin —
+pembacaan `LIKE '%token%'` di 50.000 blob ketika Windows sedang kehabisan halaman memori. Dua hal yang
+tidak berubah di antara dua jalan itu: **angka klaimnya** (DOM tetap 12 kartu, 0 baris
+lewat IPC, jumlah record sama dengan `COUNT(*)`, tulis tetap satu baris) dan
+**status hijaunya**. Inilah alasan ambang §4 lama ("simpan ulang harus >2x lebih cepat dari
+simpan penuh") sudah diganti menjadi klaim bentuk (`inserted: 0, updated: 10, deleted: 0`):
+yang ingin ditahan adalah sifat arsitekturnya, bukan waktu dinding yang bergantung pada
+mesin lain pada jam yang sama. Angka kapasitas §3.1 berasal dari lintasan terpisah pada
+mesin yang sama dan belum diulang di bawah tekanan RAM ini.
 
 ### 3.1 Kapasitas teruji sampai 400.000 baris (100.000 per collection besar)
 
@@ -241,13 +275,80 @@ menjadi detik-menit dan itu titik pertama yang harus diubah, misal dengan FTS5),
     cetak sama sekali — harness harus memindahkannya ke "📊 Tabel" lebih dulu; itu
     keputusan tata letak yang perlu persetujuan pengguna, bukan bug.
 
-Pola yang menyatukan kesepuluhnya: yang rusak bukan satu menu, melainkan asumsi bahwa
+11. **Satu skrip di root bisa memusnahkan bukti rilis dan kunci build dalam sekali jalan.**
+    `auto-fix.ps1` (versi 1) dijalankan tanpa parameter apa pun langsung
+    `Remove-Item` atas `dist/`, `dist-electron/`, `dist-electron-portable/`, `node_modules/`
+    **dan `package-lock.json`**, lalu `npm cache clean --force`, lalu `git reset` +
+    `git clean -fd`, lalu membangun ulang. Tiga dari lima itu tidak bisa dipulihkan dari
+    kode: `package-lock.json` + `.npmrc` bersama-sama menentukan prebuild `better-sqlite3`
+    untuk ABI Electron (kehilangan salah satunya berarti `npm install` mengambil build
+    untuk ABI Node dan aplikasi mati saat start-up dengan `MODULE_VERSION` salah),
+    `dist-app/` + `dist-installer/` tidak terlacak git sehingga `git clean -fd` menghapus
+    paket yang sedang diuji, dan cache prebuild adalah satu-satunya yang membuat build
+    jalan di mesin offline. Skrip itu juga menyebut dirinya "memperbaiki TypeScript
+    errors" padahal yang ia lakukan adalah menghapus artefak lalu menjalankan `tsc --noEmit`.
+    Perbaikannya bukan menghapus skripnya (keputusan itu milik pengguna) melainkan
+    **membalik sifatnya**: sekarang ia `PREFLIGHT` — 21 pemeriksaan tanpa menulis apa pun
+    secara default, dan satu-satunya jalur tulis adalah cabang `-Apply` yang cuma
+    membersihkan `node_modules/.vite` serta memanggil `npm run` yang sudah ada. Ia juga
+    memeriksa hal-hal yang selama ini hanya diketahui lewat ingatan: apakah
+    `better-sqlite3` benar-benar termuat di dalam Electron (probe nyata, mencetak ABI),
+    apakah `.npmrc target` sama dengan versi electron terpasang, apakah RAM cukup,
+    apakah ada proses Electron yang akan merebut single-instance lock, apakah
+    `dist`/`dist-electron`/`app.asar` lebih tua dari sumbernya, dan installer mana yang
+    versinya sama dengan `package.json`. *Bukti*: dijalankan dua kali — periksa-saja
+    (`FAIL=0 WARN=3`, kode keluar 0) dan `-Apply` (hanya `.vite` yang hilang, `node_modules`
+    dan lock utuh, kode keluar 0); `Parser::ParseFile` bersih untuk kedua skrip root.
+    **Temuan ikutan yang lebih berbahaya**: skrip itu membuka mata bahwa `build-installer.ps1`
+    mengandung karakter non-ASCII **tanpa BOM**. Windows PowerShell 5.1 membaca berkas
+    tanpa BOM sebagai cp1252, jadi satu tanda hubung panjang (E2 80 94) pecah menjadi tiga
+    karakter dan byte terakhirnya (0x94) adalah tanda kutip kiri — yang menutup string di
+    tengah baris dan membuat skrip build mati dengan error parse yang terlihat tidak
+    berhubungan. Keduanya kini ber-BOM, dan bentuk kesalahannya dijaga (§5).
+    *Penjaga*: validation 27 — daftar hitam perintah (`git clean`, `git reset`,
+    `npm cache clean`, `npm install/ci`) dan daftar putih sasaran hapus (hanya berkas
+    sementara, `node_modules/.vite`, `tmp-harness`) diberlakukan ke **semua** skrip root
+    setelah komentar dan string literal dibuang; `.ps1` non-ASCII wajib ber-BOM;
+    `auto-fix.ps1` wajib punya gerbang `[switch]$Apply` dan tidak boleh menjalankan
+    `npm run`/`Remove-Item` sebelum gerbang itu (dengan penjaga positif bahwa cabang
+    `-Apply` benar-benar berisi perbaikan, supaya assertion tidak lolos kosong).
+
+12. **Hasil rantai pernah tidak bisa dipercaya karena cara prosesnya keluar.** Riwayatnya:
+    72 assertion gui-check lulus semua, tapi proses induknya keluar dengan
+    `Segmentation fault` (139), sehingga `regressi.sh` menandai rantai rusak tanpa ada
+    satu pun uji yang gagal. Mitigasi yang sudah ada (harness wajib lewat
+    `tests/harness/selesai.cjs`, yang menutup koneksi SQLite lebih dulu dan mencetak
+    `SELESAI kode=N` sendiri) membuat rantai hijau lagi, dan sisanya adalah pertanyaan
+    yang belum dijawab: siapa sebenarnya yang mati tidak bersih. Siklus ini menjawabnya
+    dengan percobaan, bukan dengan asumsi: 12 keluar proses dengan koneksi SQLite
+    **ditutup**, 12 dengan koneksi **dibiarkan terbuka**, dan 8 gui-check penuh
+    (4 lewat `npx electron`, 4 lewat `electron.exe` langsung) — **34 dari 34 keluar
+    dengan kode 0**. Jadi (a) koneksi terbuka saat `ExitProcess` bukan penyebab yang
+    cukup, dan (b) setelah lapisan `selesai()` tidak ada satu pun kegagalan yang bisa
+    direproduksi. Satu-satunya bagian yang tersisa di antara rantai dan Electron adalah
+    pembungkus `npx` — proses node npm yang menunggu `electron.exe`, menambah satu proses
+    ~60 MB di mesin 3,8 GB ini dan menyediakan satu tempat lagi untuk mati tidak bersih.
+    Ia dihapus dari rantai: `regressi.sh` kini resolve `node_modules/electron/dist/electron.exe`
+    dan berhenti dengan pesan jelas kalau berkas itu belum ada. Rantai penuh sesudah
+    perubahan itu: 16 langkah, 0 gagal, dan baris `exit=` bernilai 0 untuk **setiap**
+    langkah — termasuk sepuluh langkah Electron — sehingga `proses keluar tidak bersih`
+    tidak lagi bisa disembunyikan di balik pembungkus. *Penjaga*: validation 15 — daftar
+    harness Electron **diderivasi** dari baris `"$ELEKTRON"` di `regressi.sh` plus
+    harness yang di-spawn orkestrator `*-run.cjs` (bukan daftar tulis tangan, yang pernah
+    ketinggalan `cetak-check`), setiap pengguna `require('electron')` wajib menjadi
+    langkah rantai atau perkakas yang dinyatakan (`profile-inspect.cjs`), `selesai.cjs` wajib
+    menutup database sebelum `app.exit` dan mencetak penanda, dan `regressi.sh` tidak boleh
+    kembali memakai `npx electron`.
+
+Pola yang menyatukan keduabelasnya: yang rusak bukan satu menu, melainkan asumsi bahwa
 data yang dibaca selalu lengkap, selalu berasal dari jalur yang sama, dan selalu
-diceritakan dengan cara yang sama di setiap tempat.
+diceritakan dengan cara yang sama di setiap tempat — dan bahwa alat yang dipakai untuk
+"merapikan" serta cara uji diakhiri sudah pasti aman.
+
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
 
-`validation-check` §12, §15–§26 menahan bentuk kode, bukan hanya hasilnya:
+`validation-check` §12, §15–§27 menahan bentuk kode, bukan hanya hasilnya:
 peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataStore`;
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
@@ -275,6 +376,43 @@ Ketujuh penjaga itu diverifikasi dengan mutasi (menabrakannya sengaja
 lalu dilihat FAIL) — bukan hanya hijau pada kode yang sudah benar. Dua penjaga terbaru
 dimutasi siklus ini: bacaan `daftar(item.certifications)` di Technicians sempat dikembalikan
 menjadi bacaan mentah dan §24 memang jatuh (280 lulus, 1 gagal) sebelum sumber dipulihkan.
+
+Tiga penjaga bentuk-kode baru menyusul setelah penutup §4.11–§4.12, dan ketiganya lahir
+dari temuan yang hampir tidak terlihat:
+
+- **§15 ditulis ulang supaya tidak bisa basi.** Daftar harness Electron dulunya
+  daftar tulis-tangan, jadi menambah harness baru tanpa menambahkannya ke daftar
+  itu justru membuat penjaga "wajib lewat `selesai()`" diam-diam tidak mencakup
+  apa-apa. Kini daftarnya diturunkan dari `regressi.sh` (panggilan
+  `"$ELEKTRON" tests/harness/<nama>.cjs`) ditambah harness yang di-spawn dari
+  `*-run.cjs`, sehingga langkah rantai baru otomatis ikut diperiksa. Satu pengecualian
+  dinyatakan eksplisit di kode (`DI_LUAR_RANTAI`): `profile-inspect.cjs` memang
+  perkakas baca profil untuk manusia, bukan langkah regresi, dan memang boleh
+  memakai `app.exit`. Penjaga yang sama juga memastikan rantai **tidak** kembali
+  memanggil Electron lewat `npx`.
+- **§27 mengunci bentuk skrip root.** Semua `.ps1`/`.sh`/`.cmd`/`.bat` di root
+  repo dibaca: string kutip dan komentar dibuang dulu, lalu kode yang tersisa
+  tidak boleh mengandung `git clean`, `git reset`, `npm cache clean`, `npm install`/`ci`,
+  juga tidak boleh `Remove-Item`/`del`/`rm` ke `node_modules`, `package-lock.json`,
+  `app.asar`, `dist-app`, `dist-installer`, `fathoni.db`, `.npmrc`, `src` atau `APPDATA`
+  — kecuali ke path yang secara nyata temporer (`$probe`, `$viteCache`, `tmp-harness`,
+  `GetTempPath`). Ditambah tiga aturan struktural: setiap penghapusan di luar temp
+  wajib berada setelah penjaga `-Apply`, tidak boleh ada `npm run` di depan penjaga
+  itu, dan harus ada kontrol positif yang membuktikan cabang `-Apply` sungguhan
+  berisi tindakan (supaya penjaga tidak hijau pada skrip yang dinonaktifkan total).
+  §27 juga memegang aturan BOM: `.ps1` ber-UTF-8 tanpa non-ASCII boleh tanpa BOM,
+  yang mengandung karakter non-ASCII **wajib** diawali `EF BB BF` — tanpa itu
+  Windows PowerShell 5.1 membacanya sebagai cp1252 dan tanda em-dash mengubah
+  string menjadi kutip pintar.
+- **§14 ditambah dua penjaga `.iss` lama.** `installer.iss` di root adalah duplikat
+  basi yang menunjuk `dist-electron-portable` dan menulis `AppVersion "1.0.0"`; kalau
+  build pemanggil ISCC berubah arahnya, ia mengemas paket mati dan tetap lulus
+  compile. Kini rantai build wajib menyebut `installer\FATHONI-InnoSetup.iss` secara
+  eksplisit, dan tidak ada berkas jalur build yang boleh memanggil `.iss` root.
+
+Ketiga penjaga baru ini juga dimutasi, bukan hanya dilihat hijau: BOM `build-installer.ps1`
+dikupas sehingga §27 jatuh, dan jalur ISCC diubah menunjuk `installer.iss` sehingga kedua
+penjaga `.iss` jatuh — sumber lalu dipulihkan dari salinan dan hijau kembali.
 
 ## 6. Yang BELUM diverifikasi (perbatasan laporan ini)
 
@@ -327,6 +465,22 @@ menjadi bacaan mentah dan §24 memang jatuh (280 lulus, 1 gagal) sebelum sumber 
   layak edar), `dist-electron-portable` (156 MB,
   `app.asar` terkunci proses), dan dependensi Prisma (~111 MB) yang tidak dipakai.
   Tidak ada yang dihapus tanpa persetujuan.
+- **`installer.iss` di root ikut kategori yang sama dan sengaja tidak dihapus.** Ia
+  duplikat basi dari `installer/FATHONI-InnoSetup.iss`: `Source` menunjuk
+  `dist-electron-portable\win-unpacked` (folder yang sudah ditinggalkan) dan
+  `AppVersion "1.0.0"`. Menyimpannya tidak berbahaya selama ISCC tidak dipanggil
+  dengannya — dan itu kini dijaga §14 — tapi menghapusnya tetap keputusan pengguna,
+  karena ia satu-satunya catatan bentuk build portable lama.
+- **Yang tadinya belum terverifikasi dan kini sudah: cara proses rantai keluar.** Sampai
+  siklus ini, langkah Electron di `regressi.sh` dipanggil lewat `npx`, dan pembungkus npm itu
+  sesekali mati dengan Segmentation fault (139) **setelah** semua assertion tercetak
+  lulus — akibatnya "rantai hijau" dan "rantai rusak" bisa berasal dari kode yang sama.
+  Setelah pemanggilan langsung `node_modules/electron/dist/electron.exe`,
+  `keluar tidak bersih` untuk rantai penuh 16 langkah adalah **kosong** (§2, §4.12),
+  jadi baris `exit=` di log kini berarti sesuatu. Yang belum tercover: mesin dengan
+  RAM lebih besar atau Windows versi lain, di mana npx mungkin justru aman — rantai
+  tetap memakai jalur langsung karena ia lebih cepat dan lebih mudah dibaca, bukan
+  karena npx terbukti merusak di mana-mana.
 
 ## 7. Keputusan yang tidak boleh dibalik tanpa migrasi
 
@@ -348,10 +502,27 @@ menjadi bacaan mentah dan §24 memang jatuh (280 lulus, 1 gagal) sebelum sumber 
 ```bash
 npm run build && npm run build:electron        # bundel renderer + main
 sh tests/harness/regressi.sh                   # 16 langkah, log di D:/SANY/tmp-harness/logs
-HEMS_PERF_KAPASITAS=1 npx electron tests/harness/perf-check.cjs   # lintasan kapasitas 400.000 baris (§3.1)
+HEMS_PERF_KAPASITAS=1 node_modules/electron/dist/electron.exe tests/harness/perf-check.cjs   # lintasan kapasitas 400.000 baris (§3.1)
 HEMS_SIGN_PFX=... HEMS_SIGN_PASS=... powershell -File build-installer.ps1  # build + tanda tangan (§6)
 ```
 
+Sebelum menyentuh build, periksa lingkungan tanpa mengubah apa pun:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File auto-fix.ps1          # PREFLIGHT: baca saja, 21 pemeriksaan
+powershell -NoProfile -ExecutionPolicy Bypass -File auto-fix.ps1 -Apply   # boleh menuntaskan; hanya .vite cache + rebuild native/build yang dihapus-dibangun
+```
+
+`auto-fix.ps1` keluar dengan kode 1 kalau ada FAIL. Baris terakhirnya
+`FAIL=x WARN=y dari z pemeriksaan`; WARN berarti curiga (misalnya `mtime` sumber lebih baru
+dari `app.asar`) dan yang memutuskannya tetap rantai, khususnya langkah `paket` —
+`mtime` bukan bukti basi, isinya yang bukti. Skrip itu tidak bisa lagi menghapus
+`node_modules`, `package-lock.json`, `app.asar`, artefak build, basis data, atau profil
+pengguna; §27 `validation-check` menahannya demikian.
+
 Satu instance Electron pada satu waktu (mesin 3,8 GB RAM). Harness yang menyentuh
 profil wajib lewat `HEMS_DATA_DIR=D:/SANY/tmp-harness/r-<nama>`; `APPDATA` tidak
-dipakai untuk profil Chromium/paket — gunakan `--user-data-dir`.
+dipakai untuk profil Chromium/paket — gunakan `--user-data-dir`. Rantai memanggil
+Electron langsung dari `node_modules/electron/dist/electron.exe`, bukan `npx electron`
+(§4.12); kalau berkas itu belum ada, `regressi.sh` berhenti dengan `RAMBU` dan `exit 8`
+alih-alih menjalankan rantai setengah jalan.
