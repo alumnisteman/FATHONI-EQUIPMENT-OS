@@ -1,7 +1,9 @@
 # FATHONI EQUIPMENT OS — Laporan QA
-**Versi aplikasi**: 3.0.0 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
+**Versi aplikasi**: 3.0.1 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
-**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.079 assertion, 0 gagal.
+**Status**: Rilis terverifikasi. Rantai regresi penuh hijau dijalankan terhadap **paket jadi
+3.0.1** (bukan jalur dev): 15 langkah, 1.079 assertion, 0 gagal, `rusak: tidak`,
+`proses keluar tidak bersih: tidak`, `npm audit` 0 kerentanan tinggi/kritis.
 
 Laporan ini menggantikan laporan 2026-09-23 (HEMS 1.0.0). Laporan lama itu sudah tidak
 berlaku dan sengaja ditulis ulang, bukan ditambal: ia menyebut localStorage sebagai
@@ -13,14 +15,27 @@ Matriks rinci tiap assertion ada di `tests/harness/README.md`; dokumen ini ringk
 
 ## 1. Yang berubah sejak laporan 1.0.0
 
-| Aspek | 1.0.0 (laporan lama) | 3.0.0 (hari ini) |
+| Aspek | 1.0.0 (laporan lama) | 3.0.1 (hari ini) |
 |---|---|---|
 | Penyimpanan | `localStorage` (hems_*), kuota ~5 MB | SQLite (`fathoni.db`, better-sqlite3 11.10.0, WAL) di main process; 18 collection |
 | Akses data | seluruh store disalin ke renderer saat boot | halaman besar query berpaginasi (`MAX_PAGE_LIMIT` 500); boot memindahkan **0 baris** lewat IPC |
 | Akun & login | kredensial di sisi renderer | hash+salt di main process, token sesi, wajib ganti password, lockout 5x salah, `accounts.json` tanpa plaintext |
 | Tulis data | `setX(wholeArray)` | jalur per-baris (`dbPatch`: upsert/removeIds) + aturan rujukan saat hapus; simpanan penuh hanya kalau collection terbukti terdimuat penuh |
 | Pengujian | manual saja | 14 harness otomatis + audit dependensi, dijalankan berurutan oleh `tests/harness/regressi.sh` |
-| Paket | `HEMS-Setup-1.0.0.exe` 92,8 MB, ikon bawaan | `FATHONI-Setup-3.0.0.exe` 79,3 MiB, ikon exe sendiri, asar ramping (hanya `dist`, `dist-electron`, `better-sqlite3`) |
+| Paket | `HEMS-Setup-1.0.0.exe` 92,8 MB, ikon bawaan | `FATHONI-Setup-3.0.1.exe` 79,3 MiB, ikon exe sendiri, asar ramping (hanya `dist`, `dist-electron`, `better-sqlite3`) |
+
+**Kenapa 3.0.1 dan bukan 3.0.0.** Artefak `FATHONI-Setup-3.0.0.exe` dibangun
+2026-10-10 23:20, sebelum empat perbaikan terakhir: #71 (nomor dokumen bersumber dari
+SQLite), #72 (field array pada baris cetak), #73 (urutan sidebar mengikuti siklus
+proyek), #75 (satu daftar menu untuk palette dan pencarian topbar). Paket lama tidak
+bisa dinyatakan lulus untuk perbaikan yang tidak ada di dalamnya, jadi versi dinaikkan
+lalu seluruh rantai — termasuk uji asap paket — dijalankan ulang terhadap paket baru.
+Yang diuji adalah `dist-app/win-unpacked` hasil build 2026-10-11 09:59: manifest di
+dalam `app.asar` berbunyi `3.0.1`, `dist/assets/Settings-*.js` dan `index-*.js`
+membawa string versi itu, `FileVersion`/`ProductVersion` pada `FATHONI.exe` 3.0.1, dan
+asar tetap hanya berisi `dist`, `dist-electron`, `better-sqlite3` beserta dependensi
+runtime-nya (0 file `.map`/`.pdb`). Artefak 3.0.0 ditinggalkan apa adanya di
+`dist-installer/` sebagai catatan sejarah; yang diluncurkan adalah 3.0.1.
 
 ## 2. Matriks jenis pengujian
 
@@ -214,7 +229,9 @@ lalu dilihat FAIL) — bukan hanya hijau pada kode yang sudah benar.
   backfill profil live (`ensureColumns`, `DERIVED_REVISION` 5→6) dan masih menunggu
   keputusan.
 - **Artefak lama di repo**: `dist-installer/HEMS-Setup-1.0.0.exe`,
-  `installer/dist-installer/HEMS-Setup-*.exe`, `dist-electron-portable` (156 MB,
+  `installer/dist-installer/HEMS-Setup-*.exe`, bekas `FATHONI-Setup-2.0.0.exe` dan
+  `FATHONI-Setup-3.0.0.exe` (yang terakhir dibangun sebelum #71–#75 sehingga tidak
+  layak edar), `dist-electron-portable` (156 MB,
   `app.asar` terkunci proses), dan dependensi Prisma (~111 MB) yang tidak dipakai.
   Tidak ada yang dihapus tanpa persetujuan.
 

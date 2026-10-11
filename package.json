@@ -1,6 +1,6 @@
 {
   "name": "hems-heavy-equipment-system",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "FATHONI EQUIPMENT OS - Sistem Operasional Alat Berat Terintegrasi (Multi-Brand Desktop ERP)",
   "author": "CV. MUGHNY NAMASKARABUMI KURNIA",
   "main": "dist-electron/main.js",

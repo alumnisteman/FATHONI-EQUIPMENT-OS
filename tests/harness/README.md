@@ -153,9 +153,13 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11): migration 49, unit/`validation-check` 277,
+Hasil yang diharapkan (rantai 2026-10-11 terhadap **paket 3.0.1**, bukan jalur dev):
+migration 49, unit/`validation-check` 277,
 auth 58, gui 72, flow 30, handoff 123, usable 37, db 136, integritas 68, compat 30,
 perf 37, store 47, backup 87, smoke-paket 28 — 1.079 assertion, seluruhnya tanpa FAIL.
+Angka yang sama keluar sebelum paket dibangun (rantai sumber pagi itu); langkah
+`smoke-paket` adalah yang membuktikan paket jadi ikut sekuat sumber, dan itulah
+sebabnya installer lama 3.0.0 tidak dipakai sebagai bukti rilis.
 Delapan jenis uji yang diminta terpetakan begitu: unit (validation-check, auth-check, db-check), fungsional
 (flow-check, handoff-check), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7),
 keamanan (gui-check bagian 11 dan 13, db-check bagian 12), kegunaan (flow-check menuntun

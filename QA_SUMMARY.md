@@ -1,10 +1,16 @@
-# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.0.0
+# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.0.1
 **Tanggal**: 2026-10-11
 **Rincian**: `QA_REPORT.md` (laporan lengkap) dan `tests/harness/README.md` (matriks assertion per cacat)
 
 ## Verdict
 
-Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
+Rilis 3.0.1 terverifikasi pada mesin Windows ini, dan yang diuji adalah **paket jadi**
+(bukan jalur dev): seluruh rantai dijalankan terhadap `dist-app/win-unpacked` hasil
+build 2026-10-11 09:59, yang manifest di dalam `app.asar`-nya berbunyi 3.0.1.
+Installer `FATHONI-Setup-3.0.0.exe` (dibangun 2026-10-10 23:20) berisi sumber sebelum
+perbaikan #71–#75 masuk, jadi paket itu tidak boleh dinyatakan lulus atas nama versi
+hari ini — karena itu versi dinaikkan dan rantai diulang dari nol. Hasilnya sama
+hijau seperti rantai sumber pagi tadi:
 **15 langkah, 1.079 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
 `npm audit` 0 kerentanan tinggi/kritis.
 
@@ -63,9 +69,10 @@ Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
   layar pada profil DEALER (usable 7.1–7.4: palette == sidebar sebutir-butir, kata
   kunci "onderdil" membuka `/spareparts`, "sewa" tidak membocorkan `/rental`) dan
   dikunci validation 25 (QA_REPORT §4.8).
-- **Paket**: `dist-installer/FATHONI-Setup-3.0.0.exe` (79,3 MiB), asar hanya berisi
+- **Paket**: `dist-installer/FATHONI-Setup-3.0.1.exe` (79,3 MiB), asar hanya berisi
   `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
-  dipertahankan.
+  dipertahankan. `FileVersion`/`ProductVersion` pada `FATHONI.exe` 3.0.1, dan
+  `2.0.0`/`3.0.0` dibiarkan utuh di `dist-installer/` — hanya 3.0.1 yang layak edar.
 
 ## Yang belum terbukti (jangan dinyatakan lulus)
 
