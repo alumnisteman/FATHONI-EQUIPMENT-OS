@@ -2,10 +2,10 @@
 **Versi aplikasi**: 3.0.2 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
 **Status**: Rilis terverifikasi. Rantai regresi penuh hijau dijalankan setelah paket
-**3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.170 assertion, 0 gagal, `rusak: tidak`,
+**3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.175 assertion, 0 gagal, `rusak: tidak`,
 `proses keluar tidak bersih: tidak` — untuk pertama kalinya **setiap** langkah Electron
 juga keluar dengan kode 0, karena rantai tidak lagi memanggil Electron lewat `npx`
-(§4.12). Rantai terakhir dijalankan terhadap paket yang sama: `rantai-302h.log`;
+(§4.12). Rantai terakhir dijalankan terhadap paket yang sama: `rantai-302i.log`;
 `npm audit` 0 kerentanan tinggi/kritis. Langkah
 terakhir rantai (`smoke-paket`) menguji `FATHONI.exe` HASIL PAKET; harness lain menguji
 `dist/` + `dist-electron/` yang dibundel ke dalam asar paket itu — dibuktikan dengan mengekstrak
@@ -65,6 +65,13 @@ penjaga baru di unit (297). Rantai penuh sesudah itu: **16 langkah, 1.170 assert
 0 gagal** (`rantai-302h.log`), dan `app.asar` paket dibandingkan ulang dengan hasil build
 sumber — tetap identik, jadi 3.0.2 masih versi yang dibuktikan.
 
+Siklus setelahnya (§4.14) juga tidak menyentuh `src/` atau `electron/`: yang berubah adalah
+`build-installer.ps1` (jalur signing diberi preflight + diagnostik kegagalan) dan lima
+penjaga baru di `validation-check` §29 yang mengunci bentuk jalur itu. Unit jadi **302**,
+rantai penuh diulang: **16 langkah, 1.175 assertion, 0 gagal** (`rantai-302i.log`).
+`app.asar` paket 3.0.2 tidak dibangun ulang — `build-installer.ps1` tidak ikut terbundel
+ke asar, jadi bukti paket lama tetap berlaku dan versi tetap 3.0.2.
+
 Sejarah kenaikan 3.0.1: artefak `FATHONI-Setup-3.0.0.exe` dibangun
 2026-10-10 23:20, sebelum empat perbaikan terakhir: #71 (nomor dokumen bersumber dari
 SQLite), #72 (field array pada baris cetak), #73 (urutan sidebar mengikuti siklus
@@ -76,13 +83,13 @@ pola yang sama berulang untuk 3.0.2 di atas.
 ## 2. Matriks jenis pengujian
 
 Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11
-terakhir (`tmp-harness/logs/rantai-302h.log`, dijalankan setelah dua jebakan harness di
-§4.13 ditutup): 16 langkah, 1.170 assertion, `rusak: tidak`, dan **setiap langkah
+terakhir (`tmp-harness/logs/rantai-302i.log`, dijalankan setelah jalur signing diukur di
+§4.14): 16 langkah, 1.175 assertion, `rusak: tidak`, dan **setiap langkah
 Electron keluar dengan kode 0** — bukan hanya "penanda bilang nol".
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 297 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), peta hidrasi per rute (§4.9), + penjaga statis (§5), termasuk empat penjaga bentuk-kode terbaru (§5), dan dua penjaga cara harness menunggu/membuka jendela (§4.13) |
+| **Unit** | `validation-check` | 302 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), peta hidrasi per rute (§4.9), + penjaga statis (§5), termasuk empat penjaga bentuk-kode terbaru (§5), dua penjaga cara harness menunggu/membuka jendela (§4.13), dan lima penjaga bentuk jalur signing (`build-installer.ps1`, §4.14) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
 | **Fungsional** | `gui-check`, `flow-check`, `usable-check`, `cetak-check` | 73 + 30 + 37 + 67 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16; tiga pintu masuk menu (sidebar, cari di topbar, Ctrl+K) menawarkan daftar yang sama dan sama-sama tergerbang profil/peran — usable 7.1–7.4; **sepuluh dokumen cetak benar-benar diklik** dan isi jendela cetak dibandingkan dengan aplikasi aslinya (cetak 1–9, §4.10); tautan luar diblokir sebagai jendela Electron **dan** URL-nya tercatat diserahkan ke browser sistem (gui 8.1 + 8.1b), tanpa ada browser yang benar-benar terbuka lagi (§4.13) |
 | **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7); dibaca hanya setelah penanda halaman benar-benar selesai, bukan saat masih "memuat" (§4.13) |
@@ -406,7 +413,47 @@ menjadi detik-menit dan itu titik pertama yang harus diubah, misal dengan FTS5),
     `!/memuat/` di `handoff-check` membuat penjaga ini FAIL dan unit turun ke 296/1;
     setelah dikembalikan, 297/0.
 
-Pola yang menyatukan ketiga belas temuan itu: yang rusak bukan satu menu, melainkan asumsi bahwa
+### 4.14 Jalur signing diukur dengan sertifikat uji — dan ia gagal di tempat yang salah
+
+Plumbing signing (#80) sudah ditulis tetapi **tidak pernah dijalankan sekali pun**. Ia
+diukur sekarang, di sandbox (`C:\tmp\sign-test`) memakai sertifikat self-signing uji,
+terhadap salinan PE yang benar-benar belum bertanda tangan (salinan `cat.exe` Git —
+salinan `chcp.com` tetap membawa tanda tangan Microsoft meski `signtool remove /s`
+sudah dijalankan, jadi hasil pertama tidak berarti). Tiga hal terukur:
+
+1. `signtool sign /fd SHA256 /tr <TSA>` dengan timestamp **tidak terjangkau** keluar 1
+   dan berkasnya **tinggal tanpa tanda tangan** — bukan tanda tangan tanpa timestamp,
+   jadi build yang mengabaikan kode keluar akan memproduksi paket separuh bertanda.
+2. Tanda tangan dari sertifikat **tidak dipercaya** Windows menempel dengan rapi, tapi
+   `signtool verify /pa` keluar 1 dan `Get-AuthenticodeSignature` melaporkan
+   `UnknownError`/`NotTrusted`. Untuk sertifikat OV/EV resmi kegagalan ini tidak boleh
+   terjadi; untuk sertifikat uji, kegagalan itu benar dan paketnya memang tidak layak
+   diedarkan.
+3. Keduanya baru diketahui di **langkah 5 dari 6**, yaitu ±15 menit setelah
+   `npm run build` dimulai — mesin build offline kehilangan tiga perempat jamnya hanya
+   untuk diberi tahu bahwa pfx/password/TSA-nya salah.
+
+Yang diubah: `build-installer.ps1` kini memverifikasi prasyarat signing (`signtool.exe`
+ditemukan dan berkas pfx yang ditunjuk `HEMS_SIGN_PFX` benar-benar ada) **sebelum**
+langkah build pertama, dan mencetak jalur yang dipakai (`sign AKTIF via …`), dan `Sign-Exe` memanggil `sign` lalu `verify /pa` dengan
+diagnostik yang menyebut penyebab tersering. Mode "tanpa pfx" tetap dicetak terang
+(`LEWAT sign: paket ini TIDAK ditandatangani`) supaya tidak pernah ada paket yang
+diduga sudah bertanda padahal tidak. *Penjaga*: validation 29 mengunci bentuk blok itu
+— prasyarat harus berada sebelum `npm run build`, `/fd SHA256` + `/tr $signTs` +
+`/td SHA256` harus ada, kedua perintah harus di-follow `throw` saat kode keluar bukan
+nol, `Sign-Exe` harus dipanggil untuk `FATHONI.exe` **dan** installer, dan pesan
+"LEWAT sign" harus tetap ada. Kalibrasi penjaga ini dilakukan dengan merusak berkas
+build-nya sendiri: `/tr $signTs` dihapus dari baris `signtool sign` → validation 29
+FAIL dan unit turun ke 301/1; setelah klausul itu dikembalikan → **302/0**.
+
+Ini **bukan** perubahan isi paket: `build-installer.ps1` tidak ikut terbundel —
+`build.files` hanya `dist/**`, `dist-electron/**` dan `better-sqlite3`. Karena itu
+bukti `app.asar` 3.0.2 tetap berlaku dan versi tidak naik; yang berubah hanya cara
+installer berikutnya akan ditandatangani. Keputusan membeli sertifikat OV/EV tetap ada
+di sisi user (§7); tanpa itu jalur ini tidak diaktifkan dan paket tetap tanpa tanda
+tangan.
+
+Pola yang menyatukan keempat belas temuan itu: yang rusak bukan satu menu, melainkan asumsi bahwa
 data yang dibaca selalu lengkap, selalu berasal dari jalur yang sama, dan selalu
 diceritakan dengan cara yang sama di setiap tempat — dan bahwa alat yang dipakai untuk
 "merapikan" serta cara uji diakhiri sudah pasti aman.
@@ -414,7 +461,7 @@ diceritakan dengan cara yang sama di setiap tempat — dan bahwa alat yang dipak
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
 
-`validation-check` §12, §15–§28 menahan bentuk kode, bukan hanya hasilnya:
+`validation-check` §12, §15–§29 menahan bentuk kode, bukan hanya hasilnya:
 peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataStore`;
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
@@ -443,7 +490,7 @@ lalu dilihat FAIL) — bukan hanya hijau pada kode yang sudah benar. Dua penjaga
 dimutasi siklus ini: bacaan `daftar(item.certifications)` di Technicians sempat dikembalikan
 menjadi bacaan mentah dan §24 memang jatuh (280 lulus, 1 gagal) sebelum sumber dipulihkan.
 
-Empat penjaga bentuk-kode baru menyusul setelah penutup §4.11–§4.13, dan keempatnya
+Lima penjaga bentuk-kode baru menyusul setelah penutup §4.11–§4.14, dan semuanya
 lahir dari temuan yang hampir tidak terlihat:
 
 - **§15 ditulis ulang supaya tidak bisa basi.** Daftar harness Electron dulunya
@@ -486,11 +533,25 @@ lahir dari temuan yang hampir tidak terlihat:
   `shell.openExternal` lebih dulu, supaya tidak ada uji yang lagi-lagi membuktikan
   dirinya lewat jendela yang terbuka di desktop manusia.
 
-Keempat penjaga baru ini juga dimutasi, bukan hanya dilihat hijau: BOM `build-installer.ps1`
+- **§29 mengunci bentuk jalur signing (§4.14).** Lima assertion membaca berkas
+  `build-installer.ps1` apa adanya: periksa-signtool dan periksa-pfx harus berada
+  BARIS sebelum `& npm run build` (dibandingkan lewat indeks baris, bukan ditebak dari
+  teks); baris `signtool sign` wajib `/fd SHA256`, `/tr $signTs` dan `/td SHA256`
+  dengan `$signTs` didefinisikan satu kali; setiap panggilan `signtool` wajib diikuti
+  `if ($LASTEXITCODE -ne 0) { throw … }` untuk `sign` maupun `verify /pa`; `Sign-Exe`
+  wajib dipanggil untuk `appExe` DAN target ber-nama setup (penjaga non-vakum: kalau
+  hanya satu yang ditandatangani, daftar pemanggilan dicetak di pelanggarannya); dan
+  pesan `LEWAT sign: paket ini TIDAK ditandatangani` tidak boleh hilang, supaya jalur
+  tanpa sertifikat tetap terang, bukan diam-diam.
+
+Kelima penjaga baru ini juga dimutasi, bukan hanya dilihat hijau: BOM `build-installer.ps1`
 dikupas sehingga §27 jatuh, dan jalur ISCC diubah menunjuk `installer.iss` sehingga kedua
 penjaga `.iss` jatuh. Untuk §28, klausul `!/memuat/` di salah satu wait `handoff-check`
 dihapus sengaja — penjaganya langsung FAIL dan unit turun ke 296 lulus / 1 gagal, dengan
 kutipan panggilan yang salah di daftar pelanggarannya; sumber dipulihkan dan hijau kembali.
+Untuk §29, `signtool sign /tr $signTs` sempat dikembalikan menjadi `signtool sign` tanpa
+timestamp di `build-installer.ps1` — assertion kedua jatuh (301 lulus / 1 gagal) dan
+mencetak baris yang melanggar; setelah klausul itu dipasang lagi, unit hijau 302/0.
 
 ## 6. Yang BELUM diverifikasi (perbatasan laporan ini)
 
@@ -500,11 +561,13 @@ kutipan panggilan yang salah di daftar pelanggarannya; sumber dipulihkan dan hij
   melaporkan tidak ada pemotongan. Variasi scaling Windows, 4K, dan netbook belum.
 - **Perangkat keras**: tidak ada uji printer sejati, scanner, atau perangkat keras
   lapangan.
-- **Code signing**: `build-installer.ps1` sudah punya jalur signing opsional (`HEMS_SIGN_PFX`
-  + `HEMS_SIGN_PASS` → `signtool sign` SHA256 + timestamp DigiCert, lalu `verify /pa`;
-  tanpa variabel itu ia mencetak `LEWAT sign` dan laporan akhir menyebut
-  `TIDAK TERSIGN`). Yang belum ada adalah **sertifikatnya** (OV/EV masih keputusan
-  pembelian), jadi paket ini tetap akan memicu SmartScreen pada pengguna baru.
+- **Code signing**: jalur signing-nya sudah **diukur berjalan** (§4.14) memakai sertifikat
+  uji self-signed di sandbox: `signtool sign /fd SHA256 /tr … /td SHA256` menempelkan
+  tanda tangan, `verify /pa` menolak rantai yang tidak dipercaya, dan bentuk kegagalan
+  timestamp yang meninggalkan exe tanpa tanda tangan sudah diketahui. Yang belum ada
+  tetap **sertifikatnya** (OV/EV masih keputusan pembelian), jadi paket ini masih akan
+  memicu SmartScreen pada pengguna baru — dan sertifikat uji tidak boleh dipakai untuk
+  edaran, karena `verify /pa`-nya memang gagal.
 - **Walkthrough usability oleh manusia**: semua yang tercatat di §2 adalah pengukuran
   otomatis; tidak ada sesi diterimanya alur kerja oleh pemakai sebenarnya.
 - **Yang tersisa dari bukti cetak**: `cetak-check` mengklik tombol cetak di 10 layar dan

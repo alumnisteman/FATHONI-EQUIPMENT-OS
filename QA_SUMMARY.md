@@ -9,8 +9,9 @@ diedarkan: `dist-app/win-unpacked` + `dist-installer/FATHONI-Setup-3.0.2.exe` (b
 2026-10-11 12:44, manifest di dalam `app.asar` berbunyi 3.0.2, `FileVersion`/
 `ProductVersion` `FATHONI.exe` 3.0.2, asar tanpa satu pun `.map`/`.pdb`). Sumber berubah
 SESUDAH paket 3.0.1 dibangun, jadi bukti 3.0.1 tidak dipinjam: versi dinaikkan, paket
-dibangun ulang, lalu rantai diulang dari nol. Hasilnya **16 langkah, 1.170 assertion,
-0 gagal** (`tmp-harness/logs/rantai-302h.log`), `rusak: tidak`,
+dibangun ulang, lalu rantai diulang dari nol. Hasil rilis 3.0.2: **16 langkah,
+1.175 assertion, 0 gagal** (`tmp-harness/logs/rantai-302i.log`, menyusul
+`rantai-302h.log` 1.170 sebelum penjaga signing §29), `rusak: tidak`,
 `proses keluar tidak bersih: tidak` — dan untuk pertama kalinya
 baris `exit=` bernilai 0 di **setiap** langkah, termasuk sepuluh langkah Electron, karena
 rantai tidak lagi memanggil Electron lewat `npx` (QA_REPORT §4.12). `npm audit` 0 kerentanan
@@ -19,7 +20,7 @@ tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 297 |
+| unit (`validation-check`) | 302 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 73 |
 | flow (fungsional) | 30 |
@@ -100,10 +101,13 @@ tinggi/kritis — plus lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`
   hasil build sumber: tetap identik byte per byte (QA_REPORT §4.13).
 - **Paket**: `dist-installer/FATHONI-Setup-3.0.2.exe` (79,3 MiB), asar hanya berisi
   `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
-  dipertahankan. `build-installer.ps1` kini punya jalur signing opsional
+  dipertahankan. `build-installer.ps1` punya jalur signing opsional
   (`HEMS_SIGN_PFX`/`HEMS_SIGN_PASS` → `signtool sign` SHA256 + timestamp + `verify /pa`,
   dan laporan akhir menyebut status tanda tangan); tanpa sertifikat ia mencetak
-  `LEWAT sign` dan paket dilaporkan apa adanya sebagai **TIDAK TERSIGN**.
+  `LEWAT sign` dan paket dilaporkan apa adanya sebagai **TIDAK TERSIGN**. Jalur itu sudah
+  diukur dengan sertifikat uji di sandbox (QA_REPORT §4.14) dan diberi periksa-di-depan
+  supaya kegagalan tanda tangan tidak lagi baru muncul di langkah 5 dari 6; bentuknya
+  dikunci validation §29 (302 assertion).
   `2.0.0`/`3.0.0`/`3.0.1` dibiarkan utuh di `dist-installer/` — hanya 3.0.2 yang layak edar.
 
 ## Yang belum terbukti (jangan dinyatakan lulus)

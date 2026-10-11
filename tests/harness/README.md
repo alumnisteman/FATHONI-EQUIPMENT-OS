@@ -218,12 +218,12 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11 `tmp-harness/logs/rantai-302h.log` terhadap
+Hasil yang diharapkan (rantai 2026-10-11 `tmp-harness/logs/rantai-302i.log` terhadap
 **paket 3.0.2** — `dist`/`dist-electron` yang dibundel ke asar paket itu, dibuktikan
 byte-identik dengan hasil build):
-migration 49, unit/`validation-check` 297,
+migration 49, unit/`validation-check` 302,
 auth 58, gui 73, flow 30, handoff 123, usable 37, cetak 67, db 136, integritas 68, compat 30,
-perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.170 assertion, seluruhnya tanpa FAIL,
+perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.175 assertion, seluruhnya tanpa FAIL,
 `rusak: tidak`, `proses keluar tidak bersih: tidak`, dan `exit=0` di setiap langkah
 (ini baru bermakna sejak rantai memanggil `electron.exe` langsung, bukan `npx`).
 Rantai penuh memakan ±15 menit dan **tidak boleh dijalankan dua-duanya sekaligus**:
@@ -646,6 +646,7 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | ISCC dipanggil dengan `installer.iss` basi di root (`Source` menunjuk `dist-electron-portable`, `AppVersion "1.0.0"`): paket berisi folder mati dan tetap lulus compile | unit 14: `build-installer.ps1` wajib menyebut `installer\FATHONI-InnoSetup.iss`, dan tidak ada berkas jalur build yang boleh memanggil `.iss` root (dimutasi dengan membelokkan jalur ISCC — kedua penjaga jatuh) |
 | Wait harness menguji `/record/` pada `#pager-info` sebagai "kueri selesai", padahal `Pager.tsx` juga menulis "Tidak ada record" selama `total` masih 0 — jadi teks loading pun cocok. Rantai-302f jatuh di handoff 8.1 (`sql=2, kartu=0`) karena ini, bukan karena aplikasinya | unit 28: setiap `waitFor` yang menyebut `#pager-info` wajib punya `!/memuat/` ATAU `/dari … record/`; kontrol positif menuntut ≥15 wait terdeteksi dan ≥3 di antaranya menguji `/record/` apa adanya (dimutasi dengan menghapus satu klausul `!/memuat/` di handoff-check — FAIL langsung, 296/1) |
 | Harness membuktikan dirinya lewat desktop manusia: `gui-check` bagian 8 membuka `window.open('https://example.com')`, handler menyerahkannya ke `shell.openExternal`, dan Chrome sungguhan terbuka setiap langkah `gui` dijalankan | unit 28: harness yang memanggil `window.open` wajib menambal `shell.openExternal` dengan perekam lebih dulu, dan hasil tambalan itu wajib dipakai sebagai assertion (gui 8.1b) — bukan dibuktikan dengan jendela yang muncul di layar pengguna |
+| Signing gagal di tempat yang salah: `HEMS_SIGN_PFX` diset tapi `signtool.exe`/pfx-nya tidak ada, atau timestamp tidak terjangkau, dan kegagalan itu baru muncul di langkah 5 dari 6 — ±15 menit build tertelan, meninggalkan exe TANPA tanda tangan. `verify /pa` untuk rantai tak dipercaya (sertifikat uji) juga keluar 1 | unit 29: periksa `signtool` + pfx wajib berada di baris sebelum `& npm run build`; baris sign wajib `/fd SHA256 /tr $signTs /td SHA256` dengan `$signTs` satu kali; `sign` dan `verify /pa` wajib diikuti `throw` saat kode keluar bukan nol; `Sign-Exe` wajib dipanggil untuk `appExe` DAN setup; pesan `LEWAT sign: paket ini TIDAK ditandatangani` tidak boleh hilang (dimutasi dengan melepas `/tr $signTs` — FAIL, 301/1; dipasang lagi — 302/0) |
 
 ## PREFLIGHT lingkungan (`auto-fix.ps1` di root repo)
 

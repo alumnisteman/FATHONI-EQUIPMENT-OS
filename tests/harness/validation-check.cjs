@@ -1153,6 +1153,44 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   check('harness: penambalan openExternal benar-benar dipakai sebagai assertion (tidak vakum)',
     /shell\.openExternal\s*=/.test(BERSIH_KOMENTAR(fs.readFileSync(path.join(__dirname, 'gui-check.cjs'), 'utf8'))),
     undefined);
+
+  // ── 29. jalur signing opsional tidak boleh menjadi kejutan di menit ke-15 ──
+  // Plumbing-nya sudah ada (#80) tapi belum pernah dijalankan sampai siklus ini,
+  // dan pengukuran dengan sertifikat self-signed di C:\tmp menunjukkan dua hal yang
+  // tidak bisa dilihat dari membaca kode: (1) `signtool sign` dengan /tr yang tidak
+  // terjangkau keluar 1 dan meninggalkan exe TANPA tanda tangan — di mesin build yang
+  // sedang offline, skrip lama baru mati di langkah 5, setelah npm build + bundel +
+  // branding tertelan; (2) `verify /pa` keluar 1 untuk rantai yang tidak dipercaya,
+  // jadi sertifikat uji tidak akan pernah menghasilkan paket yang layak edar. Kini
+  // prasyaratnya diperiksa di depan, dan bentuk perintahnya dikunci di sini.
+  const PENYATUAN = fs.readFileSync(path.join(ROOT, 'build-installer.ps1'), 'utf8');
+  const GARIS_PS = PENYATUAN.split(/\r?\n/);
+  const BARIS = (re) => GARIS_PS.findIndex((l) => re.test(l));
+  const BANGUN = BARIS(/&\s+npm\s+run\s+build\b/);
+  const CEK_SIGNTOOL = BARIS(/throw\s+"HEMS_SIGN_PFX diset tapi signtool\.exe/);
+  const CEK_PFX = BARIS(/throw\s+"HEMS_SIGN_PFX menunjuk berkas/);
+  check('signing: signtool + pfx diverifikasi SEBELUM langkah build apa pun',
+    BANGUN > 0 && CEK_SIGNTOOL > 0 && CEK_PFX > 0 && CEK_SIGNTOOL < BANGUN && CEK_PFX < BANGUN,
+    { BANGUN: BANGUN + 1, CEK_SIGNTOOL: CEK_SIGNTOOL + 1, CEK_PFX: CEK_PFX + 1 });
+  const PANGGIL_SIGN = BARIS(/&\s+\$signtool\s+sign\b/);
+  const BARIS_SIGN = GARIS_PS.slice(PANGGIL_SIGN, PANGGIL_SIGN + 1).join('');
+  check('signing: SHA256 + timestamp + /td SHA256 dipakai dari satu variabel, bukan dua tempat',
+    /^\$signTs\s*=\s*'https?:\/\//m.test(PENYATUAN)
+      && /\/fd\s+SHA256/.test(BARIS_SIGN) && /\/tr\s+\$signTs/.test(BARIS_SIGN)
+      && /\/td\s+SHA256/.test(BARIS_SIGN),
+    { BARIS_SIGN });
+  check('signing: setiap kegagalan signtool menghentikan build (tidak ada jalur diam-diam)',
+    /if\s+\(\$LASTEXITCODE -ne 0\)\s*\{\s*$/.test(GARIS_PS[PANGGIL_SIGN + 1] || '')
+      && /throw\s+"signtool GAGAL/.test(PENYATUAN)
+      && /&\s+\$signtool\s+verify\s+\/pa/.test(PENYATUAN)
+      && /throw\s+"signtool verify \/pa GAGAL/.test(PENYATUAN), undefined);
+  const PANGGILAN_SIGN = [...PENYATUAN.matchAll(/Sign-Exe\s+\$?(\w+)/g)].map((m) => m[1]);
+  check('signing: binary aplikasi DAN installer keduanya melewati Sign-Exe (penjaga tidak vakum)',
+    PANGGILAN_SIGN.includes('appExe') && PANGGILAN_SIGN.some((x) => /setup/i.test(x)),
+    { PANGGILAN_SIGN });
+  check('signing: tanpa HEMS_SIGN_PFX skrip tetap menyebut paket TIDAK tersign',
+    /LEWAT sign: paket ini TIDAK ditandatangani/.test(PENYATUAN)
+      && /Tersign|TERSIGN|status tanda tangan/.test(PENYATUAN), undefined);
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

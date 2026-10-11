@@ -29,24 +29,44 @@ Write-Host "==========================================" -ForegroundColor Cyan
 #   HEMS_SIGN_PASS : password .pfx (atau lewat HEMS_SIGN_PASS, jangan ditulis di repo)
 $signPfx = $env:HEMS_SIGN_PFX
 $signPass = $env:HEMS_SIGN_PASS
+$signTs = 'http://timestamp.digicert.com'
 $signtool = $null
 if ($signPfx) {
     $candidates = @((Get-Command signtool.exe -ErrorAction SilentlyContinue).Source)
     $candidates += Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
         Sort-Object FullName -Descending | Select-Object -ExpandProperty FullName
     $signtool = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+    # Kegagalan tanda tangan harus diketahui SEBELUM pekerjaan build yang memakan
+    # +-15 menit, bukan sesudahnya. Diukur di mesin ini dengan sertifikat
+    # self-signed di C:\tmp: `signtool sign` dengan /tr yang tidak terjangkau
+    # keluar 1 dan meninggalkan exe TANPA tanda tangan, dan `verify /pa` keluar 1
+    # untuk rantai yang tidak dipercaya. Build offline karena itu tetap berhenti
+    # (sengaja: paket separuh bertanda lebih buruk daripada tidak ada paket), tapi
+    # berhenti di sini, bukan di langkah 5 setelah semua hasil build tertelan.
+    if (-not $signtool) {
+        throw "HEMS_SIGN_PFX diset tapi signtool.exe tidak ditemukan (Windows Kits\10\bin\*\x64)."
+    }
+    if (-not (Test-Path $signPfx)) { throw "HEMS_SIGN_PFX menunjuk berkas yang tidak ada: $signPfx" }
+    Write-Host "  sign AKTIF via $signtool, pfx ada, timestamp $signTs" -ForegroundColor DarkGray
 }
 function Sign-Exe([string]$file) {
     if (-not $signPfx) {
         Write-Host "  LEWAT sign: paket ini TIDAK ditandatangani (HEMS_SIGN_PFX tidak diset)" -ForegroundColor Yellow
         return $false
     }
-    if (-not $signtool) { throw "signtool.exe tidak ditemukan padahal HEMS_SIGN_PFX diset" }
-    if (-not (Test-Path $signPfx)) { throw "pfx tidak ditemukan: $signPfx" }
-    & $signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /f "$signPfx" /p "$signPass" "$file" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "signtool gagal pada $file (kode $LASTEXITCODE)" }
+    # signtool sudah diverifikasi ada di blok periksa di atas.
+    # /tr bukan hiasan: tanpa timestamp, tanda tangan ikut mati pada tanggal
+    # kedaluwarsa sertifikat dan paket yang sudah diedarkan tidak bisa dibuka lagi
+    # dengan penjelasan. Kalau timestamp tidak terjangkau, signtool keluar 1 dan
+    # berkas TINGGAL TANPA tanda tangan (terukur) - jadi jangan pernah lanjut.
+    & $signtool sign /fd SHA256 /tr $signTs /td SHA256 /f "$signPfx" /p "$signPass" "$file" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "signtool GAGAL pada $file (kode $LASTEXITCODE). Penyebab tersering: timestamp $signTs tidak terjangkau (mesin build offline) atau pfx/password salah. Berkas itu masih tanpa tanda tangan - build dihentikan sengaja, paket separuh bertanda lebih buruk daripada tidak ada paket."
+    }
     & $signtool verify /pa /q "$file" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "signtool verify gagal pada $file" }
+    if ($LASTEXITCODE -ne 0) {
+        throw "signtool verify /pa GAGAL pada ${file} - tanda tangannya menempel tapi rantainya tidak dipercaya Windows. Untuk sertifikat OV/EV resmi ini tidak boleh terjadi; kalau yang dipakai sertifikat uji self-signed, kegagalan ini benar dan paketnya jangan diedarkan."
+    }
     Write-Host "  TERSIGN: $(Split-Path $file -Leaf)" -ForegroundColor Green
     return $true
 }
