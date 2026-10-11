@@ -5,7 +5,7 @@
 **3.0.2** dibangun (bukan jalur dev): 16 langkah, 1.165 assertion, 0 gagal, `rusak: tidak`,
 `proses keluar tidak bersih: tidak` — untuk pertama kalinya **setiap** langkah Electron
 juga keluar dengan kode 0, karena rantai tidak lagi memanggil Electron lewat `npx`
-(§5). `npm audit` 0 kerentanan tinggi/kritis. Langkah
+(§4.12). `npm audit` 0 kerentanan tinggi/kritis. Langkah
 terakhir rantai (`smoke-paket`) menguji `FATHONI.exe` HASIL PAKET; harness lain menguji
 `dist/` + `dist-electron/` yang dibundel ke dalam asar paket itu — dibuktikan dengan mengekstrak
 `app.asar` ke folder sementara lalu `diff -r`: `dist/` dan `dist-electron/` di dalam paket
@@ -305,6 +305,25 @@ menjadi detik-menit dan itu titik pertama yang harus diubah, misal dengan FTS5),
     karakter dan byte terakhirnya (0x94) adalah tanda kutip kiri — yang menutup string di
     tengah baris dan membuat skrip build mati dengan error parse yang terlihat tidak
     berhubungan. Keduanya kini ber-BOM, dan bentuk kesalahannya dijaga (§5).
+    **Dua kalibrasi yang ditemukan dengan menjalankan skripnya sendiri, bukan dengan
+    membacanya.** Pertama: ambang FAIL untuk RAM dulu ditaruh di 250 MB, padahal mesin ini
+    memang berdiam di 240–300 MB — jadi preflight melempar `FAIL=1` pada satu jalan dan
+    `FAIL=0` pada jalan berikutnya dengan isi repo yang sama persis (terdokumentasi: tiga
+    jalan beruntun, yang di tengah jatuh di 242 MB). Rantai penuh 16 langkah dan build
+    rilis keduanya selesai hijau pada 269 MB bebas, jadi vonis itu salah. FAIL kini
+    disimpan untuk keadaan yang benar-benar tidak bisa dijalankan (< 128 MB), sementara
+    tekanan memori yang hanya membuat pengukuran waktu tidak valid turun menjadi WARN —
+    rapor merah yang muncul terus-menerus adalah cara tercepat melatih orang mengabaikan
+    preflight. Kedua: tuduhan "app.asar lebih tua dari sumber" akan menempel selamanya
+    sebagai peringatan basi-palsu, karena dua berkas (`src/store/collectionNeeds.ts`,
+    `src/pages/Technicians.tsx`) punya mtime lebih baru dari paket hanya karena sempat
+    disentuh uji mutasi lalu dipulihkan — isinya sama dengan HEAD, jadi tidak ada yang
+    perlu dibundel ulang. Pemeriksaan kesegaran kini membandingkan **isi terhadap HEAD**,
+    bukan jam: selama `src/` dan `electron/` bersih terhadap commit, geseran mtime
+    dilaporkan sebagai OK lengkap dengan alasannya; begitu salah satu berkas benar-benar
+    berbeda, WARN-nya kembali (dimutasi dengan menambahkan satu baris komentar, kedua
+    peringatan terlihat muncul, sumber lalu dipulihkan dan `git status --porcelain -- src`
+    terbukti kosong lagi).
     *Penjaga*: validation 27 — daftar hitam perintah (`git clean`, `git reset`,
     `npm cache clean`, `npm install/ci`) dan daftar putih sasaran hapus (hanya berkas
     sementara, `node_modules/.vite`, `tmp-harness`) diberlakukan ke **semua** skrip root
@@ -340,7 +359,7 @@ menjadi detik-menit dan itu titik pertama yang harus diubah, misal dengan FTS5),
     menutup database sebelum `app.exit` dan mencetak penanda, dan `regressi.sh` tidak boleh
     kembali memakai `npx electron`.
 
-Pola yang menyatukan keduabelasnya: yang rusak bukan satu menu, melainkan asumsi bahwa
+Pola yang menyatukan kedua belas temuan itu: yang rusak bukan satu menu, melainkan asumsi bahwa
 data yang dibaca selalu lengkap, selalu berasal dari jalur yang sama, dan selalu
 diceritakan dengan cara yang sama di setiap tempat — dan bahwa alat yang dipakai untuk
 "merapikan" serta cara uji diakhiri sudah pasti aman.

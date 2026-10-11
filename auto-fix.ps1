@@ -187,21 +187,39 @@ function Waktu-BerkasObj([string]$rel) {
 }
 $srcTerbaru = Sumber-Terbaru @('src')
 $eleTerbaru = Sumber-Terbaru @('electron')
+# mtime cuma dugaan; yang membedakan "sumber berubah" dari "sumber cuma kesenggol"
+# adalah isinya dibanding HEAD. Berkas yang sempat dipakai uji mutasi lalu dipulihkan
+# punya mtime baru tapi isi sama dengan commit yang dibundel — menuduh paket basi
+# karena itu membuat peringatan yang benar ikut diabaikan. $null = git tidak
+# terjangkau, dan dalam keadaan itu kecurigaan mtime tetap dilaporkan.
+function Sumber-Sama-Dengan-HEAD([string]$Dir) {
+  try {
+    $keluar = @(& git -C $ROOT status --porcelain -- $Dir 2>$null)
+    if ($LASTEXITCODE -ne 0) { return $null }
+    return ($keluar.Count -eq 0)
+  } catch { return $null }
+}
+$srcHeadSama = Sumber-Sama-Dengan-HEAD 'src'
+$eleHeadSama = Sumber-Sama-Dengan-HEAD 'electron'
 $distHtml = Waktu-Berkas 'dist\index.html'
 $distMain = Waktu-Berkas 'dist-electron\main.js'
 $asarObj = Waktu-BerkasObj 'dist-app\win-unpacked\resources\app.asar'
 $asar = if ($asarObj) { $asarObj.LastWriteTime } else { $null }
 if (-not $distHtml) {
   Tambah-Hasil 'build renderer' 'WARN' 'dist/ belum ada; jalankan npm run build'
+} elseif ($srcTerbaru -and $distHtml -lt $srcTerbaru -and -not $srcHeadSama) {
+  Tambah-Hasil 'build renderer' 'WARN' ("dist/ lebih tua dari sumber di src/ yang isinya berbeda dari HEAD; rantai yang dijalankan sekarang menguji kode lama — npm run build")
 } elseif ($srcTerbaru -and $distHtml -lt $srcTerbaru) {
-  Tambah-Hasil 'build renderer' 'WARN' ("dist/ lebih tua dari sumber terbaru di src/; rantai yang dijalankan sekarang menguji kode lama — npm run build")
+  Tambah-Hasil 'build renderer' 'OK' ("mtime src/ lebih baru dari dist/ tapi isi src/ == HEAD — tidak ada yang berbeda untuk dibundel ulang")
 } else {
   Tambah-Hasil 'build renderer' 'OK' 'dist/ lebih baru dari seluruh src/'
 }
 if (-not $distMain) {
   Tambah-Hasil 'build electron' 'WARN' 'dist-electron/main.js belum ada; jalankan npm run build:electron'
+} elseif ($eleTerbaru -and $distMain -lt $eleTerbaru -and -not $eleHeadSama) {
+  Tambah-Hasil 'build electron' 'WARN' ("dist-electron/ lebih tua dari sumber di electron/ yang isinya berbeda dari HEAD ($eleTerbaru); jalankan npm run build:electron")
 } elseif ($eleTerbaru -and $distMain -lt $eleTerbaru) {
-  Tambah-Hasil 'build electron' 'WARN' ("dist-electron/ lebih tua dari sumber terbaru di electron/ ($eleTerbaru); jalankan npm run build:electron")
+  Tambah-Hasil 'build electron' 'OK' ("mtime electron/ lebih baru dari dist-electron/ tapi isinya == HEAD — tidak ada yang berbeda untuk dibundel ulang")
 } else {
   Tambah-Hasil 'build electron' 'OK' 'dist-electron/ lebih baru dari seluruh electron/'
 }
@@ -216,8 +234,10 @@ if (-not $asarObj) {
   Tambah-Hasil 'paket vs sumber' 'FAIL' 'dist-app/win-unpacked/resources/app.asar tidak ada — tidak ada paket untuk diuji; npm run make:installer'
 } else {
   $paketBasi = @($srcTerbaru, $eleTerbaru) | Where-Object { $_ -and $asar -lt $_ }
-  if ($paketBasi.Count -gt 0) {
-    Tambah-Hasil 'paket vs sumber' 'WARN' ("app.asar ($asar) lebih tua dari sumber terbaru; belum tentu isinya beda, tapi bukti rilis harus dibuktikan ulang lewat langkah 'paket' di rantai (sh tests/harness/regressi.sh) — kalau isinya memang berubah, bangun ulang dengan npm run make:installer")
+  if ($paketBasi.Count -gt 0 -and -not ($srcHeadSama -and $eleHeadSama)) {
+    Tambah-Hasil 'paket vs sumber' 'WARN' ("app.asar ($asar) lebih tua dari sumber yang isinya berbeda dari HEAD; belum tentu isinya ikut berubah, tapi bukti rilis harus dibuktikan ulang lewat langkah 'paket' di rantai (sh tests/harness/regressi.sh) — kalau isinya memang berubah, bangun ulang dengan npm run make:installer")
+  } elseif ($paketBasi.Count -gt 0) {
+    Tambah-Hasil 'paket vs sumber' 'OK' ('mtime sumber lebih baru dari app.asar, tapi src/ dan electron/ == HEAD ' + (& git -C $ROOT rev-parse --short HEAD) + ' — tidak ada yang berbeda untuk dipaketkan; vonis isi tetap langkah paket')
   } else {
     Tambah-Hasil 'paket vs sumber' 'OK' 'app.asar lebih baru dari seluruh sumber (bukti rilis paket ini masih berlaku)'
   }
@@ -252,10 +272,16 @@ if (Test-Path $setupDir) {
 Tulis-Judul '[4/6] Kondisi mesin'
 $os = Get-CimInstance Win32_OperatingSystem
 $bebasMB = [math]::Round($os.FreePhysicalMemory / 1KB)
-if ($bebasMB -lt 250) {
-  Tambah-Hasil 'RAM bebas' 'FAIL' ("$bebasMB MB bebas — build Vite dan Electron kemungkinan mati di tengah; tutup aplikasi lain, dan jangan jalankan dua harness paralel")
+# Ambang ini dikalibrasi pada mesin 3,8 GB ini, bukan pada mesin ideal. RAM bebas
+# normalnya duduk di 240-300 MB di sini, jadi garis FAIL yang ditaruh di 250 MB
+# menghasilkan koin: rantai penuh 16 langkah dan build rilis keduanya SELESAI hijau
+# pada 269 MB bebas (logs/rantai-302e.log). FAIL disimpan untuk keadaan yang benar-
+# benar tidak bisa dijalankan; tekanan memori yang cuma membuat pengukuran waktu
+# tidak valid adalah WARN, supaya rapor merah tidak dilatih untuk diabaikan.
+if ($bebasMB -lt 128) {
+  Tambah-Hasil 'RAM bebas' 'FAIL' ("$bebasMB MB bebas — Electron dan Vite tidak akan sempat mulai; tutup aplikasi lain sebelum membangun atau menjalankan rantai")
 } elseif ($bebasMB -lt 500) {
-  Tambah-Hasil 'RAM bebas' 'WARN' ("$bebasMB MB bebas — cukup untuk satu Electron/rantai, tapi jangan jalankan perintah berat paralel (pengukuran waktu jadi tidak valid)")
+  Tambah-Hasil 'RAM bebas' 'WARN' ("$bebasMB MB bebas — cukup untuk satu Electron/rantai (terukur jalan sampai 269 MB), tapi jangan jalankan perintah berat paralel: pengukuran waktu harness jadi tidak valid")
 } else {
   Tambah-Hasil 'RAM bebas' 'OK' "$bebasMB MB bebas"
 }

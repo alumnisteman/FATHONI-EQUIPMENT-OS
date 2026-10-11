@@ -653,10 +653,21 @@ Tiga batas yang membuat skrip ini bisa dibiarkan ada di root repo:
   konfirmasi. Penjaga validation §27 membaca semua skrip root (setelah komentar dan
   string literal dibuang) dan menolak daftar hitam perintah maupun penghapusan di luar
   path sementara; semua tindakan tulis wajib berada setelah gerbang `-Apply`.
-- **WARN bukan vonis.** Yang dibandingkan di sini adalah `mtime`, dan `mtime` sumber yang
-  lebih baru dari `app.asar` hanyalah kecurigaan — isinya bisa tetap identik. Verdict
-  sebenarnya tetap langkah `paket` di `regressi.sh`; FAIL hanya untuk berkas yang memang
-  tidak ada.
+- **WARN bukan vonis.** Yang dibandingkan lebih dulu adalah `mtime`, dan `mtime` sumber
+  yang lebih baru dari `app.asar` hanyalah kecurigaan — isinya bisa tetap identik. Karena
+  itu pemeriksaan kesegaran membandingkan **isi terhadap HEAD** (`git status --porcelain --
+  src electron`, dibaca saja): selama pohon kerja sama dengan commit yang dibundel, geseran
+  mtime dilaporkan OK dengan alasannya — ini terjadi nyata pada dua berkas yang sempat
+  dipakai uji mutasi lalu dipulihkan, yang akan membuat peringatan menempel selamanya.
+  Begitu sumber benar-benar berbeda, WARN-nya muncul lagi. Verdict isi paket tetap milik
+  langkah `paket` di `regressi.sh`; FAIL hanya untuk berkas yang memang tidak ada.
+- **Ambangnya dikalibrasi pada mesin ini, bukan pada mesin ideal.** RAM bebas di 3,8 GB
+  ini berdiam di 240–300 MB, jadi garis FAIL yang ditaruh di 250 MB menghasilkan koin:
+  `FAIL=1` dan `FAIL=0` pada isi repo yang sama. Rantai penuh dan build rilis keduanya
+  selesai pada 269 MB bebas. FAIL kini hanya di bawah 128 MB (keadaan yang benar-benar
+  tidak bisa dijalankan); tekanan memori yang cuma membuat angka waktu harness tidak valid
+  adalah WARN. Rapor merah yang muncul terus-menerus melatih orang mengabaikan preflight —
+  itulah kegagalan yang ingin dicegah oleh PREFLIGHT ini.
 - **Ia sendiri diuji.** Branch `-Apply` diverifikasi hanya menyentuh `node_modules/.vite`
   dan membangun ulang, dengan `node_modules`, lockfile, `app.asar`, basis data dan profil
   pengguna tetap utuh; kontrol positif di §27 memastikan cabang itu tidak dilumpuhkan
