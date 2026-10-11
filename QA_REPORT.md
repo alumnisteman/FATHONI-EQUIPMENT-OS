@@ -1,7 +1,7 @@
 # FATHONI EQUIPMENT OS — Laporan QA
 **Versi aplikasi**: 3.0.0 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
-**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.024 assertion, 0 gagal.
+**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.036 assertion, 0 gagal.
 
 Laporan ini menggantikan laporan 2026-09-23 (HEMS 1.0.0). Laporan lama itu sudah tidak
 berlaku dan sengaja ditulis ulang, bukan ditambal: ia menyebut localStorage sebagai
@@ -28,11 +28,11 @@ Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11.
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 241 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, + penjaga statis (§5) |
+| **Unit** | `validation-check` | 243 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, + penjaga statis (§5) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
 | **Fungsional** | `gui-check`, `flow-check`, `usable-check` | 72 + 30 + 33 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16 |
-| **Integrasi (lintas menu)** | `handoff-check` | 114 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, dan 6 menu katalog menghapus lewat patch (§4) |
-| **Integritas & transaksi** | `db-check`, `integritas-check` | 136 + 62 | paritas SQL vs `matchesWhere`, `where` pada kunci `id`, rujukan saat hapus, rollback penuh saat patch beracun, file tetap sehat setelah dibuka ulang |
+| **Integrasi (lintas menu)** | `handoff-check` | 118 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6) |
+| **Integritas & transaksi** | `db-check`, `integritas-check` | 136 + 68 | paritas SQL vs `matchesWhere`, `where` pada kunci `id`, rujukan saat hapus termasuk aturan ber-blob untuk orang, rollback penuh saat patch beracun, file tetap sehat setelah dibuka ulang |
 | **Keamanan** | `auth-check`, `npm audit` | 58 + 0 kerentanan | balasan login tanpa password/hash/salt, pesan generik, lockout, sesi palsu ditolak, CSP/sandbox/izin, injeksi formula CSV ditahan |
 | **Performa (beban + stres)** | `perf-check` | 37 | angka di §3, termasuk pertumbuhan ke 50.000 baris dan DOM yang tetap 12 kartu |
 | **Kompatibilitas** | `compat-check`, `usable-check`, `smoke-paket` | 30 + (ukuran) + 28 | boot di profil lama hasil upgrade (kolom turunan dibuat + dihitung ulang), mode browser tanpa `electronAPI` (login demo, nol error renderer), jendela 1200 px tanpa pemotongan tabel, paket jadi FATHONI.exe di sandbox |
@@ -90,8 +90,21 @@ per collection belum ada angka, jadi jangan dinyatakan sebagai "sudah teruji".
    paket — uji pertama diam-diam memakai profil nyata (password admin berubah, jejak
    audit bertambah; sudah dikembalikan dari snapshot). Sekarang `--user-data-dir`
    dihormati saat packaged dan uji asap membandingkan profil nyata sebelum/sesudah.
+6. **Menghapus teknisi atau operator yang masih bekerja lolos tanpa pesan.** Keduanya
+   tidak punya aturan rujukan sama sekali, dan nama orang tidak disimpan sebagai kolom
+   turunan di dokumen anak (`mechanicName`, `assignedTechnician`, `driverName` hanya
+   ada di payload dan di blob pencarian) — jadi jalan lama `REFERENCE_RULES` tidak bisa
+   menjangkaunya tanpa backfill profil live. Aturan baru kini membaca blob pencarian
+   yang sudah ada (`blobField`), dengan penjaga fail-closed: field yang tidak tercatat
+   di `spec.search` anak membuat pemeriksaan mengembalikan error dan hapus ditahan.
+   Tidak ada skema, kolom, atau `DERIVED_REVISION` yang berubah. *Bukti*: integrity 2d
+   (teknisi ditahan Work Order — termasuk penulisan "… & Tim" — dan Laporan Kerusakan;
+   operator ditahan Surat Jalan) dan handoff 10.18 (tombol hapus di menunya sendiri
+   menampilkan alasan yang menyebut dokumennya; baris orang dan dokumennya tetap ada).
+   *Penjaga*: validation 12 (aturan blob wajib menyebut field yang benar-benar ikut
+   ditulis ke blob; teknisi dan operator wajib berpemeriksaan).
 
-Pola yang menyatukan ketiganya: yang rusak bukan satu menu, melainkan asumsi bahwa
+Pola yang menyatukan keenamnya: yang rusak bukan satu menu, melainkan asumsi bahwa
 data yang dibaca selalu lengkap dan selalu berasal dari jalur yang sama.
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
@@ -101,7 +114,9 @@ peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataS
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
 karangan; `healthCheck` wajib memeriksa SQLite; lokasi data paket dan sandbox uji asap;
-boundary berkunci rute; dua aturan §4.3–4.4 di atas.
+boundary berkunci rute; dua aturan §4.3–4.4 di atas; dan bentuk daftar rujukan
+(§4.6) — kolom aturan wajib ada di `COLLECTION_SPECS`, `blobField` wajib ada di
+daftar `search` anak, dan teknisi/operator tidak boleh kembali menjadi record daun.
 
 ## 6. Yang BELUM diverifikasi (perbatasan laporan ini)
 
@@ -119,11 +134,18 @@ boundary berkunci rute; dua aturan §4.3–4.4 di atas.
   < 800 ms, kueri < 400 ms, patch < 250 ms. Angka §3 jauh di bawahnya, tapi
   ambangnya sendiri belum disepakati sebagai target rilis.
 - **Kapasitas di atas 50.000 baris per collection** belum diukur.
-- **Aturan rujukan untuk teknisi/operator** belum bisa menahan hapus:
-  `services.mechanicName`, `breakdowns.assignedTechnician`, `rentals.operatorName`
-  belum menjadi kolom tersimpan (`REFERENCE_RULES` hanya menerima kolom).
-  Perbaikannya menyentuh profil live (backfill `ensureColumns`, `DERIVED_REVISION`
-  5→6) sehingga menunggu keputusan.
+- **Batas aturan rujukan orang** (setelah §4.6): kunci yang lebih pendek dari
+  `PANJANG_TOKEN_MIN` (6) sengaja dilewat, jadi teknisi/operator bernama satu kata
+  ("Budi", "Joko") masih bisa terhapus meski dokumen menyebutnya — disengaja, karena
+  token pendek terlalu mudah terselip di kolom lain dan akan menolak hapus yang aman.
+  Diuji sebagai karakterisasi (integrity 2d), bukan harapan. Blob pencarian juga tidak
+  tahu kolom mana yang cocok: nama teknisi yang kebetulan sama dengan nama pelanggan
+  di baris yang sama ikut menahan hapus (menolak berlebihan, bukan meloloskan).
+- **Operator ↔ kontrak rental belum terjaga**: `rentals` tidak menyimpan nama operator
+  sama sekali — `operatorName` hanya ada di tipe `src/types/index.ts` dan tidak ditulis
+  layar mana pun. Menahannya berarti menambah kolom/blob baru, yang wajib disertai
+  backfill profil live (`ensureColumns`, `DERIVED_REVISION` 5→6) dan masih menunggu
+  keputusan.
 - **Artefak lama di repo**: `dist-installer/HEMS-Setup-1.0.0.exe`,
   `installer/dist-installer/HEMS-Setup-*.exe`, `dist-electron-portable` (156 MB,
   `app.asar` terkunci proses), dan dependensi Prisma (~111 MB) yang tidak dipakai.

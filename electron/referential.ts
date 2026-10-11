@@ -23,8 +23,11 @@ export type MatchCara = 'eq' | 'prefix' | 'contains';
 export interface ReferenceRule {
   /** Collection anak tempat rujukan dicari. */
   child: string;
-  /** Kolom turunan anak (harus ada di COLLECTION_SPECS, tidak boleh string bebas). */
-  column: string;
+  /**
+   * Kolom turunan anak (harus ada di COLLECTION_SPECS, tidak boleh string bebas).
+   * Wajib kecuali aturan memakai blobField.
+   */
+  column?: string;
   /** Field record induk yang menjadi kunci rujukan (salah satu dari ini atau parentFields). */
   parentField?: string;
   /** Label anak untuk pesan pengguna. */
@@ -39,6 +42,14 @@ export interface ReferenceRule {
   where?: { column: string; eq: string };
   /** Beberapa kunci induk sekaligus (mis. nama dan sku suku cadang). */
   parentFields?: string[];
+  /**
+   * Aturan yang hanya dibaca dari blob pencarian: field anak yang TIDAK dijadikan
+   * kolom turunan tapi memang ikut ditulis ke blob (mis. mechanicName servis).
+   * Ini yang membuat orang (teknisi, operator) bisa dijaga tanpa mengubah skema —
+   * dan tanpa backfill profil live. field-nya harus ada di spec.search anak,
+   * kalau tidak findReferences mengembalikan error dan hapus ditahan (fail-closed).
+   */
+  blobField?: string;
 }
 
 /**
@@ -110,6 +121,19 @@ export const REFERENCE_RULES: Record<string, ReferenceRule[]> = {
       label: 'Mutasi Kas', show: 'tanggal', match: 'contains',
     },
   ],
+  // Orang dirujuk dengan NAMA, bukan nomor: Work Order hanya menyimpan
+  // mechanicName, Laporan Kerusakan hanya assignedTechnician, Surat Jalan hanya
+  // driverName. Ketiganya tidak dijadikan kolom turunan (tidak ada menu yang
+  // menyaring berdasarkan orang), tapi semuanya ikut ditulis ke blob pencarian,
+  // jadi rujukannya bisa dibaca dari sana — tanpa mengubah skema dan tanpa
+  // backfill database yang sudah dipakai pengguna.
+  technicians: [
+    { child: 'services', blobField: 'mechanicName', parentField: 'name', label: 'Work Order Servis', show: 'woNumber' },
+    { child: 'breakdowns', blobField: 'assignedTechnician', parentField: 'name', label: 'Laporan Kerusakan', show: 'breakdownNumber' },
+  ],
+  operators: [
+    { child: 'deliveries', blobField: 'driverName', parentField: 'name', label: 'Surat Jalan', show: 'doNumber' },
+  ],
 };
 
 export interface ReferenceHit {
@@ -139,6 +163,18 @@ const PANJANG_TOKEN_MIN = 6;
 function hasColumn(collection: string, column: string): boolean {
   const spec = SPEC_BY_NAME[collection];
   return !!spec && (column === 'id' || spec.columns.some(c => c.col === column));
+}
+
+/**
+ * Field yang benar-benar ikut ditulis ke blob pencarian anak. Beda dari kolom
+ * turunan: nilainya ada di payload dan di "search", tapi tidak punya kolomnya
+ * sendiri. Salah tulis di sini berarti blob tidak akan pernah memuat field itu,
+ * jadi rujukannya hilang tanpa suara — karena itu penjaganya diperiksa sebelum
+ * query, bukan sesudah.
+ */
+function hasBlobField(collection: string, field: string): boolean {
+  const spec = SPEC_BY_NAME[collection];
+  return !!spec && spec.search.includes(field);
 }
 
 /** Nilai kunci rujukan dari satu record induk; string kosong berarti tidak bisa dirujuk. */
@@ -183,8 +219,15 @@ export function findReferences(handle: Database, collection: unknown, id: unknow
 
   const hits: ReferenceHit[] = [];
   for (const rule of rules) {
-    if (!isCollectionName(rule.child) || !hasColumn(rule.child, rule.column) || !hasColumn(rule.child, rule.show)) {
-      return { blocked: false, hits: [], error: `Aturan rujukan ${rule.child}.${rule.column} tidak valid` };
+    // Aturan bisa mencari di kolom turunan ATAU di blob pencarian. Dua-duanya
+    // punya penjaga sendiri; kalau tidak cocok, error → pemanggil menahan hapus.
+    const lewatBlob = !!rule.blobField;
+    const namaKunci = lewatBlob ? rule.blobField : rule.column;
+    const kunciAda = lewatBlob
+      ? hasBlobField(rule.child, rule.blobField as string)
+      : !!rule.column && hasColumn(rule.child, rule.column);
+    if (!isCollectionName(rule.child) || !kunciAda || !hasColumn(rule.child, rule.show)) {
+      return { blocked: false, hits: [], error: `Aturan rujukan ${rule.child}.${namaKunci} tidak valid` };
     }
     const values = new Set<string>();
     for (const p of parents) {
@@ -195,7 +238,7 @@ export function findReferences(handle: Database, collection: unknown, id: unknow
     if (values.size === 0) continue;
 
     const tabel = tableOfSafe(rule.child);
-    const kolomKunci = rule.column === 'id' ? '"id"' : `"${rule.column}"`;
+    const kolomKunci = lewatBlob ? '"search"' : (rule.column === 'id' ? '"id"' : `"${rule.column}"`);
     const kolomTampil = rule.show === 'id' ? '"id"' : `"${rule.show}"`;
     // LIKE tidak peka huruf untuk ASCII, persamaan '=' sensitif — karena itu
     // aturan 'eq' masih bisa kehilangan rujukan, lihat fallback blob di bawah.
@@ -205,14 +248,24 @@ export function findReferences(handle: Database, collection: unknown, id: unknow
     const kunciParams: unknown[] = [];
     const pembatas = new Set<string>();
     for (const v of values) {
-      const bound = rule.match === 'prefix' ? escapeLike(v) + '%'
+      // Blob pencarian menyimpan nilai yang sudah dinormalkan (spasi dan tanda
+      // baca dibuang), jadi kunci nama "Agus Sutrisno" hanya bisa ditemukan di
+      // sana sebagai "agussutrisno". Nama pendek di bawah ambang token sengaja
+      // dilepas: "Budi" terlalu mudah terselip di kolom lain.
+      const token = lewatBlob ? normalizeSearch(v) : v;
+      if (lewatBlob && token.length < PANJANG_TOKEN_MIN) continue;
+      const bound = lewatBlob ? '%' + escapeLike(token) + '%'
+        : rule.match === 'prefix' ? escapeLike(v) + '%'
         : rule.match === 'contains' ? '%' + escapeLike(v) + '%'
         : v;
       if (pembatas.has(bound)) continue;
       pembatas.add(bound);
-      kunciSql.push(`${kolomKunci}${like}`);
+      kunciSql.push(`${kolomKunci}${lewatBlob ? " LIKE ? ESCAPE '\\'" : like}`);
       kunciParams.push(bound);
     }
+    // Semua kunci nama orang terlalu pendek: aturan ini tidak bisa memutuskan
+    // apa pun, dan menebak dengan WHERE kosong akan menahan setiap hapus.
+    if (kunciSql.length === 0) continue;
 
     let indukSql = '';
     const indukParams: unknown[] = [];
@@ -249,7 +302,7 @@ export function findReferences(handle: Database, collection: unknown, id: unknow
     // normalizeSearch, maka kalau perbandingan persis tidak menemukan apa pun kita
     // baca blob itu. LIKE pada blob tidak memakai indeks, tapi ini satu tindakan
     // hapus yang ditunggu pengguna, bukan jalur render.
-    if (!ditemukan) {
+    if (!lewatBlob && !ditemukan) {
       const token = [...values].map(v => normalizeSearch(v)).filter(t => t.length >= PANJANG_TOKEN_MIN);
       if (token.length > 0) {
         ditemukan = hit(token.map(() => '"search" LIKE ?').join(' OR '), token.map(t => `%${escapeLike(t)}%`));

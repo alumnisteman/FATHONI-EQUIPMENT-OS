@@ -352,11 +352,33 @@ check('setiap collection store tercatat di peta hapus (kecuali bankAccounts)',
   belumPeta.join(',') === 'bankAccounts', { belumPeta });
 try {
   const { REFERENCE_RULES } = require('../../dist-electron/referential.js');
+  const SCHEMA = require('../../dist-electron/dbSchema.js');
   const tanpaMenu = Object.keys(REFERENCE_RULES).filter(c => !MENU_HAPUS[c]);
   // bankAccounts memang belum punya layar hapus; kalau collection lain muncul
   // di sini, artinya aturan baru ditambah tapi menunya belum disambungkan.
   check('setiap collection berpemeriksaan rujukan punya menu yang memakai removeRow',
     tanpaMenu.join(',') === 'bankAccounts', { tanpaMenu });
+  // Aturan blobField mencari di kolom "search", bukan kolom sendiri. Field yang
+  // tidak ada di daftar search anak tidak akan pernah tertulis ke blob, jadi
+  // rujukannya hilang tanpa suara — findReferences menolaknya dengan error, dan
+  // itu menahan SETIAP hapus di menu tersebut. Lebih baik tertangkap di sini.
+  const salahBlob = [];
+  for (const [nama, aturan] of Object.entries(REFERENCE_RULES)) {
+    for (const r of aturan || []) {
+      if (!r.blobField) continue;
+      const spec = SCHEMA.SPEC_BY_NAME[r.child];
+      if (!spec || spec.search.indexOf(r.blobField) === -1) salahBlob.push(`${nama} -> ${r.child}.${r.blobField}`);
+      if (r.column) salahBlob.push(`${nama} -> ${r.child}: column dan blobField dipakai bersama`);
+    }
+  }
+  check('aturan blob hanya menyebut field yang benar-benar ikut ditulis ke blob pencarian',
+    salahBlob.length === 0, { salahBlob });
+  // Orang pernah menjadi "record daun": menghapus teknisi yang masih menulis
+  // namanya di Work Order lolos tanpa penolakan. Kalau aturannya dihapus lagi,
+  // ini yang menahan.
+  check('teknisi dan operator punya aturan rujukan',
+    (REFERENCE_RULES.technicians || []).length > 0 && (REFERENCE_RULES.operators || []).length > 0,
+    { teknisi: (REFERENCE_RULES.technicians || []).length, operator: (REFERENCE_RULES.operators || []).length });
 } catch (err) {
   console.log('LOMPONG: dist-electron/referential.js belum dibangun, peta menu tidak dibandingkan dengan daftar aturan');
 }

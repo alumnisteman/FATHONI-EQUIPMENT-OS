@@ -56,7 +56,11 @@ Rantai keluar non-zero bila ada harness yang gagal.
   muat penuh untuk membaca kondisi), foto base64 benar-benar berpindah ke berkas saat
   halaman Unit dibuka meski array `units` di memori kosong, modal foto menyebut nomor
   sasis kartu yang diklik, nomor rangka ganda ditolak, dan saran No. Bukti Mutasi
-  Gudang sama dengan `jumlah baris warehouse di SQLite + 1`.
+  Gudang sama dengan `jumlah baris warehouse di SQLite + 1`. Bagian 10.18 menekan
+  tombol hapus di menu Teknisi dan Operator untuk satu orang yang namanya masih
+  tertulis di dokumen: yang diharapkan bukan hanya "gagal", tapi alert menyebut
+  menunya (Work Order Servis / Surat Jalan) sementara barisnya dan dokumennya dua
+  duanya masih ada di file.
 - `db-check.cjs` — lapisan SQLite di main process: skema, write-behind berbasis hash,
   paginasi/filter, patch per baris (`saveRows`), kesamaan hasil pencarian dengan
   renderer, migrasi kolom turunan pada profil lama (`ALTER TABLE` + indeks),
@@ -477,6 +481,7 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Menu katalog (Operator, Teknisi, Dokumen, Pengiriman, Breakdown, Persetujuan) menghapus dengan menyaring array di memori: seluruh collection ikut ditulis ulang dan pemeriksaan rujukan tidak pernah berjalan | handoff 10.1–10.12 (satu id lewat patch per menu, `fullCalls` tidak bergerak, baris tetangga tetap ada), validation 12 (peta `MENU_HAPUS` + larangan filter-array pada halaman ber-`useDataStore`) |
 | Layar menjatuhkan dirinya karena satu baris memuat nilai di luar peta status/severity (`MAP[nilai].label` tanpa fallback) | handoff 10.14 (`severity: 'MEDIUM'` + `status: 'ESCALATED'` tetap tampil apa adanya, tanpa layar kesalahan), validation 21 (larangan pencarian peta tanpa `?.` di seluruh `src/`) |
 | Baris tanpa kolom angka/array (data lama, impor, restore) membuat sel tabel memanggil `.toLocaleString()` pada null — layar Operator dan Teknisi jatuh | handoff 10.16 (baris tanpa `totalHours`/`specializations` tetap tampil), validation 22 (angka/teks baris harus lewat `??` atau pemeriksaan dulu) |
+| Menghapus teknisi/operator yang namanya masih tertulis di dokumen lolos tanpa pesan: keduanya tidak punya aturan rujukan, dan namanya tidak disimpan sebagai kolom turunan di dokumen anak | integrity 2d (teknisi tertahan Work Order + Laporan Kerusakan, operator tertahan Surat Jalan; nama satu kata sengaja di bawah ambang token), handoff 10.18 (tombol hapus di menunya menolak dengan alasan yang menyebut dokumennya), validation 12 (aturan blob hanya boleh menyebut field yang ikut ditulis ke blob + teknisi/operator wajib berpemeriksaan) |
 | Satu layar yang melempar membuat SEMUA menu menampilkan "Terjadi Kesalahan" sampai aplikasi dimuat ulang (boundary hanya di akar) | handoff 10.14 (Pelanggan tetap terbuka dan terisi sesudah baris asing dibuka), validation 20 (boundary berkunci rute di `ProtectedRoute`) |
 | Collection yang BELUM pernah dibaca penuh ditulis sebagai collection penuh, sehingga baris yang tidak ikut terbaca hilang dari file | db-check 15.6–15.9 (matriks `rencanakanTulis`: upsert tetap jalan, simpanan penuh ditahan, `tertahan` tidak pernah berubah menjadi `full`), handoff 7.11 |
 | Boot menyalin seluruh store ke renderer — waktu buka aplikasi dan memori renderer tumbuh mengikuti jumlah record | perf P.3b (nol baris lewat IPC di profil 25.000 baris) dan P.12b (membuka layar Unit 12.000 unit menggeser nol baris), gui 15.4, handoff 9.1–9.2 |

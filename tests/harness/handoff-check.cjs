@@ -1338,6 +1338,89 @@ async function run(wc) {
       && sehat10c.ok === true,
     { bersihkan10c, quickCheck: sehat10c.quickCheck });
 
+  // ── 10.18 orang yang masih disebut dokumen tidak boleh bisa dihapus ──
+  // Teknisi dan operator dulu "record daun": tidak ada aturan rujukan untuk
+  // keduanya, jadi menghapus teknisi yang namanya masih tertulis di Work Order
+  // lolos tanpa pesan apa pun dan dokumen itu menunjuk orang yang sudah tidak
+  // ada. Namanya tidak disimpan sebagai kolom turunan di dokumen anak (tidak ada
+  // menu yang menyaring berdasarkan orang), jadi rujukannya dibaca dari blob
+  // pencarian yang memang sudah menyimpan mechanicName / driverName.
+  const ORANG = await ev(wc, `
+    return await window.electronAPI.dbPatch({
+      technicians: { upsert: [{
+        id: 'H18TECH', technicianNumber: 'TECH-UJI-18', name: 'Suryo Ampi',
+        status: 'ACTIVE', phone: '08000000018', totalHours: 6, specializations: [],
+      }], removeIds: [] },
+      services: { upsert: [{
+        id: 'H18WO', woNumber: 'WO-UJI-18', serialNumber: 'RANGKA-UJI-18',
+        unitModel: 'SANY SY215C', customerOrProject: 'PT Uji Orang',
+        serviceType: 'PERIODIC_250H', mechanicName: 'Suryo Ampi & Tim',
+        status: 'OPEN', openDate: '2026-10-02', hourMeter: 100, estimatedCost: 0,
+      }], removeIds: [] },
+      operators: { upsert: [{
+        id: 'H18OP', operatorNumber: 'OP-UJI-18', name: 'Warsito',
+        status: 'ACTIVE', phone: '08000000019', totalHours: 2,
+      }], removeIds: [] },
+      deliveries: { upsert: [{
+        id: 'H18DO', doNumber: 'DO-UJI-18', salesOrderRef: 'SO-UJI-18',
+        customerName: 'PT Uji Orang', unitModel: 'SANY SY215C',
+        serialNumber: 'RANGKA-UJI-18', deliveryDate: '2026-10-02',
+        destination: 'Site Uji', driverName: 'Warsito', truckPlate: 'B 8888 ZZ',
+        status: 'MENUNGGU', notes: '',
+      }], removeIds: [] } });`);
+  ok('10.18a orang beserta dokumen yang menyebut namanya masuk ke file',
+    ORANG.technicians.inserted === 1 && ORANG.services.inserted === 1
+      && ORANG.operators.inserted === 1 && ORANG.deliveries.inserted === 1, ORANG);
+
+  await wc.reload();
+  const masukOrang = await masukLagi();
+  for (const m of [
+    { rute: 'technicians', collection: 'technicians', tanda: 'TECH-UJI-18',
+      dokumen: 'Work Order Servis', induk: 'services', tandaInduk: 'WO-UJI-18' },
+    { rute: 'operators', collection: 'operators', tanda: 'OP-UJI-18',
+      dokumen: 'Surat Jalan', induk: 'deliveries', tandaInduk: 'DO-UJI-18' },
+  ]) {
+    await ev(wc, `
+      window.confirm = () => true;
+      window.__alert = null;
+      window.alert = (msg) => { window.__alert = String(msg); };
+      window.location.hash = '#/${m.rute}'; return true;`);
+    const siap = await waitFor(wc,
+      `[...document.querySelectorAll('tbody tr')].some(r => /${m.tanda}/.test(r.innerText))`,
+      `baris ${m.collection} tampil`, 25000);
+    const menekan = await ev(wc, `
+      const tr = [...document.querySelectorAll('tbody tr')].find(r => /${m.tanda}/.test(r.innerText));
+      const btn = tr && [...tr.querySelectorAll('button')].find(b => (b.title || '') === 'Delete' || /Hapus/.test((b.innerText || '').trim()));
+      if (btn) btn.click();
+      return !!btn;`);
+    const menunggu = await waitFor(wc, `!!window.__alert`, 'penolakan hapus', 25000);
+    const file = await ev(wc, `
+      const q = await window.electronAPI.dbQuery({ collection: '${m.collection}', search: '${m.tanda}', limit: 5 });
+      const i = await window.electronAPI.dbQuery({ collection: '${m.induk}', search: '${m.tandaInduk}', limit: 5 });
+      return { alert: String(window.__alert || ''), masihAda: q.total, indukAda: i.total };`);
+    ok(`10.18b hapus ${m.collection} yang masih disebut dokumennya ditolak dengan alasan yang benar`,
+      siap === true && menekan === true && menunggu === true
+        && /masih dipakai/i.test(file.alert) && file.alert.includes(m.dokumen)
+        && file.masihAda === 1 && file.indukAda === 1,
+      { siap, menekan, menunggu, alert: file.alert, masihAda: file.masihAda, indukAda: file.indukAda });
+  }
+
+  // Baris uji orang dibersihkan lewat patch langsung: removeRow akan menolak
+  // dirinya sendiri justru karena pembuktiannya di atas.
+  const bersihkan18 = await ev(wc, `
+    return await window.electronAPI.dbPatch({
+      technicians: { upsert: [], removeIds: ['H18TECH'] },
+      operators: { upsert: [], removeIds: ['H18OP'] },
+      services: { upsert: [], removeIds: ['H18WO'] },
+      deliveries: { upsert: [], removeIds: ['H18DO'] } });`);
+  const sehat18 = await ev(wc, `return window.electronAPI.dbIntegrity();`);
+  ok('10.18c baris uji orang dibersihkan dan database tetap utuh',
+    masukOrang === true
+      && bersihkan18.technicians.deleted === 1 && bersihkan18.operators.deleted === 1
+      && bersihkan18.services.deleted === 1 && bersihkan18.deliveries.deleted === 1
+      && sehat18.ok === true,
+    { masukOrang, bersihkan18, quickCheck: sehat18.quickCheck });
+
   console.log(`\n=== handoff-check: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);
 }

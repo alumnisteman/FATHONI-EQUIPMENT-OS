@@ -5,20 +5,20 @@
 ## Verdict
 
 Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
-**15 langkah, 1.024 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
+**15 langkah, 1.036 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
 `npm audit` 0 kerentanan tinggi/kritis.
 
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 241 |
+| unit (`validation-check`) | 243 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 72 |
 | flow (fungsional) | 30 |
-| handoff (integrasi lintas menu) | 114 |
+| handoff (integrasi lintas menu) | 118 |
 | usable (usability + ukuran layar) | 33 |
 | db (SQLite + paritas SQL) | 136 |
-| integritas (atomisitas + rollback + hapus bers rujukan) | 62 |
+| integritas (atomisitas + rollback + hapus dirujuk) | 68 |
 | compat (profil lama + mode browser) | 30 |
 | perf (beban + stres) | 37 |
 | store (rencana tulis per collection) | 47 |
@@ -30,7 +30,9 @@ Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
 
 - **Tidak kehilangan data**: hapus lewat jalur per-baris + aturan rujukan di main
   process; simpan sebagian tidak menimpa collection lain; patch beracun di-rollback
-  penuh dan file tetap sehat.
+  penuh dan file tetap sehat. Termasuk orang: menghapus teknisi yang masih ditulis
+  namanya di Work Order, atau operator yang masih membawa Surat Jalan, sekarang
+  ditolak dengan alasan yang menyebut dokumennya (handoff 10.18).
 - **Ringan walau data tumbuh**: boot memindahkan 0 baris lewat IPC; tabel 50.000 baris
   tetap 12 kartu DOM; pencarian median 275 ms; kueri telanjang 86 ms; tulis satu baris
   median 1 ms.
@@ -55,9 +57,12 @@ kapasitas di atas 50.000 baris per collection · anggaran performa yang masih di
 
 ## Yang menunggu keputusan
 
-1. **Aturan rujukan teknisi/operator** — `services.mechanicName`,
-   `breakdowns.assignedTechnician`, `rentals.operatorName` perlu menjadi kolom
-   tersimpan; ini memicu backfill pada profil live (`DERIVED_REVISION` 5→6).
+1. **Operator ↔ kontrak rental**: `rentals` tidak menyimpan identitas operator sama
+   sekali (hanya `operatorIncluded` Ya/Tidak, dan `operatorName` cuma ada di tipe tanpa
+   pernah ditulis layar). Menahannya berarti menambah kolom/blob baru → backfill
+   profil live (`ensureColumns`, `DERIVED_REVISION` 5→6). Teknisi/operator vs dokumen
+   lain sudah ditutup tanpa migrasi (aturan blob, QA_REPORT §4.6); batas yang tersisa:
+   nama satu kata di bawah ambang token 6 huruf tidak tertahan.
 2. **Prisma tidak dipakai** (~111 MB) — penghapusan butuh persetujuan.
 3. **`auto-fix.ps1` di root** — merusak (`rm dist*/node_modules/package-lock` +
    `git reset/clean`).

@@ -153,11 +153,13 @@ function main() {
     sales: [{ id: 'SO-1', orderNo: 'SO-2026-001', customerName: 'Mitra Teknik Prima', serialNumber: 'SY215C-001', status: 'CONFIRMED', orderDate: '2026-03-01', totalPrice: 1800000000, downPayment: 200000000 }],
     rentals: [{ id: 'RN-1', contractNo: 'RNT-2026-004', customerName: 'Mitra Teknik Prima', serialNumber: 'SY215C-001', status: 'ACTIVE', startDate: '2026-04-01', endDate: '2026-07-01', monthlyRate: 90000000 }],
     services: [
-      { id: 'WO-1', woNumber: 'WO-2026-007', serialNumber: 'sy215c 001', unitModel: 'SY215C', status: 'OPEN', openDate: '2026-05-02' },
+      { id: 'WO-1', woNumber: 'WO-2026-007', serialNumber: 'sy215c 001', unitModel: 'SY215C', mechanicName: 'Agus Sutrisno & Tim', status: 'OPEN', openDate: '2026-05-02' },
       { id: 'WO-2', woNumber: 'WO-2026-009', serialNumber: 'PC200-88', unitModel: 'PC200-8', status: 'COMPLETED', openDate: '2026-05-05' },
+      // Nama satu kata di bawah ambang token: sengaja tidak bisa ditahan.
+      { id: 'WO-3', woNumber: 'WO-2026-013', serialNumber: 'TIDAKADA-WO3', unitModel: 'X', mechanicName: 'Budi Setiawan', status: 'OPEN', openDate: '2026-05-08' },
     ],
-    deliveries: [{ id: 'DO-1', doNumber: 'DO-2026-011', customerName: 'Mitra Teknik Prima', serialNumber: 'SY215C-001', status: 'DELIVERED', deliveryDate: '2026-03-05', salesOrderRef: 'SO-2026-001' }],
-    breakdowns: [{ id: 'BD-1', breakdownNumber: 'BD-2026-002', unitSerialNumber: 'SY215C-001', unitModel: 'SY215C', severity: 'HIGH', status: 'OPEN', reportedAt: '2026-05-06' }],
+    deliveries: [{ id: 'DO-1', doNumber: 'DO-2026-011', customerName: 'Mitra Teknik Prima', serialNumber: 'SY215C-001', driverName: 'Supomo', status: 'DELIVERED', deliveryDate: '2026-03-05', salesOrderRef: 'SO-2026-001' }],
+    breakdowns: [{ id: 'BD-1', breakdownNumber: 'BD-2026-002', unitSerialNumber: 'SY215C-001', unitModel: 'SY215C', assignedTechnician: 'Agus Sutrisno', severity: 'HIGH', status: 'OPEN', reportedAt: '2026-05-06' }],
     warehouse: [
       { id: 'WH-1', trxNo: 'GR-PO-2026-003', type: 'INBOUND', warehouseName: 'Yard Cikande', itemDescription: '10 Filter Oli HYUNDAI (FO-123)', date: '2026-05-01', qty: 10 },
       { id: 'WH-2', trxNo: 'GI-WO-2026-007', type: 'OUTBOUND', warehouseName: 'Yard Cikande', itemDescription: '2 Filter Oli HYUNDAI (FO-123)', date: '2026-05-02', qty: 2 },
@@ -175,7 +177,16 @@ function main() {
       { id: 'K-3', tanggal: '2026-04-25', kategori: 'PEMBELIAN', tipe: 'KELUAR', jumlah: 1500000, rekening: 'Kas Tunai', referensi: 'PO-2026-003' },
     ],
     bankAccounts: [{ id: 'BA-1', namaBank: 'BCA', nomorRekening: '123', mataUang: 'IDR', isActive: 'AKTIF' }],
-    operators: [{ id: 'OP-1', operatorNumber: 'OP-001', name: 'Joko', status: 'ACTIVE', assignedUnit: 'SY215C-001', totalHours: 120 }],
+    operators: [
+      { id: 'OP-1', operatorNumber: 'OP-001', name: 'Joko', status: 'ACTIVE', assignedUnit: 'SY215C-001', totalHours: 120 },
+      { id: 'OP-2', operatorNumber: 'OP-002', name: 'Supomo', status: 'ACTIVE', assignedUnit: 'PC200-88', totalHours: 80 },
+      { id: 'OP-3', operatorNumber: 'OP-003', name: 'Bagas Pratama', status: 'ACTIVE', totalHours: 10 },
+    ],
+    technicians: [
+      { id: 'TECH-1', technicianNumber: 'TECH-001', name: 'Agus Sutrisno', status: 'ACTIVE', totalHours: 300 },
+      { id: 'TECH-2', technicianNumber: 'TECH-002', name: 'Rizal Firmansyah', status: 'ACTIVE', totalHours: 40 },
+      { id: 'TECH-3', technicianNumber: 'TECH-003', name: 'Budi', status: 'ACTIVE', totalHours: 5 },
+    ],
     documents: [{ id: 'DOC-1', jenisDokumen: 'Faktur', nomorDokumen: 'F-1', statusLegalitas: 'LENGKAP', masaBerlaku: '2027-01-01' }],
   };
   DB.saveStore(profil);
@@ -268,13 +279,45 @@ function main() {
     ok('kontrak rental tidak dirujuk invoice servis/sales', r.blocked === false, r.hits);
   }
 
-  // 2d. daun tanpa aturan: hapusnya tidak pernah meninggalkan rujukan
-  for (const [collection, id] of [['operators', 'OP-1'], ['documents', 'DOC-1'], ['deliveries', 'DO-1'], ['warehouse', 'WH-1'], ['breakdowns', 'BD-1']]) {
+  // 2d. orang: teknisi dan operator dirujuk dengan NAMA, dan namanya hanya bisa
+  //     ditemukan di blob pencarian (mechanicName, assignedTechnician, driverName
+  //     tidak dijadikan kolom turunan).
+  {
+    const r = DB.rowReferences('technicians', 'TECH-1');
+    ok('teknisi tertahan work order yang menulis namanya dengan imbuhan',
+      !!hitLabel(r, 'services') && hitLabel(r, 'services').contoh.includes('WO-2026-007'), r.hits);
+    ok('teknisi tertahan laporan kerusakan yang menugaskannya',
+      !!hitLabel(r, 'breakdowns') && hitLabel(r, 'breakdowns').contoh.includes('BD-2026-002'), r.hits);
+    const bebas = DB.rowReferences('technicians', 'TECH-2');
+    ok('teknisi tanpa dokumen boleh dihapus', bebas.blocked === false && !bebas.error, bebas);
+  }
+  {
+    const r = DB.rowReferences('operators', 'OP-2');
+    ok('operator tertahan surat jalan yang menyebut namanya sebagai driver',
+      r.blocked === true && !!hitLabel(r, 'deliveries') && hitLabel(r, 'deliveries').contoh.includes('DO-2026-011'), r.hits);
+    const lain = DB.rowReferences('operators', 'OP-3');
+    ok('operator tanpa surat jalan boleh dihapus', lain.blocked === false && !lain.error, lain.hits);
+  }
+  {
+    // Batas yang diketahui dan sengaja: kunci sepanjang < PANJANG_TOKEN_MIN (6)
+    // terlalu mudah terselip di kolom lain, jadi nama satu kata tidak bisa
+    // ditahan. Ini karakterisasi, bukan harapan — kalau ambangnya berubah,
+    // di sinilah itu pertama kali terlihat.
+    const teknisi = DB.rowReferences('technicians', 'TECH-3');
+    ok('nama satu kata ("Budi") diketahui tidak tertahan, tanpa error',
+      teknisi.blocked === false && !teknisi.error, teknisi);
+    const operator = DB.rowReferences('operators', 'OP-1');
+    ok('nama satu kata ("Joko") diketahui tidak tertahan, tanpa error',
+      operator.blocked === false && !operator.error, operator);
+  }
+
+  // 2e. daun tanpa aturan: hapusnya tidak pernah meninggalkan rujukan
+  for (const [collection, id] of [['documents', 'DOC-1'], ['deliveries', 'DO-1'], ['warehouse', 'WH-1'], ['breakdowns', 'BD-1']]) {
     const r = DB.rowReferences(collection, id);
     ok(`${collection} tidak menahan apa pun (record daun)`, r.blocked === false && (r.hits || []).length === 0, r);
   }
 
-  // 2e. bentuk masukan yang tidak boleh membuat pemeriksaan mati
+  // 2f. bentuk masukan yang tidak boleh membuat pemeriksaan mati
   {
     const asing = DB.rowReferences('tidakAda', 'X');
     ok('collection asing dilaporkan sebagai error, bukan dilewati', !!asing.error && asing.blocked === false, asing);
@@ -286,7 +329,7 @@ function main() {
     ok('id null dilaporkan sebagai error', !!nullId.error, nullId);
   }
 
-  // 2f. daftar aturan harus tetap sesuai skema: satu nama kolom yang salah tulis
+  // 2g. daftar aturan harus tetap sesuai skema: satu nama kolom yang salah tulis
   //     akan menjadi query atas kolom yang tidak ada, dan itu membuat hapus
   //     berhenti dengan error, bukan menolak dengan alasan yang benar.
   {
@@ -296,6 +339,7 @@ function main() {
       (spec ? spec.columns : []).forEach(c => out.add(c.col));
       return out;
     };
+    const blobTabel = (collection) => new Set((SCHEMA.SPEC_BY_NAME[collection] || {}).search || []);
     const salah = [];
     for (const [nama, aturan] of Object.entries(REF.REFERENCE_RULES)) {
       if (!SCHEMA.isCollectionName(nama)) { salah.push(`${nama} bukan collection`); continue; }
@@ -305,6 +349,13 @@ function main() {
         for (const k of [r.column, r.show, r.where && r.where.column].filter(Boolean)) {
           if (!punya.has(k)) salah.push(`${nama} -> ${r.child}.${k} bukan kolom turunan`);
         }
+        // Aturan blob: field-nya harus ikut ditulis ke "search" anak, dan tidak
+        // boleh bersamaan dengan column (yang mana yang dicari jadi tidak jelas).
+        if (r.blobField && !blobTabel(r.child).has(r.blobField)) {
+          salah.push(`${nama} -> ${r.child}.${r.blobField} tidak ditulis ke blob pencarian`);
+        }
+        if (r.blobField && r.column) salah.push(`${nama} -> ${r.child}: column dan blobField bersama`);
+        if (!r.blobField && !r.column) salah.push(`${nama} -> ${r.child}: tidak punya kunci`);
         const induk = kolomTabel(nama);
         for (const k of [r.parentField].concat(r.parentFields || []).filter(Boolean)) {
           // Kunci rujukan diambil dari payload record induk. Kalau namanya bukan
