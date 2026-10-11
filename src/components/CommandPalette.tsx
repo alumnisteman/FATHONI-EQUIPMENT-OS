@@ -1,27 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const COMMANDS = [
-  { name: 'Dashboard', path: '/dashboard', icon: '📊' },
-  { name: 'Control Tower', path: '/control-tower', icon: '🗼' },
-  { name: 'Customers (Pelanggan)', path: '/customers', icon: '👥' },
-  { name: 'Suppliers (Pemasok)', path: '/suppliers', icon: '🏭' },
-  { name: 'Units (Alat Berat)', path: '/units', icon: '🚜' },
-  { name: 'Brands (Merek)', path: '/brands', icon: '🏷️' },
-  { name: 'Sales (Penjualan/SPK)', path: '/sales', icon: '💰' },
-  { name: 'Purchase (Pembelian)', path: '/purchase', icon: '🛍️' },
-  { name: 'Rental (Sewa)', path: '/rental', icon: '📄' },
-  { name: 'Invoices (Tagihan)', path: '/invoices', icon: '🧾' },
-  { name: 'Warehouse (Gudang)', path: '/warehouse', icon: '📦' },
-  { name: 'Spare Parts (Suku Cadang)', path: '/spareparts', icon: '⚙️' },
-  { name: 'Service (Bengkel)', path: '/service', icon: '🔧' },
-  { name: 'Delivery (Surat Jalan)', path: '/delivery', icon: '🚚' },
-  { name: 'Finance (Keuangan)', path: '/finance', icon: '💵' },
-  { name: 'Reports (Laporan)', path: '/reports', icon: '📈' },
-  { name: 'Settings (Pengaturan)', path: '/settings', icon: '⚙️' },
-];
+export interface PaletteItem {
+  path: string;
+  label: string;
+  group: string;
+  keywords?: string[];
+}
 
-export default function CommandPalette() {
+// Daunnya tidak lagi di berkas ini: Layout meneruskan menu sidebar yang sudah
+// melewati gerbang peran pengguna + profil bisnis (NAV_GROUPS). Dulu palette
+// menyimpan COMMANDS sendiri, sehingga isinya cepat menyimpang dari layar —
+// urutannya beda, dan sembilan menu (Operator, Teknisi, Persetujuan, Breakdown,
+// Dokumen, Pengguna, Backup, Pemeliharaan, Audit Log) tidak bisa dicari lewat
+// Ctrl+K padahal ada di sidebar. Satu sumber daftar = tidak ada lagi menu yang
+// "hilang" dari salah satu jalan masuk.
+export default function CommandPalette({ items }: { items: PaletteItem[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -29,7 +23,7 @@ export default function CommandPalette() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setIsOpen((prev) => !prev);
@@ -39,8 +33,8 @@ export default function CommandPalette() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isOpen]);
 
   useEffect(() => {
@@ -51,9 +45,18 @@ export default function CommandPalette() {
     }
   }, [isOpen]);
 
-  const filteredCommands = COMMANDS.filter((cmd) =>
-    cmd.name.toLowerCase().includes(query.toLowerCase())
-  );
+  const q = query.trim().toLowerCase();
+  const filteredCommands = q.length === 0
+    ? items
+    : items.filter((cmd) =>
+      cmd.label.toLowerCase().includes(q)
+      || cmd.group.toLowerCase().includes(q)
+      || (cmd.keywords ?? []).some((k) => k.toLowerCase().includes(q))
+    );
+  const jumlah = filteredCommands.length;
+  // Indeks boleh lebih besar dari hasil filter (misalnya peran/profil berubah
+  // saat palette terbuka), jadi baris yang disorot dikunci ke daftar yang ada.
+  const aktif = jumlah > 0 ? Math.min(selectedIndex, jumlah - 1) : 0;
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -65,15 +68,16 @@ export default function CommandPalette() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (jumlah === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % filteredCommands.length);
+      setSelectedIndex((prev) => (Math.min(prev, jumlah - 1) + 1) % jumlah);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
-    } else if (e.key === 'Enter' && filteredCommands.length > 0) {
+      setSelectedIndex((prev) => (Math.min(prev, jumlah - 1) - 1 + jumlah) % jumlah);
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      handleExecute(filteredCommands[selectedIndex].path);
+      handleExecute(filteredCommands[aktif].path);
     }
   };
 
@@ -118,16 +122,17 @@ export default function CommandPalette() {
           <span style={{ fontSize: 12, background: 'var(--bg-elevated)', padding: '4px 8px', borderRadius: 4, color: 'var(--text-muted)' }}>ESC</span>
         </div>
         <div style={{ maxHeight: '300px', overflowY: 'auto', padding: '8px' }}>
-          {filteredCommands.length === 0 ? (
+          {jumlah === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
               Tidak menemukan hasil untuk "{query}"
             </div>
           ) : (
             filteredCommands.map((cmd, index) => {
-              const isSelected = index === selectedIndex;
+              const isSelected = index === aktif;
               return (
                 <div
                   key={cmd.path}
+                  data-palette-item={cmd.path}
                   onClick={() => handleExecute(cmd.path)}
                   onMouseEnter={() => setSelectedIndex(index)}
                   style={{
@@ -140,9 +145,9 @@ export default function CommandPalette() {
                     transition: 'all 0.1s'
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{cmd.icon}</span>
-                  <span style={{ fontWeight: isSelected ? 600 : 400 }}>{cmd.name}</span>
-                  {isSelected && <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>ENTER</span>}
+                  <span style={{ fontWeight: isSelected ? 600 : 400 }}>{cmd.label}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{cmd.group}</span>
+                  {isSelected && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ENTER</span>}
                 </div>
               );
             })

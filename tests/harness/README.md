@@ -153,9 +153,9 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11): migration 49, unit/`validation-check` 260,
-auth 58, gui 72, flow 30, handoff 123, usable 33, db 136, integritas 68, compat 30,
-perf 37, store 47, backup 87, smoke-paket 28 — seluruhnya tanpa FAIL.
+Hasil yang diharapkan (rantai 2026-10-11): migration 49, unit/`validation-check` 277,
+auth 58, gui 72, flow 30, handoff 123, usable 37, db 136, integritas 68, compat 30,
+perf 37, store 47, backup 87, smoke-paket 28 — 1.079 assertion, seluruhnya tanpa FAIL.
 Delapan jenis uji yang diminta terpetakan begitu: unit (validation-check, auth-check, db-check), fungsional
 (flow-check, handoff-check), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7),
 keamanan (gui-check bagian 11 dan 13, db-check bagian 12), kegunaan (flow-check menuntun
@@ -507,6 +507,7 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Nama collection asing atau argumen bukan daftar pada `db-load` diterima lalu dilewati diam-diam, sehingga halaman mengira collection itu kosong dan menimpanya dengan kosong | gui-check 15.1–15.3 dan 15.5, db-check 15.1–15.3 |
 | Handler layar Unit / Gudang membaca array store yang sejak #38 memang kosong: upload dan hapus foto tidak melakukan apa pun, nomor rangka ganda terasa unik, saran nomor mutasi selalu `-001` | handoff 9.6–9.9 |
 | Usulan nomor dokumen dihitung dari `array.length + 1` di 11 menu: nomor rangkap atau melompat, padahal nomor bisnis itulah kunci rujukan lintas menu (`electron/referential.ts`) | handoff 9.9 + 9.9b (bukti mutasi harus melewati nomor tanam `TRX-<tahun>-888` yang tidak ada di array halaman) dan 10.19a–d (SPK berlanjut dari 902 walau baris tertinggi sudah dihapus; usulan terbukti tidak ada di file), validation 23 (celah sesudah hapus, 60 nomor terisi → 61, `T-00010` tetap menghalangi 10, embel asing tidak menghalangi, mode browser) + penjaga statis: tidak ada `.length + n` pada baris bernomor di `src/pages`, ke-11 collection wajib dipanggil lewat `nomorBerikut`, dan pasangannya wajib kolom SQL sungguhan di `dbSchema` |
+| Menu yang sama diceritakan empat daftar berbeda: katalog Pengaturan dikelompokkan lain dari sidebar, `Ctrl+K` hanya menawarkan 17 dari 26 menu, dan pencarian topbar membocorkan menu yang sudah dimatikan untuk profil/peran | usable 7.1–7.4 (profil DEALER: 25 menu, palette == sidebar sebutir-butir, "onderdil" → `/spareparts` lewat Enter, "sewa" tidak menampilkan `/rental`), validation 25 (kategori katalog == grup sidebar, urutan katalog subsekuensi sidebar, siklus grup sidebar tetap, `ALL_PATHS` lengkap tanpa path mati, palette tanpa daftar sendiri, topbar lewat hasil gerbang, kata kunci + kunci peta hidrasi per menu); penjaga ini menggigit pada penulisan pertamanya: katalog meletakkan `/documents` sebelum `/users` dan harness menolak, lalu `cat: 'Operasional'` dikembalikan ke `/rental` dan harness menolak lagi |
 | Migrasi foto base64 tidak pernah berjalan lagi karena memindai array `units` yang belum termuat | handoff 9.3–9.5 (kolom turunan `inlinePhoto` + jalur sungguhnya), db-check 15.4–15.5 (paritas SQLite vs `inlinePhotoOf`) |
 | Handoff antar menu patah (Pembelian→Gudang/Pemasok/Kas, Servis→Part/Invoice, Invoice→Kas) | handoff-check bagian 1–6 |
 | Angka kartu Dasbor berbeda dari isi database setelah pindah ke query | handoff 6.5b (kartu DEALER vs hitungan penuh), db-check 13.1–13.10 |

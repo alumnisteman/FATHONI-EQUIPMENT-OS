@@ -1,7 +1,7 @@
 # FATHONI EQUIPMENT OS — Laporan QA
 **Versi aplikasi**: 3.0.0 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
-**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.058 assertion, 0 gagal.
+**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.079 assertion, 0 gagal.
 
 Laporan ini menggantikan laporan 2026-09-23 (HEMS 1.0.0). Laporan lama itu sudah tidak
 berlaku dan sengaja ditulis ulang, bukan ditambal: ia menyebut localStorage sebagai
@@ -28,9 +28,9 @@ Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11.
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 260 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), + penjaga statis (§5) |
+| **Unit** | `validation-check` | 277 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), sinkron daftar menu antar jalan masuk (§4.8), + penjaga statis (§5) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
-| **Fungsional** | `gui-check`, `flow-check`, `usable-check` | 72 + 30 + 33 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16 |
+| **Fungsional** | `gui-check`, `flow-check`, `usable-check` | 72 + 30 + 37 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16; tiga pintu masuk menu (sidebar, cari di topbar, Ctrl+K) menawarkan daftar yang sama dan sama-sama tergerbang profil/peran — usable 7.1–7.4 |
 | **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7) |
 | **Integritas & transaksi** | `db-check`, `integritas-check` | 136 + 68 | paritas SQL vs `matchesWhere`, `where` pada kunci `id`, rujukan saat hapus termasuk aturan ber-blob untuk orang, rollback penuh saat patch beracun, file tetap sehat setelah dibuka ulang |
 | **Keamanan** | `auth-check`, `npm audit` | 58 + 0 kerentanan | balasan login tanpa password/hash/salt, pesan generik, lockout, sesi palsu ditolak, CSP/sandbox/izin, injeksi formula CSV ditahan |
@@ -130,12 +130,37 @@ per collection belum ada angka, jadi jangan dinyatakan sebagai "sudah teruji".
    dihapus; usulan bukti mutasi melewati nomor tanam 888, yang mustahil dihasilkan
    rumus lama).
 
-Pola yang menyatukan ketujuhnya: yang rusak bukan satu menu, melainkan asumsi bahwa
-data yang dibaca selalu lengkap dan selalu berasal dari jalur yang sama.
+8. **Menu yang sama diceritakan empat kali, dan keempatnya sudah menyimpang.**
+   Sebuah jalur kerja dibaca pengguna dari empat tempat: urutan sidebar, katalog modul
+   di tab Pengaturan (`ALL_MODULES`), tombol "aktifkan semua menu" (`ALL_PATHS` di
+   `configStore`), dan CommandPalette Ctrl+K yang dulu menyalin daftarnya sendiri.
+   Yang ditemukan: katalog Pengaturan menempatkan Sewa/Rental di kelompok Operasional
+   padahal sidebar memanggilnya Transaksi, `Ctrl+K` hanya menawarkan 17 dari 26 menu
+   (Operator, Teknisi, Persetujuan, Breakdown, Dokumen, Pengguna, Backup, Pemeliharaan,
+   Audit Log tidak bisa dicari sama sekali), dan pencarian di topbar membaca
+   `ALL_NAV_ITEMS` mentah — menu yang dimatikan untuk profil/peran pengguna
+   tetap muncul sebagai hasil cari dan bisa dibuka dari sana. Urutan sidebar kini
+   mengikuti siklus proyek (Utama → Master Data → Transaksi: beli-jual/sewa-acc-faktur
+   → Operasional: gudang-part-rusak-servis-kirim → Keuangan → Sistem), dan tiga daftar
+   lain tidak lagi berdiri sendiri: palette menerima item hasil gerbang dari Layout,
+   pencarian topbar memakai daftar yang sama, katalog Pengaturan disusun ulang mengikuti
+   sidebar. Tidak ada skema, IPC, atau `DERIVED_REVISION` yang berubah. *Bukti*:
+   usable 7.1–7.4 (profil DEALER: 25 menu di sidebar, palette == sidebar sebutir-butir,
+   kata kunci "onderdil" menemukan Suku Cadang dan Enter benar-benar pindah ke
+   `/spareparts`, kata "sewa" tidak membocorkan `/rental` yang mati untuk profil itu).
+   *Penjaga*: validation 25 (kategori katalog == grup sidebar, urutan katalog subsekuensi
+   urutan sidebar, siklus grup sidebar tetap, `ALL_PATHS` wajib memuat semua menu
+   bergerbang, tidak ada path mati, palette tidak boleh punya daftar sendiri,
+   pencarian topbar wajib lewat daftar tergerbang, tiap menu punya kata kunci, tiap menu
+   punya kunci di peta hidrasi).
+
+Pola yang menyatukan kedelapannya: yang rusak bukan satu menu, melainkan asumsi bahwa
+data yang dibaca selalu lengkap, selalu berasal dari jalur yang sama, dan selalu
+diceritakan dengan cara yang sama di setiap tempat.
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
 
-`validation-check` §12, §15–§24 menahan bentuk kode, bukan hanya hasilnya:
+`validation-check` §12, §15–§25 menahan bentuk kode, bukan hanya hasilnya:
 peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataStore`;
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
@@ -146,7 +171,14 @@ daftar `search` anak, dan teknisi/operator tidak boleh kembali menjadi record da
 sumber nomor dokumen (§4.7) — tidak ada lagi baris di `src/pages` yang menghitung
 nomor dari `.length + n`, ke-11 collection bernomor bisnis wajib dipanggil lewat
 `nomorBerikut`, dan pasangan (collection, field) itu wajib benar-benar kolom SQL di
-`dbSchema` supaya pemeriksaan kandidat tidak pernah diam-diam disaring keluar.
+`dbSchema` supaya pemeriksaan kandidat tidak pernah diam-diam disaring keluar;
+satu daftar menu (§4.8) — `NAV_GROUPS` dibaca parser dan jumlah itemnya dicocokkan dengan
+berkas, grup sidebar wajib tetap mengikuti siklus proyek, katalog `ALL_MODULES` wajib
+berkategori sama dan berurutan subsekuensinya, `ALL_PATHS` `enableAllMenus` wajib
+memuat semua menu bergerbang tanpa path mati, palette tidak boleh mengulang daftar,
+pencarian topbar wajib membaca hasil gerbang, tiap menu punya kata kunci dan kunci
+peta hidrasi. Kelima penjaga itu diverifikasi dengan mutasi (menabrakannya sengaja
+lalu dilihat FAIL) — bukan hanya hijau pada kode yang sudah benar.
 
 ## 6. Yang BELUM diverifikasi (perbatasan laporan ini)
 

@@ -292,13 +292,89 @@ async function run(wc) {
   ok('6.2 konten yang lebih tinggi dari jendela selalu punya jalur gulir',
     tanpaJalurSkroll.length === 0, tanpaJalurSkroll.map(h => [h.nama, h.clientT, h.scrollT]));
 
+  // ── 7. pintu masuk menu: sidebar, pencarian topbar, Ctrl+K ──────────
+  // Profil uji di §2.1 adalah DEALER, jadi 'Sewa / Rental' (RENTAL/CONTRACTOR)
+  // tidak boleh muncul di mana pun. Dulu CommandPalette membawa daftarnya sendiri
+  // (17 dari 26 menu, urutan beda, tanpa gerbang) dan pencarian topbar membaca
+  // ALL_NAV_ITEMS mentah — user bisa menemukan serta membuka menu yang menurut
+  // profilnya sedang mati, sementara menu yang HIDUP tidak selalu bisa dicari.
+  await ev(wc, `window.location.hash = '#/dashboard'; return true;`);
+  const adaSidebar = await waitFor(wc, `document.querySelectorAll('.sidebar-item').length >= 20`,
+    'sidebar terisi menu untuk profil DEALER', 20000);
+  const linkSidebar = await ev(wc, `
+    return [...document.querySelectorAll('.sidebar-item')]
+      .map(a => (a.getAttribute('href') || '').replace(/^#/, ''));`);
+  ok('7.1 sidebar menampilkan menu profil DEALER tanpa Sewa/Rental',
+    adaSidebar && linkSidebar.length === 25 && !linkSidebar.includes('/rental'),
+    { jumlah: linkSidebar.length, rental: linkSidebar.includes('/rental') });
+
+  await ev(wc, `
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+    return true;`);
+  const paletteTerbuka = await waitFor(wc,
+    `[...document.querySelectorAll('input')].some(x => (x.placeholder || '').includes('menu atau halaman'))`,
+    'Ctrl+K membuka command palette', 8000);
+  const barisPalette = await waitFor(wc, `document.querySelectorAll('[data-palette-item]').length >= 20`,
+    'palette menampilkan daftar menu', 8000);
+  const pathPalette = await ev(wc, `
+    return [...document.querySelectorAll('[data-palette-item]')]
+      .map(e => e.getAttribute('data-palette-item'));`);
+  const bedaPalette = [...new Set([...pathPalette, ...linkSidebar])]
+    .filter(p => pathPalette.includes(p) !== linkSidebar.includes(p));
+  ok('7.2 Ctrl+K menawarkan menu yang sama persis dengan sidebar (satu sumber, satu gerbang)',
+    paletteTerbuka && barisPalette && pathPalette.length === linkSidebar.length && bedaPalette.length === 0,
+    { palette: pathPalette.length, sidebar: linkSidebar.length, beda: bedaPalette });
+
+  // Enter dari palette harus benar-benar membuka rutenya, bukan hanya menutup layer.
+  await ev(wc, `
+    const inp = [...document.querySelectorAll('input')].find(x => (x.placeholder || '').includes('menu atau halaman'));
+    setVal(inp, 'onderdil');
+    return true;`);
+  const ketemuKunci = await waitFor(wc,
+    `document.querySelectorAll('[data-palette-item]').length === 1`
+    + ` && document.querySelector('[data-palette-item]').getAttribute('data-palette-item') === '/spareparts'`,
+    'kata kunci "onderdil" menemukan Suku Cadang', 8000);
+  await ev(wc, `
+    const inp = [...document.querySelectorAll('input')].find(x => (x.placeholder || '').includes('menu atau halaman'));
+    inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    return true;`);
+  const masukRute = await waitFor(wc, `location.hash === '#/spareparts'`,
+    'Enter di palette membawa ke /spareparts', 8000);
+  ok('7.3 kata kunci menu (onderdil) dikenali palette dan Enter membuka rutenya',
+    ketemuKunci === true && masukRute === true, { ketemuKunci, masukRute });
+
+  await ev(wc, `
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    return true;`);
+  await wait(300);
+
+  // Kotak cari di topbar: kata kerja profil (sewa) tidak boleh menawarkan menu
+  // yang dimatikan, sementara kata kunci part harus menemukan satu menu tepat.
+  const inputTopbar = await ev(wc, `
+    const i = document.querySelector('.topbar-search input');
+    i.focus(); setVal(i, 'onderdil');
+    return !!i;`);
+  const hasilTopbar = await waitFor(wc,
+    `document.querySelectorAll('[data-search-result]').length === 1`
+    + ` && document.querySelector('[data-search-result]').getAttribute('data-search-result') === '/spareparts'`,
+    'pencarian topbar menemukan Suku Cadang dari kata kunci', 8000);
+  await ev(wc, `setVal(document.querySelector('.topbar-search input'), 'sewa'); return true;`);
+  await wait(400);
+  const bocorSewa = await ev(wc, `
+    return [...document.querySelectorAll('[data-search-result]')]
+      .map(e => e.getAttribute('data-search-result'));`);
+  ok('7.4 pencarian topbar memakai kata kunci yang sama dan tidak membocorkan menu yang mati',
+    inputTopbar === true && hasilTopbar === true && !bocorSewa.includes('/rental'),
+    { hasilTopbar, hasilUntukSewa: bocorSewa });
+  await ev(wc, `setVal(document.querySelector('.topbar-search input'), ''); return true;`);
+
   // Bersihkan jejak uji supaya profil sementara tidak menyimpan data palsu.
   const bersih = await ev(wc, `
     const patch = {};
     for (const k of Object.keys(${JSON.stringify(SEED)})) patch[k] = { upsert: [], removeIds: ${JSON.stringify(Object.values(SEED).flat().map(r => r.id))} };
     const r = await window.electronAPI.dbPatch(patch);
     return Object.entries(r).every(([k, v]) => !v || v.deleted === undefined || v.deleted >= 0);`);
-  ok('7.1 data uji dibersihkan lewat jalur yang sama', bersih === true, bersih);
+  ok('8.1 data uji dibersihkan lewat jalur yang sama', bersih === true, bersih);
 
   console.log(`\n=== usability: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);

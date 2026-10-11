@@ -33,13 +33,23 @@ interface NavGroup {
 }
 
 /**
- * MENU DIURUTKAN BERDASARKAN ALUR KERJA BISNIS:
- * 1. Utama        → Dashboard & Control Tower (overview)
- * 2. Master Data  → Setup data referensi (merek, unit, pelanggan, pemasok, SDM)
- * 3. Transaksi    → Kegiatan jual-beli & sewa (sales, purchase, rental, invoice)
- * 4. Operasional  → Pelaksanaan lapangan (gudang, servis, breakdown, pengiriman)
- * 5. Keuangan     → Kas, bank & laporan keuangan
- * 6. Sistem       → Admin, akses, backup, audit
+ * MENU DIURUTKAN BERDASARKAN ALUR KERJA BISNIS — satu proyek dari awal sampai selesai:
+ * 1. Utama        → Dasbor, Control Tower (buka hari, lalu pantau yang berjalan)
+ * 2. Master Data  → Merek & Model, Unit, Pelanggan, Pemasok, Operator, Teknisi
+ *                   (yang diperjualbelikan dulu, baru pihak-pihaknya)
+ * 3. Transaksi    → Pembelian, Penjualan, Sewa / Rental, Persetujuan, Faktur
+ *                   (belanja barang → ikat janji ke pelanggan → minta wewenang → tagih)
+ * 4. Operasional  → Gudang, Suku Cadang, Breakdown, Servis & Work Order, Pengiriman
+ *                   (barang masuk → part tersedia → rusak → diperbaiki → diserahkan)
+ * 5. Keuangan     → Kas & Bank, Laporan (uang diterima, lalu dievaluasi)
+ * 6. Sistem       → Pengaturan, Pengguna, Dokumen Legal, Backup & Restore,
+ *                   Pemeliharaan Sistem, Audit Log (siapkan → rawat → awasi)
+ *
+ * Urutan ini bukan hiasan: menu yang sama juga disebut di tempat lain (katalog modul
+ * di Pengaturan / ALL_MODULES pada src/pages/Settings.tsx, peta kebutuhan collection di
+ * src/store/collectionNeeds.ts, daftar "aktifkan semua menu" di src/store/configStore.tsx),
+ * dan semuanya harus mengatakan hal yang sama tentang kelompok mana sebuah menu milik.
+ * Kunci statis: validation-check §25.
  */
 const NAV_GROUPS: NavGroup[] = [
   // ── 1. UTAMA ─────────────────────────────────────────────
@@ -110,22 +120,24 @@ const NAV_GROUPS: NavGroup[] = [
   },
 
   // ── 3. TRANSAKSI ──────────────────────────────────────────
+  // Belanja dulu (PO), baru ikat janji ke pelanggan (SPK / kontrak sewa); permintaan
+  // wewenang menyusul di tengah, faktur menutup rantai ini.
   {
     label: 'Transaksi',
     items: [
-      {
-        path: '/sales',
-        label: 'Penjualan',
-        keywords: ['penjualan', 'jual', 'sales', 'order', 'SO'],
-        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-        requiredModes: ['DEALER', 'TRADER'],
-      },
       {
         path: '/purchase',
         label: 'Pembelian',
         keywords: ['pembelian', 'beli', 'purchase', 'PO', 'order pembelian'],
         icon: 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z',
         requiredModes: ['DEALER', 'CONTRACTOR', 'TRADER'],
+      },
+      {
+        path: '/sales',
+        label: 'Penjualan',
+        keywords: ['penjualan', 'jual', 'sales', 'order', 'SO'],
+        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+        requiredModes: ['DEALER', 'TRADER'],
       },
       {
         path: '/rental',
@@ -135,37 +147,27 @@ const NAV_GROUPS: NavGroup[] = [
         requiredModes: ['RENTAL', 'CONTRACTOR'],
       },
       {
+        path: '/approvals',
+        label: 'Persetujuan (Approval)',
+        keywords: ['approval', 'persetujuan', 'otorisasi', 'authorize', 'approve'],
+        icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      },
+      {
         path: '/invoices',
         label: 'Faktur / Invoice',
         keywords: ['faktur', 'invoice', 'tagihan', 'billing', 'kwitansi'],
         icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
         requiredModes: ['DEALER', 'RENTAL', 'WORKSHOP', 'TRADER'],
       },
-      {
-        path: '/approvals',
-        label: 'Persetujuan (Approval)',
-        keywords: ['approval', 'persetujuan', 'otorisasi', 'authorize', 'approve'],
-        icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-      },
     ],
   },
 
   // ── 4. OPERASIONAL ────────────────────────────────────────
+  // Urut seperti kejadian di lapangan: barang masuk gudang, part tersedia, unit rusak,
+  // work order dikerjakan, terakhir unit diserahkan lewat surat jalan.
   {
     label: 'Operasional',
     items: [
-      {
-        path: '/service',
-        label: 'Servis & Work Order',
-        keywords: ['servis', 'service', 'WO', 'work order', 'perawatan', 'maintenance'],
-        icon: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
-      },
-      {
-        path: '/breakdown',
-        label: 'Breakdown',
-        keywords: ['breakdown', 'rusak', 'mogok', 'darurat', 'emergency'],
-        icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
-      },
       {
         path: '/warehouse',
         label: 'Gudang',
@@ -179,6 +181,18 @@ const NAV_GROUPS: NavGroup[] = [
         keywords: ['suku cadang', 'spare part', 'onderdil', 'part', 'komponen'],
         icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
         requiredModes: ['DEALER', 'WORKSHOP', 'CONTRACTOR'],
+      },
+      {
+        path: '/breakdown',
+        label: 'Breakdown',
+        keywords: ['breakdown', 'rusak', 'mogok', 'darurat', 'emergency'],
+        icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+      },
+      {
+        path: '/service',
+        label: 'Servis & Work Order',
+        keywords: ['servis', 'service', 'WO', 'work order', 'perawatan', 'maintenance'],
+        icon: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
       },
       {
         path: '/delivery',
@@ -210,9 +224,16 @@ const NAV_GROUPS: NavGroup[] = [
   },
 
   // ── 6. SISTEM ─────────────────────────────────────────────
+  // Siapkan (pengaturan, akses, dokumen) → rawat (backup, pemeliharaan) → awasi (audit).
   {
     label: 'Sistem',
     items: [
+      {
+        path: '/settings',
+        label: 'Pengaturan',
+        keywords: ['setting', 'pengaturan', 'konfigurasi', 'profil perusahaan'],
+        icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+      },
       {
         path: '/users',
         label: 'Pengguna',
@@ -221,23 +242,10 @@ const NAV_GROUPS: NavGroup[] = [
         requiredRoles: ['SUPERADMIN'],
       },
       {
-        path: '/audit-log',
-        label: 'Audit Log',
-        keywords: ['audit', 'log', 'histori', 'riwayat', 'aktivitas'],
-        icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-        requiredRoles: ['SUPERADMIN'],
-      },
-      {
         path: '/documents',
         label: 'Dokumen Legal',
         keywords: ['dokumen', 'legal', 'SIA', 'izin', 'sertifikat', 'BPKB', 'STNK'],
         icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-      },
-      {
-        path: '/settings',
-        label: 'Pengaturan',
-        keywords: ['setting', 'pengaturan', 'konfigurasi', 'profil perusahaan'],
-        icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
       },
       {
         path: '/backup',
@@ -250,6 +258,13 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'Pemeliharaan Sistem',
         keywords: ['maintenance', 'sistem', 'pemeliharaan', 'repair', 'clean'],
         icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+      },
+      {
+        path: '/audit-log',
+        label: 'Audit Log',
+        keywords: ['audit', 'log', 'histori', 'riwayat', 'aktivitas'],
+        icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+        requiredRoles: ['SUPERADMIN'],
       },
     ],
   },
@@ -295,6 +310,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const currentTitle = ALL_NAV_ITEMS
     .find(i => location.pathname.startsWith(i.path))?.label ?? 'FATHONI EQUIPMENT OS';
 
+  // Satu daftar menu untuk semuanya: sidebar, kotak cari di topbar, dan
+  // CommandPalette (Ctrl+K) membaca hasil gerbang yang sama (peran pengguna +
+  // profil bisnis). Dulu palette menyimpan daftarnya sendiri dan pencarian sidebar
+  // memakai ALL_NAV_ITEMS mentah, jadi menu yang disembunyikan di sidebar tetap
+  // bisa dituju dari pencarian — dan sembilan menu baru tidak pernah ada di sana.
+  const menuTerbuka = filteredGroups.flatMap(g => g.items.map(i => ({ ...i, group: g.label })));
+
   // BUG-012 FIX: Konfirmasi sebelum reset profil bisnis
   const handleChangeProfile = () => {
     if (window.confirm('Ganti profil bisnis? Halaman akan diarahkan ke halaman setup.')) {
@@ -312,7 +334,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   // BUG-017 FIX: Global search yang benar-benar berfungsi
   const searchResults = search.trim().length >= 2
-    ? ALL_NAV_ITEMS.filter(item => {
+    ? menuTerbuka.filter(item => {
         const q   = search.toLowerCase();
         const inLabel    = item.label.toLowerCase().includes(q);
         const inKeywords = item.keywords?.some(k => k.toLowerCase().includes(q));
@@ -480,6 +502,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {searchResults.map(item => (
                   <button
                     key={item.path}
+                    data-search-result={item.path}
                     onClick={() => handleSearchNavigate(item.path)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
@@ -597,7 +620,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         .user-menu-item.danger { color: var(--status-out); }
         .user-menu-item.danger:hover { background: rgba(239,68,68,0.08); }
       `}</style>
-      <CommandPalette />
+      <CommandPalette items={menuTerbuka} />
     </div>
   );
 }

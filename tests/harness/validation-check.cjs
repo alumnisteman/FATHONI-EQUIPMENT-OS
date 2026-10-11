@@ -775,6 +775,153 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   }
   check('template cetak Operator/Teknisi/Breakdown menormalkan array sebelum template',
     TERCETAK.length === 0, { TERCETAK });
+
+  // ── 25. katalog modul Settings sinkron dengan sidebar ────────────────
+  // Dua daftar menerangkan menu yang sama: NAV_GROUPS di Layout.tsx (sidebar,
+  // yang tiap hari dilihat user) dan ALL_MODULES di Settings.tsx (katalog modul di
+  // tab Pengaturan). Keduanya dulu berdiri sendiri: `/rental` berada di grup
+  // Transaksi di sidebar tapi berkategori 'Operasional' di katalog, dan urutan
+  // katalog masih warisan lama. User yang mengaktifkan modul dari Pengaturan lalu
+  // mencari menunya di sidebar menemukan posisi dan kelompok yang berbeda — persis
+  // "miss komunikasi antar menu" yang dilarang. Yang dikunci: kategori katalog ==
+  // grup sidebar, urutan katalog == subsekuensi urutan sidebar, dan urutan grup
+  // sidebar itu sendiri adalah siklus proyek dari awal sampai selesai.
+  const LAYOUT_TEKS = fs.readFileSync(path.join(ROOT, 'src', 'components', 'Layout.tsx'), 'utf8');
+  const AWAL_NAV = LAYOUT_TEKS.indexOf('const NAV_GROUPS');
+  const NAV_TEKS = LAYOUT_TEKS.slice(AWAL_NAV, LAYOUT_TEKS.indexOf('\n];', AWAL_NAV));
+  check('sidebar: blok NAV_GROUPS terbaca', AWAL_NAV > 0 && NAV_TEKS.length > 1000,
+    { AWAL_NAV, panjang: NAV_TEKS.length });
+
+  const GRUP_NAV = [];        // [{ grup, paths: [...] }]
+  const GRUP_DARI_PATH = {};  // '/sales' -> 'Transaksi'
+  const URUT_SIDEBAR = [];    // path dalam urutan tampil
+  let grupAktif = null;
+  for (const baris of NAV_TEKS.split(/\r?\n/)) {
+    const g = /^\s{4}label: '([^']+)',$/.exec(baris);
+    if (g) { grupAktif = g[1]; GRUP_NAV.push({ grup: g[1], paths: [] }); continue; }
+    const p = /^\s{8}path: '(\/[^']+)',$/.exec(baris);
+    if (p && grupAktif) {
+      GRUP_NAV[GRUP_NAV.length - 1].paths.push(p[1]);
+      GRUP_DARI_PATH[p[1]] = grupAktif;
+      URUT_SIDEBAR.push(p[1]);
+    }
+  }
+  // Parser berbasis indentasi bisa diam-diam menghasilkan daftar pendek kalau
+  // formatnya berubah. Penjaga: jumlah path yang terbaca harus sama dengan jumlah
+  // baris `path:` yang ada di blok itu.
+  const JUMLAH_BARIS_PATH = (NAV_TEKS.match(/^\s{8}path:/gm) || []).length;
+  check('sidebar: seluruh item NAV_GROUPS terbaca parser (daftar tidak boleh bocor)',
+    URUT_SIDEBAR.length === JUMLAH_BARIS_PATH && GRUP_NAV.length >= 6 && URUT_SIDEBAR.length >= 25,
+    { terbaca: URUT_SIDEBAR.length, diBerkas: JUMLAH_BARIS_PATH, grup: GRUP_NAV.map(x => x.grup) });
+
+  // Siklus: beranda -> master data -> transaksi (beli, jual/sewa, tagih) ->
+  // operasional (stok & servis menindaklanjuti) -> keuangan -> sistem.
+  const SIKLUS = ['Utama', 'Master Data', 'Transaksi', 'Operasional', 'Keuangan', 'Sistem'];
+  check('sidebar: grup mengikuti siklus proyek awal-sampai-selesai',
+    GRUP_NAV.map(x => x.grup).join('|') === SIKLUS.join('|'),
+    { nyata: GRUP_NAV.map(x => x.grup), diharapkan: SIKLUS });
+  const URUT_TRANSAKSI = (GRUP_NAV.find(x => x.grup === 'Transaksi') || { paths: [] }).paths;
+  const posOf = (p) => URUT_TRANSAKSI.indexOf(p);
+  check('sidebar: dalam Transaksi urutan belanjanya dahulu (PO -> SO/Sewa -> Faktur)',
+    URUT_TRANSAKSI.includes('/purchase') && URUT_TRANSAKSI.includes('/sales')
+    && URUT_TRANSAKSI.includes('/rental') && URUT_TRANSAKSI.includes('/invoices')
+    && posOf('/purchase') < posOf('/sales')
+    && posOf('/sales') < posOf('/invoices') && posOf('/rental') < posOf('/invoices'),
+    { Transaksi: URUT_TRANSAKSI });
+
+  const SETTINGS_TEKS = fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Settings.tsx'), 'utf8');
+  const KATALOG = [...SETTINGS_TEKS.matchAll(/^\s*\{\s*path:\s*'(\/[^']+)',.*?\bcat:\s*'([^']+)'/gm)]
+    .map(m => ({ path: m[1], cat: m[2] }));
+  check('katalog modul: daftar ALL_MODULES terbaca (penjaga tidak boleh kosong)',
+    KATALOG.length >= 17, { jumlah: KATALOG.length });
+  // Label kategori di katalog lebih rinci daripada judul grup sidebar; ini
+  // terjemahannya. Kategori baru tanpa padanan akan tertangkap di BUKAN_GRUP.
+  const PETA_KATEGORI = {
+    'Alat Berat': 'Master Data', 'CRM & Mitra': 'Master Data',
+    'Transaksi': 'Transaksi', 'Operasional': 'Operasional',
+    'Keuangan': 'Keuangan', 'Sistem': 'Sistem',
+  };
+  const TIDAK_ADA_DI_SIDEBAR = KATALOG.filter(m => !GRUP_DARI_PATH[m.path]).map(m => m.path);
+  check('katalog modul: setiap modul yang ditawarkan Pengaturan ada di sidebar',
+    TIDAK_ADA_DI_SIDEBAR.length === 0, TIDAK_ADA_DI_SIDEBAR);
+  const BEDA_KATEGORI = KATALOG
+    .filter(m => GRUP_DARI_PATH[m.path] && PETA_KATEGORI[m.cat] !== GRUP_DARI_PATH[m.path])
+    .map(m => `${m.path}: katalog '${m.cat}' (grup sidebar: ${GRUP_DARI_PATH[m.path]})`);
+  check('katalog modul: kategori sama dengan grup sidebar untuk path yang sama',
+    BEDA_KATEGORI.length === 0, BEDA_KATEGORI);
+  const OUT_OF_MAP = [...new Set(KATALOG.map(m => m.cat))].filter(c => !PETA_KATEGORI[c]);
+  check('katalog modul: semua label kategori punya padanan grup sidebar',
+    OUT_OF_MAP.length === 0, OUT_OF_MAP);
+  // Subsekuensi: urutan katalog harus bisa diikuti di sidebar tanpa melompat mundur.
+  const TIDAK_URUT = [];
+  let kemudi = -1;
+  for (const m of KATALOG) {
+    const i = URUT_SIDEBAR.indexOf(m.path);
+    if (i < 0 || i >= kemudi) { if (i >= 0) kemudi = i; continue; }
+    TIDAK_URUT.push(`${m.path} didahului ${URUT_SIDEBAR[kemudi]} di sidebar`);
+  }
+  check('katalog modul: urutannya subsekuensi dari urutan sidebar',
+    TIDAK_URUT.length === 0, { TIDAK_URUT, katalog: KATALOG.map(m => m.path) });
+
+  // Jalan masuk kedua ke menu yang sama: CommandPalette (Ctrl+K) dan kotak cari di
+  // topbar. Keduanya dulu berdiri sendiri — palette mengulang daftar menu (dan
+  // tinggal menampung 17 dari 26 menu), pencarian sidebar memakai ALL_NAV_ITEMS
+  // mentah sehingga menu yang disembunyikan untuk peran/profil itu masih bisa
+  // dituju. Sekarang keduanya memakai hasil gerbang NAV_GROUPS.
+  const PALETTE_TEKS = fs.readFileSync(path.join(ROOT, 'src', 'components', 'CommandPalette.tsx'), 'utf8');
+  const DI_ULANG_DI_PALETTE = [...PALETTE_TEKS.matchAll(/\bpath:\s*'(\/[a-z-]+)'/g)].map(m => m[1]);
+  check('CommandPalette: tidak punya daftar menu sendiri, melainkan menerima item dari Layout',
+    DI_ULANG_DI_PALETTE.length === 0
+    && /items:\s*PaletteItem\[\]/.test(PALETTE_TEKS)
+    && LAYOUT_TEKS.includes('<CommandPalette items={menuTerbuka} />'),
+    { pathYangDiulang: DI_ULANG_DI_PALETTE, terimaProp: /items:\s*PaletteItem\[\]/.test(PALETTE_TEKS) });
+  check('pencarian topbar: hasil baca dari menu yang sudah lolos gerbang peran/profil',
+    /const searchResults[\s\S]{0,160}menuTerbuka\.filter/.test(LAYOUT_TEKS)
+    && !/ALL_NAV_ITEMS\.filter/.test(LAYOUT_TEKS),
+    { masihMentah: /ALL_NAV_ITEMS\.filter/.test(LAYOUT_TEKS) });
+  // Nama menu yang dicari user harus dikenali dari kedua jalan masuk; keyword satu
+  // daftar dipakai bersama karena palette dan topbar membaca item yang sama.
+  const TANPA_KEYWORD = URUT_SIDEBAR.filter(p => {
+    const potong = LAYOUT_TEKS.slice(LAYOUT_TEKS.indexOf(`path: '${p}'`));
+    return !/keywords:\s*\[/.test(potong.slice(0, 400));
+  });
+  check('sidebar: setiap menu punya kata kunci pencarian (label Indonesia saja tidak cukup)',
+    TANPA_KEYWORD.length === 0, TANPA_KEYWORD);
+
+  // Daftar ke-empat: ALL_PATHS di configStore (tombol "aktifkan semua menu" di
+  // wizard / Pengaturan). Ia satu-satunya jalan menyalakan menu di luar profil,
+  // jadi menu baru yang lupa dimasukkan ke daftar ini tidak akan pernah bisa
+  // dibuka pengguna yang profilnya berbeda. Yang wajib ada hanya menu bergerbang
+  // mode — menu tanpa gerbang (Dasbor, Control Tower) selalu tampil.
+  const BLOK_ITEM = NAV_TEKS.split(/\n\s{6}\{\n/).slice(1);
+  const MENU_BERGELEMBAR = [];
+  for (const mentah of BLOK_ITEM) {
+    const isi = mentah.split(/\n\s{6}\}/)[0];
+    const p = /path:\s*'(\/[^']+)'/m.exec(isi);
+    if (p && /requiredModes:/.test(isi)) MENU_BERGELEMBAR.push(p[1]);
+  }
+  const CONFIG_TEKS = fs.readFileSync(path.join(ROOT, 'src', 'store', 'configStore.tsx'), 'utf8');
+  const AWAL_ALL_PATHS = CONFIG_TEKS.indexOf('const ALL_PATHS');
+  const ALL_PATHS = [...CONFIG_TEKS.slice(AWAL_ALL_PATHS, CONFIG_TEKS.indexOf('];', AWAL_ALL_PATHS))
+    .matchAll(/'(\/[^']+)'/g)].map(m => m[1]);
+  check('enableAllMenus: daftar path terbaca penjaga',
+    AWAL_ALL_PATHS > 0 && ALL_PATHS.length >= 24, { jumlah: ALL_PATHS.length });
+  const KURANG_DI_ALL = MENU_BERGELEMBAR.filter(p => !ALL_PATHS.includes(p));
+  check('enableAllMenus: setiap menu yang digerbangi mode bisa diaktifkan dari daftar',
+    KURANG_DI_ALL.length === 0, { kurang: KURANG_DI_ALL, bergelembang: MENU_BERGELEMBAR.length });
+  const MATI_DI_ALL = ALL_PATHS.filter(p => !URUT_SIDEBAR.includes(p));
+  check('enableAllMenus: tidak ada path mati di daftar (setiap entri masih jadi menu)',
+    MATI_DI_ALL.length === 0, MATI_DI_ALL);
+
+  // peta hidrasi (collectionNeeds) adalah jalan masuk kelima: menu yang tidak ada
+  // kuncinya di sana diam-diam menghidrasi SEMUA collection tiap dibuka — lambat,
+  // dan justru pola yang dibuang di #38.
+  const KUNCI_NEEDS = [...fs.readFileSync(path.join(ROOT, 'src', 'store', 'collectionNeeds.ts'), 'utf8')
+    .matchAll(/^\s{2}'?([a-z][a-z-]*)'?:\s*(?:\[|SEMUA_COLLECTION)/gm)].map(m => m[1]);
+  check('peta hidrasi: daftar kunci terbaca penjaga', KUNCI_NEEDS.length >= 25, KUNCI_NEEDS.length);
+  const TANPA_PETA = [...new Set(URUT_SIDEBAR.map(p => p.replace(/^\//, '')))].filter(k => !KUNCI_NEEDS.includes(k));
+  check('peta hidrasi: setiap menu sidebar punya kunci kebutuhan collection',
+    TANPA_PETA.length === 0, TANPA_PETA);
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

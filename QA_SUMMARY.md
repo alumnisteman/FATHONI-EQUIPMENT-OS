@@ -5,18 +5,18 @@
 ## Verdict
 
 Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
-**15 langkah, 1.058 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
+**15 langkah, 1.079 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
 `npm audit` 0 kerentanan tinggi/kritis.
 
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 260 |
+| unit (`validation-check`) | 277 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 72 |
 | flow (fungsional) | 30 |
 | handoff (integrasi lintas menu) | 123 |
-| usable (usability + ukuran layar) | 33 |
+| usable (usability + ukuran layar) | 37 |
 | db (SQLite + paritas SQL) | 136 |
 | integritas (atomisitas + rollback + hapus dirujuk) | 68 |
 | compat (profil lama + mode browser) | 30 |
@@ -54,6 +54,15 @@ Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
   array di memori yang sejak #38 hanya sebagian. Nomor bisnis adalah kunci rujukan
   lintas menu (`electron/referential.ts`), jadi ini perlindungan integritas data, bukan
   kenyamanan mengetik (QA_REPORT §4.7).
+- **Satu menu, satu cerita di semua jalan masuk**: urutan sidebar disusun ulang
+  mengikuti siklus kerja (master data → beli → jual/sewa → setuju → tagih → gudang/part
+  → rusak → servis → kirim → kas → laporan → sistem), dan tiga daftar lain yang dulu
+  berdiri sendiri kini ikut dia: katalog modul di Pengaturan (kategori + urutan),
+  CommandPalette Ctrl+K (dulu hanya 17 dari 26 menu), dan pencarian di topbar (dulu
+  menawarkan menu yang sudah dimatikan untuk profil/peran pengguna). Dibuktikan di
+  layar pada profil DEALER (usable 7.1–7.4: palette == sidebar sebutir-butir, kata
+  kunci "onderdil" membuka `/spareparts`, "sewa" tidak membocorkan `/rental`) dan
+  dikunci validation 25 (QA_REPORT §4.8).
 - **Paket**: `dist-installer/FATHONI-Setup-3.0.0.exe` (79,3 MiB), asar hanya berisi
   `dist`, `dist-electron`, `better-sqlite3`; ikon exe sendiri; AppId dan nama data
   dipertahankan.

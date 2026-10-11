@@ -28,23 +28,29 @@ const DEFAULT: CompanySettings = {
   timezone: 'Asia/Jakarta',
 };
 
+// Katalog modul di tab Pengaturan. URUTAN dan `cat`-nya mengikuti sidebar
+// (NAV_GROUPS di src/components/Layout.tsx) supaya siklus kerja yang dibaca user
+// di dua tempat sama: beli unit -> jual/sewa -> tagih -> stok & servis -> kas ->
+// laporan -> sistem. Kategori 'Alat Berat'/'CRM & Mitra' keduanya berada di grup
+// sidebar 'Master Data'. Dikunci validation-check §25: kalau menu dipindah atau
+// dikategori-ulang tanpa memperbarui daftar ini, pemeriksaan gagal.
 const ALL_MODULES = [
-  { path: '/units',      name: 'Unit / Armada',       cat: 'Alat Berat',   desc: 'Kelola data fisik alat berat, status operasional, dan jam kerja (HM)' },
   { path: '/brands',     name: 'Merek & Model',       cat: 'Alat Berat',   desc: 'Katalog merek, spesifikasi teknis, dan brosur model unit' },
+  { path: '/units',      name: 'Unit / Armada',       cat: 'Alat Berat',   desc: 'Kelola data fisik alat berat, status operasional, dan jam kerja (HM)' },
   { path: '/customers',  name: 'Pelanggan (CRM)',      cat: 'CRM & Mitra',  desc: 'Database pelanggan, kontak, limit kredit, dan histori transaksi' },
   { path: '/suppliers',  name: 'Pemasok (Supplier)',  cat: 'CRM & Mitra',  desc: 'Pemasok unit, spare part, pelumas, dan vendor layanan' },
-  { path: '/sales',      name: 'Penjualan Unit',      cat: 'Transaksi',    desc: 'Sales order, penawaran harga, skema pembayaran, dan komisi' },
   { path: '/purchase',   name: 'Pembelian Unit',      cat: 'Transaksi',    desc: 'Purchase order unit baru/bekas dan impor barang' },
+  { path: '/sales',      name: 'Penjualan Unit',      cat: 'Transaksi',    desc: 'Sales order, penawaran harga, skema pembayaran, dan komisi' },
+  { path: '/rental',     name: 'Sewa & Rental',       cat: 'Transaksi',    desc: 'Kontrak sewa, alokasi jobsite, timesheet, dan billing bulanan' },
   { path: '/invoices',   name: 'Faktur & Penagihan',  cat: 'Transaksi',    desc: 'Faktur penjualan/sewa, kwitansi, dan penagihan piutang (AR)' },
-  { path: '/rental',     name: 'Sewa & Rental',       cat: 'Operasional',  desc: 'Kontrak sewa, alokasi jobsite, timesheet, dan billing bulanan' },
-  { path: '/service',    name: 'Servis & Work Order', cat: 'Operasional',  desc: 'Jadwal PM, Work Order perbaikan, dan histori perawatan unit' },
   { path: '/warehouse',  name: 'Gudang & Stok',       cat: 'Operasional',  desc: 'Stok gudang, stok opname, dan mutasi barang antar gudang' },
   { path: '/spareparts', name: 'Suku Cadang & Parts', cat: 'Operasional',  desc: 'Katalog spare part, interchange number, dan harga jual' },
+  { path: '/service',    name: 'Servis & Work Order', cat: 'Operasional',  desc: 'Jadwal PM, Work Order perbaikan, dan histori perawatan unit' },
   { path: '/delivery',   name: 'Pengiriman & Mobilisasi', cat: 'Operasional', desc: 'Surat Jalan (DO), pengiriman unit, dan biaya mobilisasi' },
   { path: '/finance',    name: 'Kas & Bank',          cat: 'Keuangan',     desc: 'Pencatatan kas masuk/keluar, saldo bank, dan arus kas' },
   { path: '/reports',    name: 'Laporan & Analitik',  cat: 'Keuangan',     desc: 'Laporan laba rugi, utilisasi unit, dan piutang' },
-  { path: '/documents',  name: 'Dokumen Legal',       cat: 'Sistem',       desc: 'Kelola dokumen legal, perizinan, dan sertifikat perusahaan' },
   { path: '/users',      name: 'Pengguna & Role',     cat: 'Sistem',       desc: 'Kelola akun staf, hak akses, dan matriks wewenang' },
+  { path: '/documents',  name: 'Dokumen Legal',       cat: 'Sistem',       desc: 'Kelola dokumen legal, perizinan, dan sertifikat perusahaan' },
   { path: '/backup',     name: 'Backup & Restore',    cat: 'Sistem',       desc: 'Cadangan data lokal dan pemulihan basis data' },
 ];
 
