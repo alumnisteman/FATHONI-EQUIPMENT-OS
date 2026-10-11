@@ -339,6 +339,10 @@ export default function Breakdown() {
   const handlePrint = (item: Breakdown) => {
     if (confirm(`Cetak Breakdown Report ${item.breakdownNumber}?`)) {
       const companyName = getCompanyName();
+      // Baris lama / hasil restore bisa tidak punya partsUsed sama sekali, atau
+      // menyimpannya sebagai teks. Tanpa ini `.map` di bawah melempar dan layar
+      // pemakai yang memanggil cetak ikut runtuh.
+      const parts = Array.isArray(item.partsUsed) ? item.partsUsed : [];
 
       const htmlContent = `
         <html>
@@ -444,7 +448,7 @@ export default function Breakdown() {
             </div>
             ` : ''}
 
-            ${item.partsUsed && item.partsUsed.length > 0 ? `
+            ${parts.length > 0 ? `
             <div class="section">
               <h3>Parts Used</h3>
               <table>
@@ -456,7 +460,7 @@ export default function Breakdown() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${item.partsUsed.map(part => `
+                  ${parts.map(part => `
                     <tr>
                       <td>${sanitize(part.partName)}</td>
                       <td>${part.quantity}</td>

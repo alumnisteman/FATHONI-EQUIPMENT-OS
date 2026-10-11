@@ -153,7 +153,7 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11): migration 49, unit/`validation-check` 258,
+Hasil yang diharapkan (rantai 2026-10-11): migration 49, unit/`validation-check` 260,
 auth 58, gui 72, flow 30, handoff 123, usable 33, db 136, integritas 68, compat 30,
 perf 37, store 47, backup 87, smoke-paket 28 — seluruhnya tanpa FAIL.
 Delapan jenis uji yang diminta terpetakan begitu: unit (validation-check, auth-check, db-check), fungsional
@@ -468,9 +468,17 @@ Yang masih sengaja dilaporkan apa adanya:
   mengalami ini; hanya impor massal dan simpanan penuh yang perlu dipecah.
 
 Kapasitas yang terukur (db-check bagian 7, mesin 3,8 GB RAM): 50.000 unit = simpan
-±1 detik, pencarian berindeks ±0,12 detik, simpan ulang dengan sedikit perubahan ±0,2
-detik, agregasi di SQL ±17 ms, file ±26 MB. Batas localStorage lama ±4 MB hilang
+±1,2 detik, pencarian berindeks ±0,12 detik, simpan ulang dengan sedikit perubahan
+±0,3 detik, agregasi di SQL ±26 ms, file ±27 MB. Batas localStorage lama ±4 MB hilang
 bersama SQLite.
+
+Assertion bagian 7 dulu menuntut "simpan ulang dengan sedikit perubahan LEBIH CEPAT
+sekali daripada simpan penuh" (`tDiff < tWrite / 2`). Klausa itu benar-benar pernah
+membuktikan write-behind, tapi bentuknya waktu dinding: pada rantai yang berjalan saat
+RAM tinggal ±200 MB, dua simpanan berjarak 1.758 vs 1.218 ms dan assertion jatuh tanpa
+ada yang rusak di kode. Yang ditahan sekarang adalah klaimnya sendiri dalam bentuk yang
+tidak bergantung pada beban mesin — `inserted: 0, updated: 10, deleted: 0` dari
+`saveCollection` yang sama — sementara waktunya tetap dicetak sebagai `CATATAN`.
 
 ## Daftar periksa regresi
 
@@ -491,6 +499,7 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Menu katalog (Operator, Teknisi, Dokumen, Pengiriman, Breakdown, Persetujuan) menghapus dengan menyaring array di memori: seluruh collection ikut ditulis ulang dan pemeriksaan rujukan tidak pernah berjalan | handoff 10.1–10.12 (satu id lewat patch per menu, `fullCalls` tidak bergerak, baris tetangga tetap ada), validation 12 (peta `MENU_HAPUS` + larangan filter-array pada halaman ber-`useDataStore`) |
 | Layar menjatuhkan dirinya karena satu baris memuat nilai di luar peta status/severity (`MAP[nilai].label` tanpa fallback) | handoff 10.14 (`severity: 'MEDIUM'` + `status: 'ESCALATED'` tetap tampil apa adanya, tanpa layar kesalahan), validation 21 (larangan pencarian peta tanpa `?.` di seluruh `src/`) |
 | Baris tanpa kolom angka/array (data lama, impor, restore) membuat sel tabel memanggil `.toLocaleString()` pada null — layar Operator dan Teknisi jatuh | handoff 10.16 (baris tanpa `totalHours`/`specializations` tetap tampil), validation 22 (angka/teks baris harus lewat `??` atau pemeriksaan dulu) |
+| Field array dari baris dibaca langsung: `item.X && item.X.length > 0` LOLOS untuk string (cadangan yang disunting tangan), lalu `.map` melempar di template cetak dan menjatuhkan rutenya | validation 24 (sepuluh nama field array wajib dinormalkan `Array.isArray` / `?? []` sebelum dipakai, + tiga template cetak Operator/Teknisi/Breakdown); penjaga ini terbukti menggigit: `parts.length` dikembalikan menjadi `item.partsUsed.length` dan harness menolak |
 | Menghapus teknisi/operator yang namanya masih tertulis di dokumen lolos tanpa pesan: keduanya tidak punya aturan rujukan, dan namanya tidak disimpan sebagai kolom turunan di dokumen anak | integrity 2d (teknisi tertahan Work Order + Laporan Kerusakan, operator tertahan Surat Jalan; nama satu kata sengaja di bawah ambang token), handoff 10.18 (tombol hapus di menunya menolak dengan alasan yang menyebut dokumennya), validation 12 (aturan blob hanya boleh menyebut field yang ikut ditulis ke blob + teknisi/operator wajib berpemeriksaan) |
 | Satu layar yang melempar membuat SEMUA menu menampilkan "Terjadi Kesalahan" sampai aplikasi dimuat ulang (boundary hanya di akar) | handoff 10.14 (Pelanggan tetap terbuka dan terisi sesudah baris asing dibuka), validation 20 (boundary berkunci rute di `ProtectedRoute`) |
 | Collection yang BELUM pernah dibaca penuh ditulis sebagai collection penuh, sehingga baris yang tidak ikut terbaca hilang dari file | db-check 15.6–15.9 (matriks `rencanakanTulis`: upsert tetap jalan, simpanan penuh ditahan, `tertahan` tidak pernah berubah menjadi `full`), handoff 7.11 |

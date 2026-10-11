@@ -5,13 +5,13 @@
 ## Verdict
 
 Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
-**15 langkah, 1.056 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
+**15 langkah, 1.058 assertion, 0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`,
 `npm audit` 0 kerentanan tinggi/kritis.
 
 | Langkah | Assertion |
 |---|---|
 | migration | 49 |
-| unit (`validation-check`) | 258 |
+| unit (`validation-check`) | 260 |
 | auth (keamanan) | 58 |
 | gui (fungsional) | 72 |
 | flow (fungsional) | 30 |
@@ -44,7 +44,10 @@ Rilis 3.0.0 terverifikasi pada mesin Windows ini. Rantai regresi penuh:
   terbuka dengan penanda demo dan nol error renderer.
 - **Satu baris aneh tidak membekukan aplikasi**: nilai di luar peta status/severity,
   dan kolom angka/array yang kosong, kini tampil apa adanya alih-alih meruntuhkan
-  seluruh menu (ini penyebab "aplikasi macet" yang paling sering dilaporkan).
+  seluruh menu (ini penyebab "aplikasi macet" yang paling sering dilaporkan). Field
+  array pada dokumen cetak (sertifikat operator/teknisi, parts dipakai) ikut dinormalkan
+  `Array.isArray`, karena `item.X && item.X.length > 0` tidak menahan nilai berbentuk
+  teks — dijaga statis validation 24.
 - **Nomor dokumen tidak rangkap**: usulan nomor di 11 menu (SPK, rental, PO, WO, surat
   jalan, invoice, kerusakan, permohonan, operator, teknisi, bukti mutasi) berlanjut dari
   nomor tertinggi di `fathoni.db` lalu diperiksa sampai benar-benar bebas — bukan dari

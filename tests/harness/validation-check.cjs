@@ -736,6 +736,45 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   } catch (err) {
     console.log('LOMPONG: dist-electron/dbSchema.js belum dibangun, kolom nomor tidak dibandingkan dengan skema');
   }
+
+  // ── 24. field array dari baris tidak boleh langsung dipanggil ────────
+  // Perluasan §22 untuk kolom yang berbentuk array. Dua lapis bahayanya:
+  // baris lama / hasil impor / restore bisa tidak punya field itu sama sekali
+  // (`item.certifications.map` melempar pada undefined), dan backups yang disunting
+  // manusia bisa menyimpannya sebagai teks — `item.X && item.X.length > 0` LOLOS untuk
+  // string, lalu `.map` tetap melempar. Jadi yang diterima hanya normalisasi eksplisit:
+  // `Array.isArray(...)` atau `?? []` / `|| []` pada baris yang sama. Yang dibaca lewat
+  // variabel hasil normalisasi (`sertifikat.map`) tidak terlihat pola ini memang sengaja:
+  // normalisasinya sudah ada satu baris di atasnya dan dijaga pola `Array.isArray`.
+  const NAMA_ARRAY = ['certifications', 'partsUsed', 'specializations', 'skills',
+    'compatibleModels', 'photos', 'items', 'serviceRecords', 'categories', 'models'];
+  const METODE_ARRAY = ['map', 'filter', 'slice', 'join', 'length', 'includes', 'some', 'every',
+    'find', 'findIndex', 'forEach', 'reduce', 'indexOf', 'concat', 'push', 'at'].join('|');
+  const BACA_ARRAY = new RegExp('\\bitem\\.(' + NAMA_ARRAY.join('|') + ')\\.(' + METODE_ARRAY + ')\\b', 'g');
+  const TANPA_NORMALIASI = [];
+  for (const f of BERKAS_SRC) {
+    fs.readFileSync(f, 'utf8').split(/\r?\n/).forEach((baris, i) => {
+      for (const m of baris.matchAll(BACA_ARRAY)) {
+        const field = m[1];
+        const dijaga = /Array\.isArray\(\s*[\w.]*\b/.test(baris)
+          || /\?\?\s*\[\s*\]/.test(baris) || /\|\|\s*\[\s*\]/.test(baris);
+        if (!dijaga) TANPA_NORMALIASI.push(path.relative(ROOT, f) + ':' + (i + 1) + '  ' + baris.trim());
+      }
+    });
+  }
+  check('field array dari baris dinormalkan (Array.isArray / ?? []) sebelum dipakai',
+    TANPA_NORMALIASI.length === 0, { TANPA_NORMALIASI });
+  // cetak adalah satu-satunya jalan yang membaca sertifikat/partsUsed, dan ia dibangun
+  // dari htmlContent di dalam handlePrint — jadi bentuk normalisasinya dikunci statis.
+  const TERCETAK = [];
+  for (const f of ['src/pages/Operators.tsx', 'src/pages/Technicians.tsx', 'src/pages/Breakdown.tsx']) {
+    const teks = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    if (!/Array\.isArray\(item\.(certifications|partsUsed)\)\s*\?\s*item\.\1\s*:\s*\[\]/.test(teks)) {
+      TERCETAK.push(f);
+    }
+  }
+  check('template cetak Operator/Teknisi/Breakdown menormalkan array sebelum template',
+    TERCETAK.length === 0, { TERCETAK });
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

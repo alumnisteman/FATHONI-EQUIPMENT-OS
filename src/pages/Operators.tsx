@@ -179,6 +179,9 @@ export default function Operators() {
   const handlePrint = (item: Operator) => {
     if (confirm(`Cetak Operator Profile ${item.operatorNumber}?`)) {
       const companyName = getCompanyName();
+      // Baris lama / hasil restore bisa tidak punya certifications, atau menyimpannya
+      // sebagai teks: tanpa ini `.map` di bawah melempar saat cetak.
+      const sertifikat = Array.isArray(item.certifications) ? item.certifications : [];
 
       const htmlContent = `
         <html>
@@ -257,7 +260,7 @@ export default function Operators() {
             </div>
             ` : ''}
 
-            ${item.certifications && item.certifications.length > 0 ? `
+            ${sertifikat.length > 0 ? `
             <div class="section">
               <h3>Certifications</h3>
               <table>
@@ -269,7 +272,7 @@ export default function Operators() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${item.certifications.map(cert => `
+                  ${sertifikat.map(cert => `
                     <tr>
                       <td>${sanitize(cert.name)}</td>
                       <td>${new Date(cert.issueDate).toLocaleDateString('id-ID')}</td>

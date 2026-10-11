@@ -196,6 +196,8 @@ export default function Technicians() {
   const handlePrint = (item: Technician) => {
     if (confirm(`Cetak Technician Profile ${item.technicianNumber}?`)) {
       const companyName = getCompanyName();
+      // Sama seperti Operator: sertifikat bisa tidak ada atau berbentuk teks.
+      const sertifikat = Array.isArray(item.certifications) ? item.certifications : [];
 
       const htmlContent = `
         <html>
@@ -281,7 +283,7 @@ export default function Technicians() {
               </div>
             </div>
 
-            ${item.certifications && item.certifications.length > 0 ? `
+            ${sertifikat.length > 0 ? `
             <div class="section">
               <h3>Certifications</h3>
               <table>
@@ -293,7 +295,7 @@ export default function Technicians() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${item.certifications.map(cert => `
+                  ${sertifikat.map(cert => `
                     <tr>
                       <td>${sanitize(cert.name)}</td>
                       <td>${new Date(cert.issueDate).toLocaleDateString('id-ID')}</td>

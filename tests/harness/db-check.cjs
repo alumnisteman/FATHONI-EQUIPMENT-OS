@@ -160,7 +160,7 @@ function main() {
 
   const t2 = Date.now();
   const ubah = bulk.map((u, i) => (i % 5000 === 0 ? { ...u, status: 'MAINTENANCE' } : u));
-  DB.saveCollection('units', ubah);
+  const hasilDiff = DB.saveCollection('units', ubah);
   const tDiff = Date.now() - t2;
 
   const t3 = Date.now();
@@ -172,8 +172,9 @@ function main() {
     + `ubah-10-baris=${tDiff}ms, agregat=${tSum}ms, file=${(size / 1048576).toFixed(1)} MB`);
   ok('7.1 50.000 baris tersimpan di bawah 10 detik', tWrite < 10000, tWrite);
   ok('7.2 pencarian di atas 50.000 baris di bawah 1 detik', tSearch < 1000, tSearch);
-  ok('7.3 simpan ulang dengan sedikit perubahan jauh lebih cepat dari simpan penuh',
-    tDiff < tWrite / 2, { tDiff, tWrite });
+  ok('7.3 simpan ulang 50.000 baris dengan sedikit perubahan hanya menulis baris yang berubah',
+    hasilDiff.inserted === 0 && hasilDiff.updated === 10 && hasilDiff.deleted === 0,
+    { hasilDiff, tWrite, tDiff });
   ok('7.4 agregasi jumlah dilakukan di SQLite dan hasilnya benar', sum > 0 && Number.isFinite(sum), sum);
 
   // ── 8. Buka ulang: data tetap ada, pernyataan lama dibuang ──

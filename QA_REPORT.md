@@ -1,7 +1,7 @@
 # FATHONI EQUIPMENT OS — Laporan QA
 **Versi aplikasi**: 3.0.0 (nama paket `hems-heavy-equipment-system`, dipertahankan sebagai kunci data — lihat §7)
 **Tanggal laporan**: 2026-10-11
-**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.056 assertion, 0 gagal.
+**Status**: Rilis terverifikasi. Rantai regresi penuh hijau: 15 langkah, 1.058 assertion, 0 gagal.
 
 Laporan ini menggantikan laporan 2026-09-23 (HEMS 1.0.0). Laporan lama itu sudah tidak
 berlaku dan sengaja ditulis ulang, bukan ditambal: ia menyebut localStorage sebagai
@@ -28,7 +28,7 @@ Angka diambil dari `D:/SANY/tmp-harness/logs/<nama>.log` pada rantai 2026-10-11.
 
 | Jenis | Harness | Assertion | Yang dibuktikan |
 |---|---|---|---|
-| **Unit** | `validation-check` | 258 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), + penjaga statis (§5) |
+| **Unit** | `validation-check` | 260 | aturan batas validator, sanitasi, `matchesQuery` (termasuk "SANY SY215C" dua kolom), checksum pemulihan, usulan nomor dokumen (`nomorBerikut`), + penjaga statis (§5) |
 | **Unit (lapisan data)** | `migration-check`, `db-store-run`, `db-backup-run` | 49 + 47 + 87 | migrasi sekali dari arsip lama, rencana tulis per collection, atomisitas simpan sebagian, snapshot |
 | **Fungsional** | `gui-check`, `flow-check`, `usable-check` | 72 + 30 + 33 | tiap layar membuka, mengisi, mencari, memfilter, menyimpan; semua 30 entri rute di `App.tsx` (termasuk wildcard halaman detail) dilewati minimal satu harness — dijaga validation 16 |
 | **Integrasi (lintas menu)** | `handoff-check` | 123 | Pembelian→Gudang/Unit/Pemasok/Kas, Servis→Part/Invoice/Kas, Invoice→Kas, 6 menu katalog menghapus lewat patch (§4.1), dan hapus teknisi/operator yang masih disebut dokumen ditolak dari tombolnya sendiri (§4.6), plus usulan nomor dokumen yang benar-benar diklik di layanannya (§4.7) |
@@ -49,9 +49,10 @@ Terukur di mesin ini (RAM 3,8 GB) pada profil uji terisolasi, mode WAL:
 | Kueri telanjang dari renderer, 12.000 baris | < 150 ms |
 | Agregat berindeks di 6.000 baris kas | < 150 ms, KPI dihitung SQLite |
 | Tulis satu baris lewat `dbPatch` | median **1 ms** |
-| Simpan 50.000 unit dari main process | 1.104 ms (membekukan event loop selama itu — tercatat, bukan tanpa batas) |
-| Pencarian di layar Unit, 50.000 baris | median **275 ms**, dan tidak lebih dari 3x waktu di 12.000 baris |
-| Kueri telanjang di 50.000 baris | median **86 ms** |
+| Simpan 50.000 unit dari main process | 1.216 ms (membekukan event loop selama itu — tercatat, bukan tanpa batas) |
+| Simpan ulang 50.000 unit dengan 10 baris berubah | 282 ms, dan hanya 10 baris yang benar-benar ditulis (db-check 7.3) |
+| Pencarian di layar Unit, 50.000 baris | median **310 ms**, dan tidak lebih dari 3x waktu di 12.000 baris |
+| Kueri telanjang di 50.000 baris | median **116 ms** |
 | Ukuran DOM tabel | tetap **12 kartu** saat tabel tumbuh ke 50.000 baris |
 | Total baris profil uji | 63.000 di seluruh 18 collection |
 
@@ -83,7 +84,15 @@ per collection belum ada angka, jadi jangan dinyatakan sebagai "sudah teruji".
    sebagai `null` bila field tidak ada (data lama, impor, restore); sel tabel memanggil
    `.toLocaleString()`/`.slice()` langsung. 12 titik diberi `??`. *Bukti*: handoff 10.16
    gagal sebelum perbaikan (`layarKosong: ["operators","technicians"]`) dan lulus
-   sesudahnya. *Penjaga*: validation 22.
+   sesudahnya. *Penjaga*: validation 22. Perluasannya (#72): field **array** dari baris
+   (`certifications`, `partsUsed`, `specializations`, `skills`, `compatibleModels`,
+   `photos`, `items`, `serviceRecords`, `categories`, `models`) tidak boleh dibaca
+   langsung sama sekali. Pemeriksaan `item.X && item.X.length > 0` yang dipakai tiga
+   template cetak tidak menahan string — cadangan yang disunting tangan bisa
+   menyimpannya sebagai teks, `length > 0` lolos, lalu `.map` melempar di layar cetak
+   dan menjatuhkan rute itu. Tiga template kini menormalkan lebih dulu
+   (`Array.isArray(item.X) ? item.X : []`), dan validation 24 menolak bentuk baca
+   langsung di seluruh `src/`.
 5. **Dua cacat yang hanya terlihat pada paket jadi** (ditemukan uji asap 3.0.0):
    `healthCheck` masih menulis probe ke `localStorage` dan menutup kegagalan file basis
    data dengan status "localStorage bisa ditulis"; serta tidak ada cara aman menguji
@@ -126,7 +135,7 @@ data yang dibaca selalu lengkap dan selalu berasal dari jalur yang sama.
 
 ## 5. Penjaga anti-regresi (bukan assertion fungsi)
 
-`validation-check` §12, §15–§23 menahan bentuk kode, bukan hanya hasilnya:
+`validation-check` §12, §15–§24 menahan bentuk kode, bukan hanya hasilnya:
 peta `MENU_HAPUS` 17 collection + larangan filter-array di halaman ber-`useDataStore`;
 harness Electron wajib keluar lewat `selesai()`; setiap rute aplikasi harus dilewati
 minimal satu harness; `AuditLog` wajib bersumber dari main process dan tanpa baris
@@ -151,6 +160,11 @@ nomor dari `.length + n`, ke-11 collection bernomor bisnis wajib dipanggil lewat
   memperingatkan pengguna baru.
 - **Walkthrough usability oleh manusia**: semua yang tercatat di §2 adalah pengukuran
   otomatis; tidak ada sesi diterimanya alur kerja oleh pemakai sebenarnya.
+- **Tombol Print tidak diklik di harness**: cetak membuka dialog cetak asli
+  (`silent: false`), yang tidak bisa dijalankan otomatis tanpa meninggalkan jendela
+  tergantung. Karena itu perbaikan #72 (array pada baris cetak) hanya dijaga **statis**
+  (validation 24) — jalur UI-nya (kolom angka/array di daftar) memang diuji runtime lewat
+  handoff 10.16, tapi dokumen cetak itu sendiri belum pernah dibuktikan sampai kertas.
 - **Anggaran performa masih dilonggarkan**: boot < 15 s, domReady < 12 s, cari median
   < 800 ms, kueri < 400 ms, patch < 250 ms. Angka §3 jauh di bawahnya, tapi
   ambangnya sendiri belum disepakati sebagai target rilis.
