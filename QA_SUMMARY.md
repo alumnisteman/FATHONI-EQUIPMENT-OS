@@ -47,6 +47,14 @@ tetap disimpan sebagai sejarah.
   **1.502 assertion lulus, 0 gagal**, `rusak: tidak`, semua proses keluar bersih,
   `npm audit` 0 kerentanan (tinggi/kritis 0, sedang 0, rendah 0). Angka 1.502 =
   1.500 sebelumnya + `perf P.9b` + `compat A.7b`.
+- **Uji instalasi (17 Nov)**: build 23 Oktober di-uninstall, lalu paket bertanda dipasang
+  senyap, di-boot dengan `--user-data-dir` sandbox, dan di-uninstall lagi — **30 lulus /
+  0 gagal** lewat kit `installer/uji-instalasi-bersih.ps1` (commit `877651d`; log
+  `C:/tmp/uji-instalasi-310/hasil-skrip-full.txt`). Exe terpasang identik dengan paket
+  bertanda (`dd790ef7…9f01b4b`), `app.asar` `6cbdb3e7…c931ff5`, ProductVersion 3.1.0,
+  per-pengguna tanpa admin, dan `fathoni.db` live tidak berubah. Mesin ini bukan Windows
+  bersih (VC++ dan sertifikat internal sudah ada); VM bersih, SmartScreen, dan AV masih
+  menjadi gerbang distribusi luas.
 - **Batas**: tidak ada perubahan skema dan `DERIVED_REVISION` tetap 5; profil live
   `%APPDATA%\hems-heavy-equipment-system` tidak disentuh. Lintasan kapasitas 400.000 baris
   **diulang pada 3.1.0** (`C:/tmp/kapasitas-310c.log`): **56 lulus / 0 gagal**, berkas

@@ -1542,6 +1542,17 @@ Biaya penjaga diukur terpisah pada 100.000 unit: memuat collection 265–465 ms 
 pemeriksaan 22 ms per tulisan; pada 12.000 unit P.23 (satu baris lewat `db-patch`) tetap
 di bawah 250 ms.
 
+Uji instalasi dijalankan pada mesin ini 17 Nov: build 23 Oktober (unsigned, 177.018.368 B)
+di-uninstall senyap, lalu `FATHONI-Setup-3.1.0.exe` dipasang senyap (`/VERYSILENT`),
+aplikasi di-boot dengan `--user-data-dir` ke profil sandbox, lalu di-uninstall lagi. Kit
+`installer/uji-instalasi-bersih.ps1` (commit `877651d`) menjalankan siklus yang sama dan
+mencatat **30 lulus / 0 gagal** (`C:/tmp/uji-instalasi-310/hasil-skrip-full.txt`): hash
+installer cocok, penandatangan sesuai, exe terpasang identik byte-per-byte dengan paket
+(`dd790ef7…9f01b4b`), `app.asar` `6cbdb3e7…c931ff5`, ProductVersion 3.1.0, terpasang
+per-pengguna tanpa admin, jendela aplikasi muncul, database sandbox terbentuk, dan
+uninstaller menghapus program/ARP/shortcut tanpa menyentuh `fathoni.db` (SHA-256
+`dace82d6…3420f5` tetap).
+
 ### §9.6 Batas yang harus disebut
 
 - **Tidak ada perubahan skema**; `DERIVED_REVISION` tetap 5 dan profil live
@@ -1562,3 +1573,11 @@ di bawah 250 ms.
   boot 1.350 ms, tulis satu baris 334 ms (ambang 400 ms). P.42 sempat merah karena harness
   menulis meter mundur dan ditolak gerbang 3.0.5 dengan benar; yang diperbaiki harness,
   bukan produk. Angka kapasitas §3.1 untuk 3.0.4 tetap dibiarkan sebagai riwayat.
+- **Mesin uji instalasi bukan Windows bersih.** Host ini sudah memiliki VC++ runtime dan
+  sertifikat internal terpasang di Root/TrustedPublisher, jadi hasil 30/0 membuktikan jalur
+  uninstall→install→boot→uninstall serta ketahanan data, bukan ketergantungan runtime pada
+  Windows baru. Di VM tanpa sertifikat internal, status rantai Authenticode akan
+  `UnknownError` (kit memakai hash + thumbprint sebagai penentu) dan SmartScreen tetap
+  menampilkan “Unknown publisher”; pemindaian antivirus di mesin tanpa allowlist juga belum
+  diuji. Kit `installer/uji-instalasi-bersih.ps1` disiapkan untuk menjalankan siklus ini di
+  VM bersih (`-SampleDb` opsional untuk uji data-bertahan dengan database sungguhan).
