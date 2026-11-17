@@ -1553,6 +1553,20 @@ per-pengguna tanpa admin, jendela aplikasi muncul, database sandbox terbentuk, d
 uninstaller menghapus program/ARP/shortcut tanpa menyentuh `fathoni.db` (SHA-256
 `dace82d6…3420f5` tetap).
 
+Rantai yang sama juga dijalankan di **Windows Sandbox** — Windows 11 24H2 build 10.0.26100
+yang bersih dan sekali pakai — dari bundel `C:\tmp\uji-vm-bersih-310` (installer + kit +
+`SHA256SUMS.txt`) yang dipetakan ke `C:\uji`; `LogonCommand` menjalankan kit otomatis dan
+hasilnya tersalin ke host di `C:/tmp/uji-vm-bersih-310/hasil/hasil.txt`: **30 lulus /
+0 gagal**, `SELESAI kode=0`. Di lingkungan tanpa sertifikat internal, rantai Authenticode
+benar-benar `UnknownError` seperti yang diperkirakan, sedangkan thumbprint penandatangan
+tetap cocok dan hash installer/exe/asar tetap menjadi penentu; instalasi tetap per-pengguna
+di `C:\Users\WDAGUtilityAccount\AppData\Local\Programs\FATHONI`, jendela muncul dengan
+judul yang benar, DB sandbox terbentuk, dan uninstaller menghapus program/ARP/shortcut tanpa
+menyentuh penanda data. Perbedaan yang harus dibaca apa adanya: pengguna di dalam Windows
+Sandbox adalah administrator (kit mencetak peringatan), dan `B.4`/`U.5b` memakai cabang
+“tidak ada profil pengguna nyata” karena sandbox dimulai tanpa database — pemeriksaan hash
+profil live hanya berlaku pada run host.
+
 ### §9.6 Batas yang harus disebut
 
 - **Tidak ada perubahan skema**; `DERIVED_REVISION` tetap 5 dan profil live
@@ -1573,19 +1587,18 @@ uninstaller menghapus program/ARP/shortcut tanpa menyentuh `fathoni.db` (SHA-256
   boot 1.350 ms, tulis satu baris 334 ms (ambang 400 ms). P.42 sempat merah karena harness
   menulis meter mundur dan ditolak gerbang 3.0.5 dengan benar; yang diperbaiki harness,
   bukan produk. Angka kapasitas §3.1 untuk 3.0.4 tetap dibiarkan sebagai riwayat.
-- **Mesin uji instalasi bukan Windows bersih.** Host ini sudah memiliki VC++ runtime dan
-  sertifikat internal terpasang di Root/TrustedPublisher, jadi hasil 30/0 membuktikan jalur
-  uninstall→install→boot→uninstall serta ketahanan data, bukan ketergantungan runtime pada
-  Windows baru. Ketergantungan itu diukur, bukan diasumsikan: `better_sqlite3.node` hanya
-  mengimpor `KERNEL32.dll`, dan proses utama 3.1.0 memuat `ucrtbase.dll`/`msvcp_win.dll`
-  milik Windows tanpa `vcruntime140`/`msvcp140`, jadi tidak ada redistributable VC++ yang
-  perlu dipasang lebih dulu. Di VM tanpa sertifikat internal, status rantai Authenticode
-  akan `UnknownError` (kit memakai hash + thumbprint sebagai penentu) dan SmartScreen tetap
-  menampilkan “Unknown publisher”; pemindaian antivirus di mesin tanpa allowlist juga belum
-  diuji. Kit `installer/uji-instalasi-bersih.ps1` disiapkan untuk menjalankan siklus ini di
-  VM bersih (`-SampleDb` opsional untuk uji data-bertahan dengan database sungguhan). Di
-  Windows bersih kit harus dipanggil dengan `-ExecutionPolicy Bypass` (kebijakan bawaan
-  `Restricted`), dan setelah hash + tanda tangan lolos kit menghapus Mark of the Web dari
-  installer supaya SmartScreen tidak menghentikan `/VERYSILENT`; jalur itu diuji pada salinan
-  installer bertanda unduhan (`-PreflightOnly` 8 lulus dengan hanya P.6 gagal di host
-  terpasang, lalu `-BootOnly` 6/0 pada exe terpasang).
+- **Windows bersih diuji di Windows Sandbox, bukan VM fisik.** Sandbox memberi Windows 11
+  24H2 (10.0.26100) yang bersih dan sekali pakai: **30 lulus / 0 gagal**, rantai Authenticode
+  `UnknownError` karena sertifikat internal tidak ada sementara thumbprint tetap cocok, dan
+  instalasi per-pengguna di profil `WDAGUtilityAccount`. Yang belum tercakup: pengguna di
+  dalam sandbox adalah administrator (jalur non-admin hanya diukur di host), SmartScreen
+  pada mesin asing belum pernah tampil karena kit menghapus Mark of the Web sebelum
+  `/VERYSILENT` dan tidak ada uji klik-ganda installer, pemindaian antivirus tanpa allowlist
+  belum diuji, dan VM fisik/PC bersih belum dijalankan. Ketergantungan runtime diukur, bukan
+  diasumsikan: `better_sqlite3.node` hanya mengimpor `KERNEL32.dll`, dan proses utama 3.1.0
+  memuat `ucrtbase.dll`/`msvcp_win.dll` milik Windows tanpa `vcruntime140`/`msvcp140`, jadi
+  tidak ada redistributable VC++ yang perlu dipasang lebih dulu. Di Windows bersih kit harus
+  dipanggil dengan `-ExecutionPolicy Bypass` (kebijakan bawaan `Restricted`), dan setelah
+  hash + tanda tangan lolos kit menghapus Mark of the Web dari installer; kedua jalur itu
+  diuji di host pada salinan bertanda unduhan (`-PreflightOnly` 8 lulus dengan P.6 gagal
+  karena host terpasang, `-BootOnly` 6/0), dan siklus penuh diulang di sandbox.

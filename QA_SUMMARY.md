@@ -52,12 +52,14 @@ tetap disimpan sebagai sejarah.
   0 gagal** lewat kit `installer/uji-instalasi-bersih.ps1` (commit `877651d`; log
   `C:/tmp/uji-instalasi-310/hasil-skrip-full.txt`). Exe terpasang identik dengan paket
   bertanda (`dd790ef7…9f01b4b`), `app.asar` `6cbdb3e7…c931ff5`, ProductVersion 3.1.0,
-  per-pengguna tanpa admin, dan `fathoni.db` live tidak berubah. Mesin ini bukan Windows
-  bersih (sertifikat internal sudah ada); ketergantungan VC++ diukur dan **tidak ada**
-  (`better_sqlite3.node` hanya mengimpor `KERNEL32.dll`). Untuk VM bersih kit dipanggil
-  dengan `-ExecutionPolicy Bypass` dan menghapus Mark of the Web installer setelah hash +
-  tanda tangan lolos agar SmartScreen tidak menghentikan mode senyap. VM bersih, SmartScreen
-  pada mesin asing, dan AV masih menjadi gerbang distribusi luas.
+  per-pengguna tanpa admin, dan `fathoni.db` live tidak berubah. Siklus yang sama **lulus
+  30/0 di Windows Sandbox** Windows 11 24H2 (bundel `C:/tmp/uji-vm-bersih-310`, hasil
+  `hasil/hasil.txt`; Authenticode `UnknownError` tanpa sertifikat internal, thumbprint tetap
+  cocok) — sandbox bukan VM fisik dan penggunanya administrator. Ketergantungan VC++
+  diukur dan **tidak ada** (`better_sqlite3.node` hanya mengimpor `KERNEL32.dll`). Kit
+  dipanggil dengan `-ExecutionPolicy Bypass` dan menghapus Mark of the Web setelah hash +
+  tanda tangan lolos. Yang masih terbuka: VM fisik/PC bersih, SmartScreen pada mesin asing
+  (uji klik ganda), dan AV tanpa allowlist.
 - **Batas**: tidak ada perubahan skema dan `DERIVED_REVISION` tetap 5; profil live
   `%APPDATA%\hems-heavy-equipment-system` tidak disentuh. Lintasan kapasitas 400.000 baris
   **diulang pada 3.1.0** (`C:/tmp/kapasitas-310c.log`): **56 lulus / 0 gagal**, berkas
