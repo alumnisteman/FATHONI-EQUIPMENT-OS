@@ -716,18 +716,22 @@ async function run(wc) {
     const tulisK = await ev(wc, `
       const arr = [];
       const id = 'KAP-U50000';
+      const awal = (await window.electronAPI.dbQuery({ collection: 'units', where: { id }, limit: 1 })).rows[0];
+      const dasar = awal.hourMeter;
       for (let i = 0; i < 9; i++) {
         const s = await window.electronAPI.dbQuery({ collection: 'units', where: { id }, limit: 1 });
         const baris = s.rows[0];
-        baris.hourMeter = 2000 + i;
+        // Gerbang meter-mundur (3.0.5) benar menolak nilai lebih kecil dari yang
+        // tersimpan; baris KAP-U50000 lahir dengan hourMeter 4999, jadi tulis maju.
+        baris.hourMeter = dasar + i + 1;
         const t = performance.now();
         await window.electronAPI.dbPatch({ units: { upsert: [baris], removeIds: [] } });
         arr.push(Math.round(performance.now() - t));
       }
       const cek = await window.electronAPI.dbQuery({ collection: 'units', where: { id }, limit: 1 });
-      return { arr, hourMeter: cek.rows[0] && cek.rows[0].hourMeter };`);
+      return { arr, hourMeter: cek.rows[0] && cek.rows[0].hourMeter, harapan: dasar + 9, dasar };`);
     ok('P.42 menyimpan SATU baris di profil 400.000 baris tetap < 400 ms dan sampai ke file',
-      median(tulisK.arr) < 400 && tulisK.hourMeter === 2008, { med: median(tulisK.arr), hourMeter: tulisK.hourMeter });
+      median(tulisK.arr) < 400 && tulisK.hourMeter === tulisK.harapan, { med: median(tulisK.arr), hourMeter: tulisK.hourMeter, dasar: tulisK.dasar });
     catat('median tulis satu baris pada 400.000 baris (ms)', median(tulisK.arr));
 
     const statsK = await ev(wc, `return await window.electronAPI.dbStats();`);

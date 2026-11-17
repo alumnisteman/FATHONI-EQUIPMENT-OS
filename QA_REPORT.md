@@ -231,6 +231,17 @@ menampilkan pengukuran paling buruk dari siklus ini, bukan yang paling enak diba
 | Memori | heap JS renderer **10 MB**, working set 179–263 MB per proses — tidak bertambah saat berkas tumbuh dari 44 MB ke 233 MB |
 | Total waktu rantai + uji kapasitas | **37 s**; 55 assertion lulus, 0 gagal |
 
+**Pengukuran ulang 3.1.0 (17 Nov 2026, `C:/tmp/kapasitas-310c.log`, 56 lulus / 0 gagal)**
+pada mesin yang sama: berkas **233,17 MB** / 400.010 baris; boot **1.350 ms**; layar Armada
+di 100.000 unit **274 ms** dengan 0 baris store lewat IPC; pencarian hangat median
+**326 ms**; `dbQuery` telanjang **108 ms**; `dbSum` kas **36 ms**; menulis 400.000 baris
+sekaligus **6.500 ms**; tulis satu baris median **334 ms** (ambang 400 ms — commit pertama
+sesudah impor massal menunggu checkpoint WAL; di profil 12.000 baris titik yang sama
+23 ms). Working set 46–283 MB per proses, heap renderer 16 MB, total 30 s. P.42 sempat
+merah dua kali karena harness menulis meter 2000–2008 ke baris yang lahir dengan
+`hourMeter` 4999, sehingga gerbang meter-mundur 3.0.5 menolaknya dengan benar; harness
+diperbaiki agar menulis maju (`dasar+1…+9`, diperiksa `dasar+9`) — produk tidak diubah.
+
 Jawaban praktis: **400.000 baris teruji dan tetap ringan** untuk pemakaian sehari-hari
 (buka layar, cari, agregat KPI, simpan satu baris). Yang berubah drastis di atas 50.000
 hanya satu hal: simpanan collection penuh dari main process (impor massal / restore)
@@ -1546,5 +1557,8 @@ di bawah 250 ms.
   setelah signing, `smoke-paket` diulang 28/0 pada exe bertanda. Dua perbaikan harness
   sesudah pemaketan hanya mengubah `tests/` dan tidak masuk `app.asar`, jadi bukti paket
   tidak batal.
-- Lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`) tidak dijalankan ulang pada
-  siklus ini; angka kapasitas yang dikutip di §3 tetap milik pengukuran sebelumnya.
+- Lintasan kapasitas 400.000 baris **dijalankan ulang pada 3.1.0** (17 Nov,
+  `C:/tmp/kapasitas-310c.log`): **56 lulus / 0 gagal**, berkas 233,17 MB / 400.010 baris,
+  boot 1.350 ms, tulis satu baris 334 ms (ambang 400 ms). P.42 sempat merah karena harness
+  menulis meter mundur dan ditolak gerbang 3.0.5 dengan benar; yang diperbaiki harness,
+  bukan produk. Angka kapasitas §3.1 untuk 3.0.4 tetap dibiarkan sebagai riwayat.

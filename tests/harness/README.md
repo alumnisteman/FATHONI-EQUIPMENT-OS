@@ -349,8 +349,10 @@ jatuh (db 7.2: pencarian 50.000 baris 3.462 ms terhadap anggaran 1.000 ms) semen
 15 langkah lainnya hijau. Yang jatuh saat itu adalah lingkungan pengukurannya, bukan
 aplikasinya — QA_REPORT §3 mencatat hitungan mundurnya.
 Lapisan kapasitas TIDAK ikut angka di atas: `HEMS_PERF_KAPASITAS=1 "$ELEKTRON"
-tests/harness/perf-check.cjs` menambah bagian 11 (400.000 baris) menjadi 55 lulus dan
-memakan ±2 menit — angka nyatanya ada di QA_REPORT §3.1.
+tests/harness/perf-check.cjs` menambah bagian 11 (400.000 baris) menjadi **56 lulus**
+pada 3.1.0 dan memakan ±30 detik — angka nyatanya ada di QA_REPORT §3.1. P.42 menulis
+meter **maju** dari nilai awal karena gerbang meter-mundur menolak nilai lebih kecil
+dengan benar; jangan mengembalikannya ke nilai tetap 2000-an.
 Langkah `smoke-paket` adalah yang membuktikan paket jadi ikut sekuat sumber, dan itulah
 sebabnya installer lama (3.0.0 dan 3.0.1, keduanya dibangun sebelum perbaikan terbaru)
 tidak dipakai sebagai bukti rilis.

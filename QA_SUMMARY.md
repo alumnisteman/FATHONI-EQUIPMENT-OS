@@ -49,10 +49,13 @@ tetap disimpan sebagai sejarah.
   1.500 sebelumnya + `perf P.9b` + `compat A.7b`.
 - **Batas**: tidak ada perubahan skema dan `DERIVED_REVISION` tetap 5; profil live
   `%APPDATA%\hems-heavy-equipment-system` tidak disentuh. Lintasan kapasitas 400.000 baris
-  tidak diulang. Dua perbaikan harness sesudah pemaketan hanya mengubah `tests/`, tidak
-  masuk `app.asar`, jadi bukti paket tetap berlaku. Biaya penjaga terukur: pada 100.000
-  unit muat collection 265–465 ms + pemeriksaan 22 ms per tulisan; pada 12.000 unit P.23
-  tetap di bawah 250 ms.
+  **diulang pada 3.1.0** (`C:/tmp/kapasitas-310c.log`): **56 lulus / 0 gagal**, berkas
+  233,17 MB / 400.010 baris, boot 1.350 ms, tulis satu baris 334 ms (ambang 400 ms).
+  P.42 sempat merah karena harness menulis meter mundur dan ditolak gerbang 3.0.5 dengan
+  benar; harness diperbaiki agar menulis maju, produk tidak diubah. Dua perbaikan harness
+  sesudah pemaketan hanya mengubah `tests/`, tidak masuk `app.asar`, jadi bukti paket tetap
+  berlaku. Biaya penjaga terukur: pada 100.000 unit muat collection 265–465 ms + pemeriksaan
+  22 ms per tulisan; pada 12.000 unit P.23 tetap di bawah 250 ms.
 
 ## Verdict
 
