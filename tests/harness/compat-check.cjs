@@ -13,7 +13,7 @@
 //
 // Jalankan: HEMS_DATA_DIR boleh kosong (harness ini membuat foldernya sendiri
 // dan mengisinya sebelum aplikasi dibuka).
-//   npx electron tests/harness/compat-check.cjs
+//   node_modules/electron/dist/electron.exe tests/harness/compat-check.cjs
 
 const { app, BrowserWindow } = require('electron');
 const selesai = require('./selesai.cjs');
@@ -142,7 +142,21 @@ async function run(wc) {
 
   const info = await ev(wc, `return await window.electronAPI.dbInfo();`);
   ok('A.5 main process melaporkan versi skema terbaru ke renderer',
-    info && info.schemaVersion === 1 && info.collections.length === 18, info);
+    info && info.schemaVersion === 1 && info.collections.length === 20, info);
+
+  // Katalog merek/model ditambahkan sebagai dua TABEL KOSONG. Ini bedanya dengan
+  // perubahan kolom turunan: tidak ada revisi yang naik dan tidak ada baris lama
+  // yang dihitung ulang, jadi profil yang sudah dipakai pengguna tidak tersentuh.
+  // Naiknya DERIVED_REVISION di sini berarti refreshDerivedColumns menulis ulang
+  // fathoni.db live — itu keputusan yang harus diminta, bukan efek samping.
+  const jumlahLama = DB.rowCounts().perCollection;
+  const lama = jumlahLama.find(r => r.name === 'spareParts');
+  const merekBaru = jumlahLama.filter(r => r.name === 'brands' || r.name === 'models');
+  ok('A.5b profil lama mendapat dua tabel katalog kosong tanpa menyentuh baris lama',
+    DB.DERIVED_REVISION === 5 && String(meta.revisi) === '5'
+      && merekBaru.length === 2 && merekBaru.every(r => r.rows === 0)
+      && !!lama && lama.rows === 1,
+    { revisi: meta.revisi, konstanta: DB.DERIVED_REVISION, merekBaru, spareParts: lama && lama.rows });
 
   // Buka aplikasi lewat-layar-login: akun bawaan wajib ganti password.
   const unlock = await ev(wc, `
@@ -195,6 +209,13 @@ async function run(wc) {
 
   // ══ B. Mode browser: tanpa electronAPI sama sekali ═══════════════════════
   // Seed store browser: 15 unit (melebihi satu halaman isi 12) + arus kas.
+  // Tanggal kas memakai bulan berjalan karena kartu KPI-nya berlabel "Bulan Ini";
+  // tanggal tetap akan membuat B.10 membandingkan Rp 0 dengan Rp 3.250.000
+  // begitu bulan berganti, tanpa ada yang salah di aplikasi.
+  const bulanBrowser = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
   const browserSeed = {
     units: Array.from({ length: 15 }, (_x, i) => ({
       id: 'BR-U' + (i + 1),
@@ -207,9 +228,9 @@ async function run(wc) {
     })),
     spareParts: [{ id: 'BR-P1', name: 'Filter browser', sku: 'BR-SKU-1', stock: 2, minStock: 1, unit: 'Pcs', price: 100000 }],
     kas: [
-      { id: 'BR-K1', tanggal: '2026-10-01', keterangan: 'DP Penjualan Uji', kategori: 'PENJUALAN', tipe: 'MASUK', jumlah: 2500000, rekening: 'Kas Tunai', referensi: 'SPK-BR-1' },
-      { id: 'BR-K2', tanggal: '2026-10-02', keterangan: 'Beli filter', kategori: 'PEMBELIAN', tipe: 'KELUAR', jumlah: 400000, rekening: 'Kas Tunai', referensi: 'PO-BR-1' },
-      { id: 'BR-K3', tanggal: '2026-10-03', keterangan: 'Servis unit', kategori: 'SERVIS', tipe: 'MASUK', jumlah: 750000, rekening: 'Kas Tunai', referensi: 'WO-BR-1' },
+      { id: 'BR-K1', tanggal: `${bulanBrowser}-01`, keterangan: 'DP Penjualan Uji', kategori: 'PENJUALAN', tipe: 'MASUK', jumlah: 2500000, rekening: 'Kas Tunai', referensi: 'SPK-BR-1' },
+      { id: 'BR-K2', tanggal: `${bulanBrowser}-02`, keterangan: 'Beli filter', kategori: 'PEMBELIAN', tipe: 'KELUAR', jumlah: 400000, rekening: 'Kas Tunai', referensi: 'PO-BR-1' },
+      { id: 'BR-K3', tanggal: `${bulanBrowser}-03`, keterangan: 'Servis unit', kategori: 'SERVIS', tipe: 'MASUK', jumlah: 750000, rekening: 'Kas Tunai', referensi: 'WO-BR-1' },
     ],
     invoices: [], customers: [], suppliers: [], sales: [], rentals: [], services: [],
     deliveries: [], warehouse: [], purchases: [], documents: [], bankAccounts: [],
@@ -281,14 +302,18 @@ async function run(wc) {
 
   await ev(bwc, `window.location.hash = '#/finance'; return true;`);
   ok('B.9 halaman Kas terbuka', await waitFor(bwc, `!!document.querySelector('#finance-search')`, 'halaman kas browser', 30000));
+  // Kotak cari muncul sebelum hook paginasi selesai (200 ms debounce), jadi
+  // tabel dibaca sesudah penanda halamannya sendiri menyebut 3 record — bukan
+  // sesudah halaman hanya "terbuka".
+  const kasSiap = await waitFor(bwc, `/dari 3 record/.test(txt('#pager-info'))`, 'tabel kas browser terisi', 30000);
   const kas = await ev(bwc, `
     const cards = [...document.querySelectorAll('.stat-card')].map(c => ({ judul: ((c.querySelector('.card-title') || {}).innerText) || '', nilai: rupiah((c.querySelector('.card-value') || {}).innerText) }));
     const masuk = cards.find(c => /Kas Masuk/i.test(c.judul));
     const keluar = cards.find(c => /Kas Keluar/i.test(c.judul));
     const baris = document.querySelectorAll('#finance-table tbody tr').length;
-    return { masuk: masuk && masuk.nilai, keluar: keluar && keluar.nilai, baris };`);
+    return { masuk: masuk && masuk.nilai, keluar: keluar && keluar.nilai, baris, kartu: cards.length, info: txt('#pager-info') };`);
   ok('B.10 total dihitung dari array store saat SQLite tidak ada',
-    kas.masuk === 3250000 && kas.keluar === 400000 && kas.baris === 3, kas);
+    kasSiap === true && kas.masuk === 3250000 && kas.keluar === 400000 && kas.baris === 3, kas);
 
   await ev(bwc, `window.location.hash = '#/spareparts'; return true;`);
   ok('B.11 form suku cadang terbuka di mode browser',

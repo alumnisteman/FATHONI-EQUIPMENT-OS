@@ -10,7 +10,7 @@
 // sungguhan dibuka dan tiap rute dilewati.
 //
 // Cara menjalankan (profil sementara, satu harness Electron pada satu waktu):
-//   HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable npx electron tests/harness/usable-check.cjs
+//   HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable node_modules/electron/dist/electron.exe tests/harness/usable-check.cjs
 
 const { app, BrowserWindow } = require('electron');
 const selesai = require('./selesai.cjs');
@@ -368,13 +368,72 @@ async function run(wc) {
     { hasilTopbar, hasilUntukSewa: bocorSewa });
   await ev(wc, `setVal(document.querySelector('.topbar-search input'), ''); return true;`);
 
+  // ── 8. navigasi bolak-balik, muat ulang, dan halaman yang benar-benar terisi ──
+  // "State" yang diukur di sini adalah yang TIDAK BOLEH hilang karena berpindah
+  // menu: data halaman dan sesi login. Posisi filter tidak ikut diuji — menyimpan
+  // atau tidak menyimpannya adalah hak renderer, bukan tanda kehilangan data.
+  await ev(wc, `window.location.hash = '#/units'; return true;`);
+  const unitsAwal = await waitFor(wc, `document.body.innerText.includes('SDPE219RPLK0001234')`,
+    '/units menampilkan unit uji', 25000);
+  await ev(wc, `window.location.hash = '#/customers'; return true;`);
+  const custAwal = await waitFor(wc, `document.body.innerText.includes('Cikande Putra Mandiri')`,
+    '/customers menampilkan pelanggan uji', 25000);
+  ok('8.1 dua menu berturut-turut menampilkan datanya sendiri', unitsAwal && custAwal, { unitsAwal, custAwal });
+
+  await ev(wc, `window.history.back(); return true;`);
+  const mundur = await waitFor(wc,
+    `location.hash === '#/units' && document.body.innerText.includes('SDPE219RPLK0001234')`,
+    'mundur ke /units beserta datanya', 25000);
+  await ev(wc, `window.history.forward(); return true;`);
+  const maju = await waitFor(wc,
+    `location.hash === '#/customers' && document.body.innerText.includes('Cikande Putra Mandiri')`,
+    'maju ke /customers beserta datanya', 25000);
+  ok('8.2 mundur lalu maju mengembalikan halaman beserta datanya', mundur && maju, { mundur, maju });
+
+  // Rangkaian panjang: maju lewat lima menu, mundur lima kali, maju lima kali.
+  // Yang dicari halaman yang tinggal kosong atau layar login yang muncul lagi.
+  const bolakBalik = await ev(wc, `
+    const rute = ['#/units', '#/warehouse', '#/spareparts', '#/service', '#/invoices'];
+    const jeda = () => new Promise(x => setTimeout(x, 400));
+    for (const r of rute) { window.location.hash = r; await jeda(); }
+    for (let i = 0; i < rute.length; i++) { window.history.back(); await jeda(); }
+    for (let i = 0; i < rute.length; i++) { window.history.forward(); await jeda(); }
+    return { hash: location.hash, invoice: document.body.innerText.includes('INV/SO/CIKANDE'),
+             login: !!document.querySelector('#login-username'), panjang: document.body.innerText.length };`);
+  ok('8.3 lima menu maju-mundur dua putaran berakhir di halaman berisi data, tanpa layar login',
+    bolakBalik.hash === '#/invoices' && bolakBalik.invoice === true
+      && bolakBalik.login === false && bolakBalik.panjang > 300, bolakBalik);
+
+  await ev(wc, `window.location.hash = '#/units'; return true;`);
+  await wait(400);
+  await wc.reload();
+  const setelahReload = await waitFor(wc,
+    `!document.querySelector('#login-username') && document.body.innerText.includes('SDPE219RPLK0001234')`,
+    '/units terisi ulang tanpa login ulang', 45000);
+  ok('8.4 muat ulang di tengah menu tidak menghasilkan halaman kosong dan tidak mengusir sesi',
+    setelahReload === true, setelahReload);
+
+  // Semua menu, termasuk yang tidak punya penanda data uji dan karena itu tidak
+  // pernah dipastikan terisi di §3/§4. Halaman kosong selalu lolos uji tata
+  // letak, jadi "panjang teks" inilah yang membuktikan menunya benar-benar dibuka.
+  const kosong = [];
+  for (const [hash, nama] of RUTE) {
+    await ev(wc, `window.location.hash = ${JSON.stringify(hash)}; return true;`);
+    const siap = await waitFor(wc, `document.body.innerText.length > 300 && !!document.querySelector('.sidebar-item')`,
+      `${nama} terisi`, 20000);
+    const panjang = await ev(wc, `return document.body.innerText.length;`);
+    if (!siap) kosong.push([nama, panjang]);
+  }
+  ok('8.5 setiap menu di sidebar benar-benar merender konten, bukan halaman kosong',
+    kosong.length === 0, kosong);
+
   // Bersihkan jejak uji supaya profil sementara tidak menyimpan data palsu.
   const bersih = await ev(wc, `
     const patch = {};
     for (const k of Object.keys(${JSON.stringify(SEED)})) patch[k] = { upsert: [], removeIds: ${JSON.stringify(Object.values(SEED).flat().map(r => r.id))} };
     const r = await window.electronAPI.dbPatch(patch);
     return Object.entries(r).every(([k, v]) => !v || v.deleted === undefined || v.deleted >= 0);`);
-  ok('8.1 data uji dibersihkan lewat jalur yang sama', bersih === true, bersih);
+  ok('9.1 data uji dibersihkan lewat jalur yang sama', bersih === true, bersih);
 
   console.log(`\n=== usability: ${pass} lulus, ${fail} gagal ===`);
   selesai(app, fail === 0 ? 0 : 1);

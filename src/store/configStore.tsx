@@ -48,29 +48,33 @@ function persistConfig(modes: BusinessMode[], customMenus: string[], isSetupComp
   }
 }
 
-export function ConfigProvider({ children }: { children: ReactNode }) {
-  const [modes, setModesState]               = useState<BusinessMode[]>([]);
-  const [customMenus, setCustomMenusState]   = useState<string[]>([]);
-  const [isSetupComplete, setIsSetupComplete] = useState<boolean>(false);
-  const [isLoaded, setIsLoaded]              = useState(false);
-
-  // Muat konfigurasi dari localStorage saat mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed: StoredConfig = JSON.parse(stored);
-        setModesState(Array.isArray(parsed.modes) ? parsed.modes : []);
-        setCustomMenusState(Array.isArray(parsed.customMenus) ? parsed.customMenus : []);
-        setIsSetupComplete(Boolean(parsed.isSetupComplete));
-      }
-    } catch (e) {
-      console.error('[ConfigStore] Gagal memuat konfigurasi bisnis:', e);
-      // Reset ke default jika rusak
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+/** Baca konfigurasi dari localStorage secara sinkron saat inisialisasi. */
+function readStoredConfig(): { modes: BusinessMode[]; customMenus: string[]; isSetupComplete: boolean } {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed: StoredConfig = JSON.parse(stored);
+      return {
+        modes: Array.isArray(parsed.modes) ? parsed.modes : [],
+        customMenus: Array.isArray(parsed.customMenus) ? parsed.customMenus : [],
+        isSetupComplete: Boolean(parsed.isSetupComplete),
+      };
     }
-    setIsLoaded(true);
-  }, []);
+  } catch (e) {
+    console.error('[ConfigStore] Gagal memuat konfigurasi bisnis:', e);
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  }
+  return { modes: [], customMenus: [], isSetupComplete: false };
+}
+
+export function ConfigProvider({ children }: { children: ReactNode }) {
+  // Lazy initializer: localStorage dibaca SINKRON sekali saat komponen pertama
+  // kali mount, tidak di useEffect. Ini menghilangkan satu render kosong yang
+  // menyebabkan jeda setelah logout sebelum halaman Login bisa dipakai.
+  const init = readStoredConfig;
+  const [modes, setModesState]               = useState<BusinessMode[]>(() => init().modes);
+  const [customMenus, setCustomMenusState]   = useState<string[]>(() => init().customMenus);
+  const [isSetupComplete, setIsSetupComplete] = useState<boolean>(() => init().isSetupComplete);
 
   // BUG-013 FIX: Fungsi setModes yang benar — tidak ada race condition
   const setModes = useCallback((newModes: BusinessMode[]) => {
@@ -160,9 +164,6 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     toggleCustomMenu, enableAllMenus, completeSetup, resetSetup,
     hasMode, isMenuEnabled, getActiveProfileBadge,
   ]);
-
-  // Jangan render sampai konfigurasi dimuat (hindari flash profil kosong)
-  if (!isLoaded) return null;
 
   return (
     <ConfigContext.Provider value={contextValue}>

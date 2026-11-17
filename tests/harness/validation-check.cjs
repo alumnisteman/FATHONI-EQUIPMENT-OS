@@ -45,6 +45,7 @@ esbuild.buildSync({
 });
 const E = require(outfile);
 const V = E.V;
+const D = E.D;
 
 // ── kerangka ───────────────────────────────────────────────────
 let passed = 0;
@@ -304,6 +305,8 @@ check('sanitasi: huruf biasa utuh', V.sanitizeInput('Makmur 2026') === 'Makmur 2
 // hiasan tanpa ada yang sadar.
 const MENU_HAPUS = {
   units: 'Units.tsx',
+  brands: 'Brands.tsx',
+  models: 'Brands.tsx',
   customers: 'Customers.tsx',
   suppliers: 'Suppliers.tsx',
   spareParts: 'SpareParts.tsx',
@@ -332,9 +335,10 @@ for (const [collection, file] of Object.entries(MENU_HAPUS)) {
 // Peta di atas hanya mengawasi menu yang sudah dikenal. Aturan umum ini yang
 // menahan menu baru (atau perubahan lama) supaya tidak kembali ke filter-array:
 // setiap halaman yang mengambil datanya dari useDataStore harus menghapus lewat
-// removeRow. Brands.tsx sengaja tidak ikut — daftar merek/model adalah state
-// lokal halaman itu, bukan collection store, jadi tidak ada baris file yang bisa
-// tertinggal.
+// removeRow. Brands.tsx sekarang ikut peta: katalog merek/model adalah collection
+// store (brands + models) sejak 3.0.4, jadi menghapus satu entri harus menahan
+// hapusnya kalau merek/kodenya masih dipakai unit — dan itu hanya berjalan lewat
+// removeRow.
 const halamanStore = fs.readdirSync(path.join(__dirname, '../../src/pages'))
   .filter(f => f.endsWith('.tsx'))
   .filter(f => {
@@ -382,6 +386,98 @@ try {
 } catch (err) {
   console.log('LOMPONG: dist-electron/referential.js belum dibangun, peta menu tidak dibandingkan dengan daftar aturan');
 }
+
+// ── 12b. katalog Merek & Model adalah collection, bukan state halaman ─────────
+// Sebelum 3.0.4 halaman ini mengisi dirinya sendiri dari INITIAL_BRANDS di dalam
+// komponen: apa yang tampil bukan katalog perusahaan, dan setiap perubahan hilang
+// saat halaman ditutup. Yang diuji di bawah adalah JALURNYA (store + removeRow +
+// katalog awal hanya lewat tombol), karena itu yang bisa kembali ke pola lama
+// tanpa ada yang sadar.
+const BRANS = fs.readFileSync(path.join(__dirname, '../../src/pages/Brands.tsx'), 'utf8');
+check('Brands.tsx: membaca katalog dari store, bukan useState lokal',
+  /const \{ brands, setBrands, models, setModels, saveRow(?:s|, saveRows)?, (?:saveRows, )?removeRow \} = useDataStore\(\)/.test(BRANS)
+    && !/useState<[^>]*\[\]>\(INITIAL/.test(BRANS)
+    && !/INITIAL_BRANDS|INITIAL_MODELS/.test(BRANS));
+check('Brands.tsx: merek dan model sama-sama dihapus lewat removeRow',
+  BRANS.includes("removeRow('brands'") && BRANS.includes("removeRow('models'"));
+check('Brands.tsx: nama merek wajib unik dan model wajib berdiri di bawah merek yang ada',
+  /merekList\.some\(b => kecil\(b\.name\) === kecil\(name\)/.test(BRANS)
+    && /sudah ada di katalog/.test(BRANS)
+    && /Pilih merek yang sudah ada di katalog/.test(BRANS));
+check('Brands.tsx: jumlah model per merek dihitung dari katalog, bukan field yang membeku',
+  /jumlahModel/.test(BRANS) && !/modelCount/.test(BRANS));
+check('Brands.tsx: mengubah nama merek ditahan bila masih dipakai unit',
+  /unitPakaiMerek/.test(BRANS) && /masih ada \$\{dipakai\} unit/.test(BRANS));
+// Katalog awal: boleh ada, tapi hanya lewat tombol. Ini penerapan aturan "hapus
+// auto-seed palsu" pada collection baru — halaman yang mengisi dirinya sendiri
+// membuat angkanya tidak bisa dipercaya lagi.
+const KATALOG = fs.readFileSync(path.join(__dirname, '../../src/data/katalogAwal.ts'), 'utf8');
+const alamatMuat = BRANS.indexOf('const muatKatalogAwal');
+check('katalog awal hanya masuk lewat tombol eksplisit yang dikonfirmasi',
+  alamatMuat >= 0 && /setBrands\(KATALOG_MEREK\.map/.test(BRANS.slice(alamatMuat, alamatMuat + 900))
+    && /confirm\(/.test(BRANS.slice(alamatMuat, alamatMuat + 900))
+    && !/useState[\s\S]{0,80}KATALOG_MEREK/.test(BRANS));
+// Yang mengimpor modul katalog awal hanya layarnya. Kalau store atau App yang
+// mengimpor, isi katalog masuk lagi tanpa ada yang menekan tombol.
+const yangImporKatalog = fs.readdirSync(path.join(__dirname, '../../src'))
+  .flatMap(dir => {
+    const penuh = path.join(__dirname, '../../src', dir);
+    if (!fs.statSync(penuh).isDirectory()) return [];
+    return fs.readdirSync(penuh)
+      .filter(f => /\.(ts|tsx)$/.test(f))
+      .map(f => ({ berkas: `${dir}/${f}`, teks: fs.readFileSync(path.join(penuh, f), 'utf8') }));
+  })
+  .filter(x => /from '[^']*data\/katalogAwal'/.test(x.teks))
+  .map(x => x.berkas);
+check('katalog awal tidak diimpor oleh store (tidak ada auto-seed senyap)',
+  yangImporKatalog.length === 1 && yangImporKatalog[0] === 'pages/Brands.tsx', { yangImporKatalog });
+// Nama merek di katalog awal harus sama dengan cara units.brand mencatatnya, atau
+// pemeriksaan rujukan saat hapus/rename tidak akan pernah menemukan rujukannya.
+const namaKatalogAwal = [...KATALOG.matchAll(/name:\s*'([^']+)'/g)].map(m => m[1]);
+check('katalog awal memakai nama merek persis seperti units.brand mencatatnya',
+  ['SANY', 'Komatsu', 'Caterpillar'].every(n => namaKatalogAwal.includes(n)), { namaKatalogAwal });
+
+// ── 12c. halaman Unit mengambil merek/model dari katalog ─────────────────────
+const UNIT_TEKS = fs.readFileSync(path.join(__dirname, '../../src/pages/Units.tsx'), 'utf8');
+check('Units.tsx: pilihan merek datang dari collection brands dengan fallback daftar bawaan',
+  /const merekKatalog = Array\.from\(new Set\(/.test(UNIT_TEKS)
+    && /merekKatalog\.length > 0 \? merekKatalog : VALID_BRANDS/.test(UNIT_TEKS)
+    && /merekPilihan\.map\(m =>/.test(UNIT_TEKS)
+    && !/<option value="SANY">SANY<\/option>/.test(UNIT_TEKS));
+check('Units.tsx: merek di luar katalog tetap bisa dibaca dan disimpan ulang',
+  /(di luar katalog)/.test(UNIT_TEKS));
+check('Units.tsx: kode model disarankan dari katalog model merek terpilih',
+  /kodeModelKatalog\(form\.brand\)/.test(UNIT_TEKS) && /list="unit-kode-model"/.test(UNIT_TEKS));
+check('Units.tsx: validasi merek menerima merek katalog',
+  /validateBrand\(form\.brand, merekKatalog\)/.test(UNIT_TEKS));
+check('validation.ts: validateBrand tetap tertutup tanpa katalog dan terbuka dengan katalog',
+  V.validateBrand('XCMG-Baru') !== null
+    && V.validateBrand('XCMG-Baru', ['XCMG-Baru']) === null
+    && V.validateBrand('SANY', ['Apa-Pun']) === null);
+
+// ── 12d. store mendaftar setiap collection di dua tempat yang harus sama ─────
+// dataStore menyusun dataRef.current dari satu literal berisi nama collection.
+// Nama yang hilang di sana tidak pernah ikut autosave — perubahannya hilang tanpa
+// pesan. Ini membandingkan literal itu dengan COLLECTION_KEYS.
+const STORE_TEKS = fs.readFileSync(path.join(__dirname, '../../src/store/dataStore.tsx'), 'utf8');
+const potong = (mulai, akhir) => {
+  const m = STORE_TEKS.indexOf(mulai);
+  if (m < 0) return null;
+  const a = STORE_TEKS.indexOf(akhir, m);
+  return a < 0 ? null : STORE_TEKS.slice(m + mulai.length, a);
+};
+// Penanda ikut membawa ganti baris: di dalam removeRow ada `dataRef.current = {
+// ...dataRef.current, [name]: … }` yang lebih dulu muncul dan bukan literal store.
+const LIT = potong('dataRef.current = {\n', '\n    };');
+const namaLit = new Set((LIT || '').replace(/\s+/g, ' ').split(',').map(s => s.trim()).filter(Boolean));
+check('dataStore: literal dataRef memuat tepat semua COLLECTION_KEYS',
+  !!LIT && E.COLLECTION_KEYS.every(k => namaLit.has(k)) && namaLit.size === E.COLLECTION_KEYS.length,
+  { belum: E.COLLECTION_KEYS.filter(k => !namaLit.has(k)), lebih: [...namaLit].filter(k => !E.COLLECTION_KEYS.includes(k)) });
+const SETTER_LIT = potong('const collectionSetters = useMemo<Record<string, React.Dispatch<React.SetStateAction<any[]>>>>(() => ({', '}), []');
+const namaSetter = new Set((SETTER_LIT || '').replace(/\s+/g, ' ').split(',')
+  .map(s => s.split(':')[0].trim()).filter(Boolean));
+check('dataStore: peta setter menutup semua COLLECTION_KEYS (hidrasi bisa menulis)',
+  E.COLLECTION_KEYS.every(k => namaSetter.has(k)), { belum: E.COLLECTION_KEYS.filter(k => !namaSetter.has(k)) });
 
 // ── 13. pencarian daftar (matchesQuery) ───────────────────────
 // Aturan yang dipegang pengguna: ketik "SANY SY215C" di halaman mana pun harus
@@ -1191,6 +1287,378 @@ check('handoff-check menguji baris tanpa kolom angka di Operator dan Teknisi',
   check('signing: tanpa HEMS_SIGN_PFX skrip tetap menyebut paket TIDAK tersign',
     /LEWAT sign: paket ini TIDAK ditandatangani/.test(PENYATUAN)
       && /Tersign|TERSIGN|status tanda tangan/.test(PENYATUAN), undefined);
+
+  // ── 30. pembacaan meter yang mundur (Tahap 1 T4 / #88) ───────────────
+  // Satu kolom HM yang ditulis tangan dari lapangan pasti pernah salah baca.
+  // Sebelum Tahap 1 angka yang lebih kecil diterima diam-diam, lalu menyeret
+  // turun seluruh hitungan siklus servis dan biaya per jam tanpa jejak. Yang
+  // ditegakkan: mundur hanya sah dengan penanda koreksi DAN alasan yang berisi,
+  // dan alasannya tidak dibuang karena ia satu-satunya jejak yang tersisa setelah
+  // angkanya ditimpa.
+  noError('meter: naik diterima', V.validateHourMeterProgress(500, 450, {}));
+  noError('meter: sama persis bukan kemunduran', V.validateHourMeterProgress(450, 450, {}));
+  msgIs('meter: mundur tanpa penanda koreksi ditolak beserta selisihnya',
+    V.validateHourMeterProgress(440, 450, {}),
+    'Hour Meter mundur dari 450 ke 440 (10 jam). Bila ini pembacaan yang benar, '
+    + 'centang "Ini koreksi pembacaan meter" dan isi alasannya; bila bukan, perbaiki angkanya.');
+  msgIs('meter: koreksi tanpa alasan tetap ditolak',
+    V.validateHourMeterProgress(440, 450, { koreksi: true, alasan: '' }),
+    'Koreksi pembacaan meter wajib disertai alasan (misalnya "HM sebelumnya salah baca 450, seharusnya 440").');
+  msgIs('meter: alasan hanya spasi bukan alasan',
+    V.validateHourMeterProgress(440, 450, { koreksi: true, alasan: '   ' }),
+    'Koreksi pembacaan meter wajib disertai alasan (misalnya "HM sebelumnya salah baca 450, seharusnya 440").');
+  noError('meter: koreksi + alasan diterima',
+    V.validateHourMeterProgress(440, 450, { koreksi: true, alasan: 'HM lama salah baca 450, seharusnya 440' }));
+  noError('meter: angka yang tidak terbaca bukan urusan gerbang ini',
+    V.validateHourMeterProgress('abc', 450, {}));
+  noError('meter: unit baru tanpa HM tercatat tidak ditahan',
+    V.validateHourMeterProgress(10, undefined, {}));
+  check('meter: kemunduran besar tetap memakai kalimat yang sama',
+    /mundur dari 1200 ke 300 \(900 jam\)/.test(V.validateHourMeterProgress(300, 1200, {}) || ''),
+    V.validateHourMeterProgress(300, 1200, {}));
+  msgIs('jejak koreksi: bentuk yang ditulis ke catatan record',
+    V.catatanKoreksiHourMeter(450, 440, '  salah baca di formulir  '),
+    '[KOREKSI HM 450 -> 440: salah baca di formulir]');
+  check('jejak koreksi: memuat angka lama DAN angka baru supaya jejak bisa dibaca ulang',
+    /\[KOREKSI HM 450 -> 440: x\]$/.test(V.catatanKoreksiHourMeter(450, 440, 'x')),
+    V.catatanKoreksiHourMeter(450, 440, 'x'));
+
+  // ── 31. kategori pembelian: BBM tersimpan, warisan tidak ditolak (T1 / #85) ──
+  // Dua cacat kembar sebelum Tahap 1: layar menawarkan CONSUMABLE yang ditolak
+  // validasi (PO oli tidak pernah bisa disimpan), sementara FUEL sah di validasi
+  // tapi tidak bisa dipilih. Sekarang keduanya satu daftar, dan kategori warisan
+  // diterima saat disimpan ulang — kalau tidak, membuka PO lama lalu menekan
+  // Simpan diam-diam mengganti kategorinya.
+  noError('kategori PO: BBM (FUEL) boleh disimpan', V.validatePurchaseCategory('FUEL'));
+  noError('kategori PO: pelumas boleh disimpan', V.validatePurchaseCategory('LUBRICANT'));
+  noError('kategori PO: CONSUMABLE warisan diterima ulang', V.validatePurchaseCategory('CONSUMABLE'));
+  check('kategori PO: warisan TIDAK ditawarkan sebagai kategori baru',
+    !V.VALID_PURCHASE_CATEGORIES.includes('CONSUMABLE') && V.PURCHASE_CATEGORY_LEGACY.includes('CONSUMABLE'),
+    { sah: V.VALID_PURCHASE_CATEGORIES, warisan: V.PURCHASE_CATEGORY_LEGACY });
+  check('kategori PO: FUEL dan LUBRICANT sama-sama bisa dipilih',
+    V.VALID_PURCHASE_CATEGORIES.includes('FUEL') && V.VALID_PURCHASE_CATEGORIES.includes('LUBRICANT'),
+    V.VALID_PURCHASE_CATEGORIES);
+  msgIs('kategori PO: label FUEL adalah BBM yang dibaca dispatcher',
+    V.PURCHASE_CATEGORY_LABELS.FUEL, 'BBM (Solar)');
+  const WARISAN_TANPA_LABEL = V.PURCHASE_CATEGORY_LEGACY.filter((k) => !V.PURCHASE_CATEGORY_LEGACY_LABELS[k]);
+  check('kategori PO: setiap kategori warisan punya label yang mengarahkan ke pengganti',
+    WARISAN_TANPA_LABEL.length === 0 && Object.keys(V.PURCHASE_CATEGORY_LEGACY_LABELS)
+      .every((k) => V.PURCHASE_CATEGORY_LEGACY.includes(k)),
+    { WARISAN_TANPA_LABEL, label: Object.keys(V.PURCHASE_CATEGORY_LEGACY_LABELS) });
+  msgIs('kategori PO: nilai asing ditolak dengan daftar yang bisa dipilih',
+    V.validatePurchaseCategory('KACANG'),
+    `Kategori tidak valid. Pilih dari: ${V.VALID_PURCHASE_CATEGORIES.join(', ')}`);
+
+  // ── 32. satu aturan servis berikutnya, bukan dua (T2 / #86) ───────────
+  // Kartu "Servis Periodik Selanjutnya" di layar Unit dulu menulis
+  // `hourMeter + 250` sementara sisi SQLite menghitung siklus 500 — dua menu
+  // melaporkan tanggal servis berbeda untuk alat yang sama. Yang dikunci di sini
+  // adalah bentuk aritmetiknya, supaya angka 500 tidak bisa kembali sendiri.
+  check('servis berikutnya: satu konstanta siklus dan angkanya 500 HM',
+    D.SIKLUS_SERVIS_HM === 500, D.SIKLUS_SERVIS_HM);
+  const SIKLUS_BATAS = [];
+  for (const hm of [0, 120, 380, 470, 499, 500, 501, 1000, 1000.9, 12000]) {
+    const sisa = D.serviceDueInOf(hm);
+    const berikut = D.hmServisBerikutnyaOf(hm);
+    const benar = sisa === D.SIKLUS_SERVIS_HM - (Math.trunc(hm) % D.SIKLUS_SERVIS_HM)
+      && berikut === Math.trunc(hm) + sisa && sisa > 0 && sisa <= D.SIKLUS_SERVIS_HM;
+    if (!benar) SIKLUS_BATAS.push({ hm, sisa, berikut });
+  }
+  check('servis berikutnya: sisa+HM jatuh selalu tepat pada kelipatan siklus (10 nilai tepi)',
+    SIKLUS_BATAS.length === 0, SIKLUS_BATAS);
+  check('servis berikutnya: HM tidak terpakai menghasilkan null, bukan angka karangan',
+    D.serviceDueInOf(-5) === null && D.hmServisBerikutnyaOf(-5) === null
+    && D.serviceDueInOf(Infinity) === null,
+    { negatif: D.serviceDueInOf(-5), takhingga: D.serviceDueInOf(Infinity) });
+  const SUMBER_HALAMAN = fs.readdirSync(path.join(ROOT, 'src', 'pages')).filter((f) => /\.tsx$/.test(f));
+  const ARITMATIKA_250 = [];
+  for (const f of SUMBER_HALAMAN) {
+    const t = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', f), 'utf8'));
+    if (/hourMeter\s*\+\s*250/.test(t)) ARITMATIKA_250.push(f);
+  }
+  const DC_TEKS = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'domain', 'derivedColumns.ts'), 'utf8'));
+  check('servis berikutnya: tidak ada satu layar pun yang masih menjumlah 250 ke HM',
+    ARITMATIKA_250.length === 0 && !/hourMeter\s*\+\s*250/.test(DC_TEKS), ARITMATIKA_250);
+  // Dipanggil, bukan sekadar diimpor: impor yang menganggur membuat penjaga
+  // terlihat hijau padahal layarnya sudah menghitung sendiri.
+  const PEMAKAI_DC = fs.readdirSync(path.join(ROOT, 'src', 'pages'))
+    .filter((f) => /\b(hmServisBerikutnyaOf|serviceDueInOf)\(/.test(
+      BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', f), 'utf8'))));
+  const DEKLARASI_LAIN = [...DC_TEKS.matchAll(/SIKLUS_SERVIS_HM\s*=/g)].length - 1
+    + SUMBER_HALAMAN.filter((f) => /SIKLUS_SERVIS_HM\s*=\s*\d/.test(
+      BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', f), 'utf8')))).length;
+  check('servis berikutnya: layar memakainya lewat modul bersama, bukan salinan lokal',
+    PEMAKAI_DC.length >= 2 && PEMAKAI_DC.includes('Units.tsx') && DEKLARASI_LAIN === 0,
+    { PEMAKAI_DC, DEKLARASI_LAIN });
+
+  // ── 33. layar Pembelian membaca daftar kategori yang sama (T1, statis) ─
+  // Komentar di validation.ts menjanjikan penjaga ini; pasal ini membuatnya ada.
+  // Kelas cacatnya bukan angka salah, melainkan daftar yang berdiri sendiri di
+  // dua tempat: yang ditawarkan layar dan yang diterima validasi.
+  const SUMBER_PO = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Purchase.tsx'), 'utf8'));
+  check('kategori PO: dropdown dibangun dari PURCHASE_CATEGORY_LABELS, bukan <option> tulis tangan',
+    /Object\.entries\(PURCHASE_CATEGORY_LABELS\)\.map/.test(SUMBER_PO)
+    && /PURCHASE_CATEGORY_LEGACY_LABELS\[form\.category\]/.test(SUMBER_PO),
+    { adaPeta: /Object\.entries\(PURCHASE_CATEGORY_LABELS\)\.map/.test(SUMBER_PO) });
+  // Yang dibandingkan hanya layar yang mengikat <select> ke form.category: itulah
+  // yang bisa menyimpang dari peta bersama. Nilai tokennya sengaja tidak
+  // dibandingkan ke seluruh halaman — 'SPAREPART' juga nama tipe Invoice (domain
+  // lain, daftar lain), dan penjaga yang menuduh itu akan dibuang karena bising.
+  const HALAMAN_KATEGORI = SUMBER_HALAMAN.filter((f) =>
+    /value=\{form\.category\}/.test(BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', f), 'utf8'))));
+  const OPTION_TULIS_TANGAN = [];
+  for (const f of HALAMAN_KATEGORI) {
+    const t = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', f), 'utf8'));
+    const salah = [...t.matchAll(/<option[^>]*value=\{?["'](UNIT|SPAREPART|FUEL|LUBRICANT|OTHER|CONSUMABLE)["']/g)]
+      .map((m) => `${f}:${m[1]}`);
+    if (salah.length) OPTION_TULIS_TANGAN.push(...salah);
+  }
+  check('kategori PO: tidak ada halaman yang menulis <option> kategori secara hardcode',
+    OPTION_TULIS_TANGAN.length === 0, OPTION_TULIS_TANGAN);
+  const PO_VALIDASI_LBH_DULU = SUMBER_PO.indexOf('validatePurchaseCategory(form.category)');
+  const PO_SIMPAN = SUMBER_PO.indexOf('category: form.category');
+  check('kategori PO: validasi kategori terjadi SEBELUM record disusun untuk disimpan',
+    PO_VALIDASI_LBH_DULU > 0 && PO_SIMPAN > 0 && PO_VALIDASI_LBH_DULU < PO_SIMPAN,
+    { PO_VALIDASI_LBH_DULU, PO_SIMPAN });
+  check('penjaga kategori PO tidak vakum: layar pengikat kategori memang terbaca',
+    /<option/.test(SUMBER_PO) && SUMBER_HALAMAN.length >= 15 && HALAMAN_KATEGORI.includes('Purchase.tsx'),
+    { halaman: SUMBER_HALAMAN.length, HALAMAN_KATEGORI });
+
+  // ── 34. gerbang koreksi meter benar-benar dipasang di kedua layar (T4) ─
+  // Validatornya sudah diuji di §30; yang dijaga di sini adalah pemasangannya,
+  // karena gerbang yang tidak dipanggil sama dengan gerbang yang tidak ada.
+  const SUMBER_SVC = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Service.tsx'), 'utf8'));
+  const SUMBER_UNT = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Units.tsx'), 'utf8'));
+  const SUMBER_STORE = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'store', 'dataStore.tsx'), 'utf8'));
+  const LABEL_KOREKSI = /label[^<]*>\s*(Ini koreksi pembacaan meter)/.exec(SUMBER_SVC)
+    || /(Ini koreksi pembacaan meter)/.exec(SUMBER_SVC);
+  check('layar Servis: penanda koreksi ditawarkan ke pengguna',
+    !!LABEL_KOREKSI && /Alasan koreksi/.test(SUMBER_SVC), { LABEL_KOREKSI: LABEL_KOREKSI && LABEL_KOREKSI[1] });
+  check('layar Servis: kalimat validator menunjuk label yang benar-benar ada di layar',
+    LABEL_KOREKSI
+    && (V.validateHourMeterProgress(1, 2, {}) || '').includes(`"${LABEL_KOREKSI[1]}"`),
+    { label: LABEL_KOREKSI && LABEL_KOREKSI[1], pesan: V.validateHourMeterProgress(1, 2, {}) });
+  // Pemetaan kunci state → kunci API validator. Penjaga teks sumber di atas dulu
+  // hanya melihat bahwa gerbang DIPANGGIL, padahal panggilannya mengirim
+  // `koreksiHm` apa adanya: validator membaca opts.koreksi, state layar memakai
+  // kunci `aktif`, jadi opts.koreksi selalu undefined dan gerbang dengan centang
+  // + alasan tetap ditolak selamanya. Yang dikunci sekarang adalah pemetaannya.
+  const PEMETAAN_KOREKSI = /\{\s*koreksi:\s*koreksiHm\.aktif,\s*alasan:\s*koreksiHm\.alasan\s*\}/;
+  const gerbangBerpetak = (sumber, mulai) => mulai > 0 && PEMETAAN_KOREKSI.test(sumber.slice(mulai, mulai + 220));
+  const SVC_GATE = SUMBER_SVC.indexOf('validateHourMeterProgress(form.hourMeter, unitRujukan?.hourMeter,');
+  // Sejak penulisan per baris (saveRow), Work Order baru tidak lagi masuk lewat
+  // setData([newItem, ...prev]) di memori. Yang harus tetap berlaku adalah
+  // urutannya: gerbang meter diputuskan SEBELUM baris itu ditulis ke file.
+  const SVC_SIMPAN = SUMBER_SVC.indexOf("await saveRow('services', newItem)");
+  check('layar Servis: gerbang meter dijalankan sebelum Work Order baru ditulis',
+    gerbangBerpetak(SUMBER_SVC, SVC_GATE) && SVC_SIMPAN > 0 && SVC_GATE < SVC_SIMPAN, { SVC_GATE, SVC_SIMPAN });
+  check('layar Servis: jejak koreksi ditulis pada record BARU dan hasil SUNTING (dua jalur)',
+    (SUMBER_SVC.match(/hmKoreksi: jejakKoreksi/g) || []).length === 2,
+    { jumlah: (SUMBER_SVC.match(/hmKoreksi: jejakKoreksi/g) || []).length });
+  const UNT_GATE = SUMBER_UNT.indexOf('validateHourMeterProgress(form.hourMeter, hmLama,');
+  check('layar Unit: gerbang meter dijalankan sebelum commit dan jejaknya menyimpan dari/ke/alasan/pada',
+    gerbangBerpetak(SUMBER_UNT, UNT_GATE) && UNT_GATE < SUMBER_UNT.indexOf('commit({')
+    && /hmKoreksi: adaKoreksi/.test(SUMBER_UNT)
+    && ['dari:', 'ke:', 'alasan:', 'pada:'].every((k) => SUMBER_UNT.includes(k)),
+    { UNT_GATE, commit: SUMBER_UNT.indexOf('commit({') });
+  check('dataStore: servis selesai hanya menaikkan HM, kemunduran tidak pernah diserap',
+    /const maju = hmSah && hmServis >= /.test(SUMBER_STORE)
+    && /hourMeter: maju \? hmServis : u\.hourMeter/.test(SUMBER_STORE)
+    && /lastServiceHM: maju \? hmServis : u\.lastServiceHM/.test(SUMBER_STORE), undefined);
+  check('dataStore: servis selesai menulis lastServiceHM (dulu tidak pernah ada)',
+    /lastServiceHM: /.test(SUMBER_STORE), undefined);
+  // At-most-once: panggilan kedua tidak boleh mengulang efek sampingnya. Invoice
+  // dan mutasi gudang sudah menolak duplikat sendiri, tetapi stok suku cadang
+  // TIDAK — panggilan kedua tetap mengurangi stok sekali lagi.
+  check('dataStore: Work Order yang sudah COMPLETED tidak diproses ulang',
+    /if \(!wo \|\| wo\.status === 'COMPLETED'\) return;/.test(SUMBER_STORE), undefined);
+  check('dataStore: biaya aktual dari modal tersimpan ke baris Work Order',
+    /const biayaSah = actualCost !== undefined/.test(SUMBER_STORE)
+    && /actualCost: biaya/.test(SUMBER_STORE), undefined);
+  // Banner merah pernah menetap setelah tulisan berikutnya benar-benar berhasil:
+  // jalur patch hanya membersihkan hasUnsavedChanges, bukan storageWarning, jadi
+  // operator terus diberi tahu datanya hilang padahal sudah masuk file.
+  const SIMPAN_OK = SUMBER_STORE.indexOf('bumpSaved([name]);');
+  check('dataStore: peringatan gagal simpan dibersihkan setelah tulisan berhasil',
+    SIMPAN_OK > 0 && SUMBER_STORE.indexOf('setStorageWarning(null);', SIMPAN_OK) > SIMPAN_OK, undefined);
+  const SVC_KUNCI = SUMBER_SVC.indexOf('submitLock.current = true;');
+  const SVC_PANGGIL = SUMBER_SVC.indexOf('completeService(completing.id');
+  check('layar Servis: kirim ganda dikunci sebelum completeService dipanggil',
+    SVC_KUNCI > 0 && SVC_PANGGIL > SVC_KUNCI
+    && /if \(submitLock\.current\) return;/.test(SUMBER_SVC)
+    && /submitLock\.current = false;/.test(SUMBER_SVC),
+    { kunci: SVC_KUNCI, panggil: SVC_PANGGIL });
+
+  // ── 35. biaya per jam Dashboard dihitung dari data (T5 / #89) ──────────
+  // Panel Cost per Hour dulu berisi tiga konstanta yang tidak pernah berubah
+  // seberapa banyak pun data masuk: Rp85.000 / Rp18.000 / Rp25.000 per HM, dan
+  // pendapatan karangan Rp350.000/HM. Angka-angka itu kini harus tetap mati —
+  // kalau salah satu kembali, layarnya terlihat meyakinkan dan tidak ada uji
+  // runtime yang bisa membedakannya dari angka sungguhan.
+  const SUMBER_DASH = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Dashboard.tsx'), 'utf8'));
+  const KONSTANTA_LAMA = /(85000|85\.000|18000|18\.000|25000|25\.000|350000|350\.000)/g;
+  const ANGKA_LAMA_KEMBALI = [...SUMBER_DASH.matchAll(KONSTANTA_LAMA)].map((m) => m[1]);
+  check('dashboard: tidak ada satu pun konstanta biaya lama yang kembali',
+    ANGKA_LAMA_KEMBALI.length === 0, ANGKA_LAMA_KEMBALI);
+  check('dashboard: penyusutan memakai harga perolehan unit dan dua asumsi bernama',
+    /const NILAI_SISA_EKONOMIS = /.test(SUMBER_DASH) && /const UMUR_EKONOMIS_HM = /.test(SUMBER_DASH)
+    && /harga \* \(1 - NILAI_SISA_EKONOMIS\)\) \/ UMUR_EKONOMIS_HM/.test(SUMBER_DASH)
+    && /biayaPerJam: penyusutanPerJam/.test(SUMBER_DASH), undefined);
+  check('dashboard: pendapatan per jam datang dari agregat SQLite, bukan angka di layar',
+    /const sewaPerSerial = useCollectionGroup\(/.test(SUMBER_DASH)
+    && /const biayaServisPerSerial = useCollectionGroup\(/.test(SUMBER_DASH)
+    && /kelompokSerial\(sewaPerSerial, unit\?\.serialNumber\)/.test(SUMBER_DASH), undefined);
+  check('dashboard: tanpa tarif kontrak layar menyatakan ketiadaan, bukan mengarang angka',
+    /tarif\/jam belum ada/.test(SUMBER_DASH) && /belum tercatat per unit/.test(SUMBER_DASH), undefined);
+  check('penjaga dashboard tidak vakum: panel biaya per jam memang ada untuk dijaga',
+    (SUMBER_DASH.match(/useCollectionGroup\(/g) || []).length >= 5
+    && (SUMBER_DASH.match(/biayaPerJam/g) || []).length >= 3,
+    { group: (SUMBER_DASH.match(/useCollectionGroup\(/g) || []).length, biaya: (SUMBER_DASH.match(/biayaPerJam/g) || []).length });
+
+  // ── 36. ekspor Laporan menembus batas kueri dengan paginasi ─────────────
+  // Batas 500 baris ditegakkan di main process untuk SEMUA kueri. Ketika angka
+  // itu juga dipakai sebagai batas ekspor, satu kueri besar hanya akan dipotong
+  // diam-diam: CSV-nya terlihat sukses dan berisi 500 baris. Yang dijaga di sini
+  // adalah pemisahan dua batas itu dan bahwa ekspor benar-benar menelusuri
+  // halaman — bukan hanya bahwa angkanya berbeda.
+  const SUMBER_LAP = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Reports.tsx'), 'utf8'));
+  check('laporan: batas kueri (500, ditegakkan main) dan batas ekspor CSV (5.000) adalah dua angka berbeda',
+    /const BATAS_KUERI = 500/.test(SUMBER_LAP) && /const BATAS_EKSPOR = 5000/.test(SUMBER_LAP),
+    { kueri: /const BATAS_KUERI = (\d+)/.exec(SUMBER_LAP)?.[1], ekspor: /const BATAS_EKSPOR = (\d+)/.exec(SUMBER_LAP)?.[1] });
+  check('laporan: tidak ada satu pun kueri yang meminta lebih dari BATAS_KUERI (main memotongnya tanpa suara)',
+    !/limit:\s*BATAS_EKSPOR/.test(SUMBER_LAP) && !/limit:\s*(1000|5000|10_000)/.test(SUMBER_LAP),
+    { permintaan: (SUMBER_LAP.match(/limit:[^,}]+/g) || []).slice(0, 6) });
+  check('laporan: penelusuran halaman berhenti pada total dari SQLite, bukan pada halaman pertama',
+    /while \(rows\.length < batas && rows\.length < pertama\.total\)/.test(SUMBER_LAP)
+    && /offset: rows\.length/.test(SUMBER_LAP)
+    && /limit: Math\.min\(BATAS_KUERI, batas - rows\.length\)/.test(SUMBER_LAP), undefined);
+  check('laporan: keempat jalur ambil-baris besar memakai penelusuran halaman, bukan dbQuery langsung',
+    (SUMBER_LAP.match(/ambilUntukEkspor\(/g) || []).length === 4
+    && (SUMBER_LAP.match(/, BATAS_EKSPOR\)/g) || []).length === 2
+    && (SUMBER_LAP.match(/, BATAS_CETAK\)/g) || []).length === 2,
+    { jalur: (SUMBER_LAP.match(/ambilUntukEkspor\(/g) || []).length });
+  check('laporan: cetak PDF tetap di bawah batas layar sedangkan CSV naik ke 5.000 (dua niat, dua angka)',
+    /const BATAS_CETAK = 500/.test(SUMBER_LAP) && /const BATAS_TAMPIL = 500/.test(SUMBER_LAP)
+    && /sampai \{BATAS_EKSPOR\} baris/.test(SUMBER_LAP), undefined);
+
+  // ── 37. BPKB bisa dipilih sebagai jenis dokumen ──────────────────────────
+  // Panduan 3.0.3 menyuruh pengguna menulis "STNK" lalu mengganti teksnya di
+  // file karena BPKB tidak ada di daftar. Daftarnya adalah satu-satunya sumber
+  // pilihan di formulir, jadi penambahan yang hilang di sini terlihat runtime.
+  const SUMBER_DOK = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Documents.tsx'), 'utf8'));
+  const DAFTAR_JENIS = /const JENIS_DOKUMEN = \[([\s\S]*?)\];/.exec(SUMBER_DOK);
+  check('dokumen: BPKB ada di daftar jenis dan daftar itu yang mengisi pilihan formulir',
+    !!DAFTAR_JENIS && /BPKB \(Bukti Kepemilikan Kendaraan\)/.test(DAFTAR_JENIS[1])
+    && /JENIS_DOKUMEN\.map\(/.test(SUMBER_DOK),
+    { jenis: (DAFTAR_JENIS ? DAFTAR_JENIS[1].match(/'[^']+'/g) : []) || [] });
+
+  // ── 38. satu pembayaran tidak bisa masuk kas dua kali (titik 5) ──────────
+  // Penjaga anti-dobel dulunya hanya ada di jalur otomatis addKasEntry; layar Kas
+  // & Bank menerima PO yang sama dua kali (Rp72 juta untuk satu faktur Rp36 juta)
+  // dan duplikatnya bertahan lintas muat ulang. Sekarang aturannya satu, hidup di
+  // tiga tempat: validator murni ini, form-nya, dan main process.
+  const KAS_ADA = [
+    { id: 'K-1', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-1' },
+    { id: 'K-2', tipe: 'MASUK', kategori: 'PENJUALAN', referensi: 'INV-1' },
+  ];
+  noError('kas: baris tanpa referensi bukan pembayaran dokumen, jadi tidak ditahan',
+    V.validateKasKembar({ id: 'X', tipe: 'KELUAR', kategori: 'OPERASIONAL', referensi: '' }, KAS_ADA));
+  noError('kas: dokumen lain dengan nomor referensi lain tetap boleh',
+    V.validateKasKembar({ id: 'X', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-2' }, KAS_ADA));
+  noError('kas: tipe berbeda atas dokumen yang sama adalah transaksi berbeda',
+    V.validateKasKembar({ id: 'X', tipe: 'MASUK', kategori: 'PEMBELIAN', referensi: 'PO-1' }, KAS_ADA));
+  check('kas: referensi yang sama persis dengan id baru ditolak beserta nomor barisnya',
+    /PO-1/.test(V.validateKasKembar({ id: 'X', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-1' }, KAS_ADA) || '')
+    && /sudah tercatat di baris K-1/.test(
+      V.validateKasKembar({ id: 'X', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-1' }, KAS_ADA) || ''),
+    V.validateKasKembar({ id: 'X', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-1' }, KAS_ADA));
+  noError('kas: menyunting baris yang sama bukan duplikasi',
+    V.validateKasKembar({ id: 'K-1', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-1' }, KAS_ADA));
+  check('kas: huruf besar/kecil dan spasi tidak meloloskan dobel yang sama',
+    !!V.validateKasKembar({ id: 'X', tipe: 'keluar', kategori: 'Pembelian', referensi: ' po-1 ' }, KAS_ADA),
+    V.validateKasKembar({ id: 'X', tipe: 'keluar', kategori: 'Pembelian', referensi: ' po-1 ' }, KAS_ADA));
+  check('kas: daftar yang bukan array tidak meruntuhkan gerbang',
+    V.validateKasKembar({ id: 'X', tipe: 'KELUAR', kategori: 'PEMBELIAN', referensi: 'PO-1' }, undefined) === null);
+  // Ketiga tempat pemakaiannya, karena gerbang yang tidak dipanggil = gerbang yang
+  // tidak ada: jalur otomatis, jalur manual, dan hakim terakhir di main process.
+  check('kas: jalur otomatis (addKasEntry) memakai validator yang sama',
+    /setKas\(prev => \(validateKasKembar\(entry, prev\)/.test(SUMBER_STORE), undefined);
+  const SUMBER_FIN = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Finance.tsx'), 'utf8'));
+  check('kas: form manual memeriksa kembar sebelum menulis dan tidak menutup modal saat ditolak',
+    SUMBER_FIN.includes('validateKasKembar(row, data)')
+    && SUMBER_FIN.indexOf('validateKasKembar(row, data)') < SUMBER_FIN.indexOf('await commit(row)')
+    && /if \(!await commit\(row\)\) return;\s*\n\s*setShowModal\(false\)/.test(SUMBER_FIN), undefined);
+  const PATCH_BLOCK = MAIN.slice(MAIN.indexOf("trustedHandle('db-patch'"));
+  const SAVE_BLOCK = MAIN.slice(MAIN.indexOf("trustedHandle('db-save'"), MAIN.indexOf("trustedHandle('db-patch'"));
+  const GATE_KAS = PATCH_BLOCK.indexOf('kasKembarCacat(');
+  check('main: db-patch memanggil penjaga kembar dan menolaknya dengan DATA_DENY',
+    GATE_KAS > 0 && GATE_KAS < PATCH_BLOCK.indexOf('transact(')
+    && /void auditData\(putusan\.penulis\.username, 'DATA_DENY', kembar\)/.test(MAIN)
+    && PATCH_BLOCK.slice(GATE_KAS, GATE_KAS + 260).includes('dilarang: true'),
+    { GATE_KAS });
+  check('main: jalur collection penuh (migrasi boot + Restore) tetap dikecualikan',
+    !SAVE_BLOCK.includes('kasKembarCacat(') && !SAVE_BLOCK.includes('meterMundurCacat('), undefined);
+
+  // ── 39. tab riwayat kartu Unit: data nyata, tombol yang benar-benar bekerja ──
+  // Lima tab di kartu detail unit dulu berisi daftar tetap yang sama untuk semua
+  // alat (WO, part, klaim garansi, kontrak, dokumen legal) dan enam tombolnya
+  // hanya memunculkan alert(). Yang dikunci di sini: tidak ada satu pun angka
+  // hiasan yang boleh kembali, riwayat unit dibaca lewat query atas nomor sasis,
+  // dan tombolnya menyerahkan pengguna ke menu tempat record itu dibuat.
+  const SUMBER_RTL = BERSIH_KOMENTAR(fs.readFileSync(path.join(ROOT, 'src', 'pages', 'Rental.tsx'), 'utf8'));
+  const SUMBER_LBL = fs.readFileSync(path.join(ROOT, 'src', 'domain', 'labels.ts'), 'utf8');
+  const ANGKA_HIASAN = ['SPK-2025-012', 'SPK-2024-089', 'SPK-2024-042', 'P-1002', 'P-2004',
+    'CLM-2024-008', 'KNT-2025-001', 'KNT-2024-044', 'SIA-2024-8891-JKT', 'SILO-SANY',
+    'INS-ALLIANZ', 'GARANSI AKTIF', 'Ahmad Jaya'];
+  check('unit: tidak ada satu pun angka hiasan riwayat lama yang tersisa di layar',
+    !ANGKA_HIASAN.some(t => SUMBER_UNT.includes(t)),
+    { tersisa: ANGKA_HIASAN.filter(t => SUMBER_UNT.includes(t)) });
+  check('unit: tidak ada tombol yang hanya memanggil alert() di kartu detail',
+    !/onClick=\{\s*\(\)\s*=>\s*alert\(/.test(SUMBER_UNT), undefined);
+  check('unit: WO dan kontrak sewa dibaca dari query berpaginasi atas nomor sasis unit ini',
+    /const kunciUnit = \{ serialNumber: serial \}/.test(SUMBER_UNT)
+    && /useCollectionQuery\(\s*\{\s*collection: 'services', where: kunciUnit/.test(SUMBER_UNT)
+    && /useCollectionQuery\(\s*\{\s*collection: 'rentals', where: kunciUnit/.test(SUMBER_UNT)
+    && /savedTick\.services/.test(SUMBER_UNT) && /savedTick\.rentals/.test(SUMBER_UNT), undefined);
+  check('unit: satu komponen riwayat dipakai semua tab selain Ringkasan (tidak ada jalur kedua)',
+    /\{activeTab !== 'RINGKASAN' && <UnitRiwayat unit=\{u\} activeTab=\{activeTab\} \/>\}/.test(SUMBER_UNT)
+    && !/activeTab === 'PERAWATAN' && \(/.test(SUMBER_UNT), undefined);
+  // Yang tidak punya kolom penaut per unit harus DIUCAPKAN, bukan dikarang — dan
+  // ucapannya wajib menunjuk alasan datanya, supaya temuan probe tetap terbaca.
+  check('unit: pemakaian part, garansi dan dokumen diucapkan apa adanya beserta alasannya',
+    /Baris mutasi gudang tidak menyimpan nomor sasis/.test(SUMBER_UNT)
+    && /tidak disimpan di baris unit maupun di katalog/.test(SUMBER_UNT)
+    && /tidak menyimpan nomor sasis alatnya/.test(SUMBER_UNT), undefined);
+  check('unit: tiap tombol menyerahkan pengguna ke menu tempat record itu dibuat',
+    /navigate\('\/service',\s*\{\s*state:\s*\{\s*baru: true, unit: \{ serialNumber: serial, unitModel: model \}/.test(SUMBER_UNT)
+    && /navigate\('\/service',\s*\{\s*state: serial \? \{ cari: serial \}/.test(SUMBER_UNT)
+    && /navigate\('\/rental',\s*\{\s*state:\s*\{\s*baru: true, unit:/.test(SUMBER_UNT)
+    && /navigate\('\/documents',\s*\{\s*state:\s*\{\s*baru: true\s*\}\s*\}\)/.test(SUMBER_UNT)
+    && /navigate\('\/spareparts'\)/.test(SUMBER_UNT), undefined);
+  // Sisi terima: tiga halaman tujuan harus membaca state yang sama, dan form barunya
+  // tetap dibuka lewat openCreateModal sendiri supaya calon nomornya bersumber dari
+  // file (nomorBerikut), bukan dari array yang dipegang halaman.
+  check('servis: menyambut tawaran dari kartu Unit tanpa meninggalkan calon nomor dari file',
+    /const lokasi = useLocation\(\);/.test(SUMBER_SVC)
+    && /useState\(stateAwal\.cari \?\? ''\)/.test(SUMBER_SVC)
+    && /if \(!stateAwal\.baru\) return undefined;/.test(SUMBER_SVC)
+    && SUMBER_SVC.indexOf("nomorBerikut('services'") > 0
+    && SUMBER_SVC.indexOf("nomorBerikut('services'") < SUMBER_SVC.indexOf('await openCreateModal();')
+    && /serialNumber: String\(unitAwal\.serialNumber \?\? ''\)/.test(SUMBER_SVC), undefined);
+  check('rental: menyambut tawaran dari kartu Unit dengan kontrak bernomor dari file',
+    /useLocation\(\)\.state/.test(SUMBER_RTL)
+    && /if \(!stateAwal\.baru\) return undefined;/.test(SUMBER_RTL)
+    && SUMBER_RTL.indexOf("nomorBerikut('rentals'") > 0
+    && SUMBER_RTL.indexOf("nomorBerikut('rentals'") < SUMBER_RTL.indexOf('await openCreateModal();'), undefined);
+  check('dokumen: pintasan dari kartu Unit membuka formulir upload yang asli',
+    /Boolean\(\(useLocation\(\)\.state as \{ baru\?: boolean \} \| null\)\?\.baru\)/.test(SUMBER_DOK), undefined);
+  check('label status tunggal: Servis, Rental dan kartu Unit memakai daftar yang sama',
+    /SERVICE_TYPE_LABEL, STATUS_WO as STATUS_MAP/.test(SUMBER_SVC)
+    && /STATUS_SEWA as STATUS_MAP/.test(SUMBER_RTL)
+    && /SERVICE_TYPE_LABEL, STATUS_SEWA, STATUS_WO/.test(SUMBER_UNT)
+    && !/^const STATUS_MAP: /m.test(SUMBER_SVC) && !/^const STATUS_MAP: /m.test(SUMBER_RTL)
+    && ['Servis Selesai', 'Menunggu Sparepart', 'Sedang Berjalan', 'Menunggu Mobilisasi',
+      'Servis Berkala 250 Jam'].every(l => SUMBER_LBL.includes(l)), undefined);
 })().then(() => {
   fs.rmSync(outfile, { force: true });
   console.log(`\n=== unit: ${passed} lulus, ${failed} gagal ===`);

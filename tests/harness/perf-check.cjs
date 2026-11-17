@@ -12,7 +12,7 @@
 // tulis SQLite dan mengukur ulang waktu yang sama.
 //
 // Jalankan (folder datanya dibuat sendiri):
-//   npx electron tests/harness/perf-check.cjs
+//   node_modules/electron/dist/electron.exe tests/harness/perf-check.cjs
 
 const { app, BrowserWindow } = require('electron');
 const selesai = require('./selesai.cjs');
@@ -49,6 +49,13 @@ const DB = require(path.join(__dirname, '../../dist-electron/db.js'));
 
 const JUMLAH_UNIT = 12000;
 const JUMLAH_KAS = 6000;
+// Kartu KPI Kas berlabel "Bulan Ini", jadi profil uji harus bertanggal bulan
+// berjalan. Tanggal tetap akan membuat kartunya Rp 0 begitu bulan berganti dan
+// P.21 berhenti membuktikan bahwa agregatnya dihitung SQLite, bukan renderer.
+const BULAN_UJI = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
 const JUMLAH_PART = 4000;
 const JUMLAH_INVOICE = 3000;
 // Bagian 11 (kapasitas 100.000/collection) hanya jalan kalau diminta: ia menulis
@@ -94,7 +101,7 @@ function partBanyak(n, prefix) {
 function kasBanyak(n, prefix) {
   return Array.from({ length: n }, (_x, i) => ({
     id: prefix + '-K' + (i + 1),
-    tanggal: '2026-10-0' + (1 + (i % 8)),
+    tanggal: `${BULAN_UJI}-${String(1 + (i % 8)).padStart(2, '0')}`,
     keterangan: i % 2 === 0 ? 'Pembayaran penjualan ' + i : 'Belai suku cadang ' + i,
     kategori: i % 2 === 0 ? 'PENJUALAN' : 'PEMBELIAN',
     tipe: i % 2 === 0 ? 'MASUK' : 'KELUAR',
@@ -116,6 +123,21 @@ function invoiceBanyak(n, prefix) {
   }));
 }
 
+// Katalog merek/model ikut di-seed supaya jalur #R3 benar-benar terukur di profil
+// besar: halaman Unit menghidrasi brands + models lewat store, dan angka P.12b di
+// bawah harus bisa membedakan "hanya katalog yang lewat IPC" dari "armada ikut
+// lewat". Tanpa isi katalog, delta baris jadi nol dan penjaga itu tidak membuktikan
+// apa pun selain dirinya sendiri.
+const KATALOG = MEREK.map((name, i) => ({
+  id: 'PRF-B' + (i + 1), name, country: 'RRT', category: 'EXCAVATOR',
+  description: 'merek uji kinerja ' + name,
+}));
+const KATALOG_MODEL = MEREK.map((name, i) => ({
+  id: 'PRF-M' + (i + 1), brandName: name, modelCode: MODEL[i], category: 'EXCAVATOR',
+  capacity: '1,2 m3', enginePower: '128 kW', operatingWeight: '21.900 kg',
+}));
+const BARIS_KATALOG = KATALOG.length + KATALOG_MODEL.length;
+
 function seedProfil() {
   DB.openDatabase(dir);
   DB.saveStore({
@@ -123,6 +145,8 @@ function seedProfil() {
     spareParts: partBanyak(JUMLAH_PART, 'PRF'),
     kas: kasBanyak(JUMLAH_KAS, 'PRF'),
     invoices: invoiceBanyak(JUMLAH_INVOICE, 'PRF'),
+    brands: KATALOG,
+    models: KATALOG_MODEL,
   });
   DB.closeDatabase();
 }
@@ -313,15 +337,24 @@ async function run(wc) {
   // renderer. Sekarang halaman datang lewat dbQuery, jadi membuka menu tidak boleh
   // menggeser satu baris store pun — diukur sebagai delta sejak bagian 2, karena
   // bagian 2 sendiri sengaja memanggil jalur penuh dua kali.
+  // #R3 menambahkan satu pengecualian yang sah dan terbatas: rute /units menghidrasi
+  // katalog brands + models agar dropdown Merek/Model membaca halaman Merek & Model,
+  // bukan daftar hardcoded di dalam formulir Unit. Jadi subsetCalls boleh naik dan
+  // baris boleh lewat IPC — tetapi jumlahnya wajib persis isi katalog (10 baris),
+  // bukan sebagian dari armada. Di profil 12.000 unit, satu collection units yang
+  // ikut terseret menaikkan delta menjadi ribuan.
   const bacaSetelahUnit = await ev(wc, `return (await window.electronAPI.dbStats()).reads;`);
   const pindahUnit = {
     penuh: bacaSetelahUnit.fullCalls - bacaSesudah2.fullCalls,
     sebagian: bacaSetelahUnit.subsetCalls - bacaSesudah2.subsetCalls,
+    koleksi: bacaSetelahUnit.subsetCollections - bacaSesudah2.subsetCollections,
     baris: bacaSetelahUnit.rows - bacaSesudah2.rows,
   };
-  ok('P.12b membuka layar Unit di profil 12.000 unit tidak memindahkan baris store apa pun',
-    pindahUnit.penuh === 0 && pindahUnit.sebagian === 0 && pindahUnit.baris === 0,
-    pindahUnit);
+  ok('P.12b membuka layar Unit di profil 12.000 unit hanya menghidrasi katalog ('
+    + BARIS_KATALOG + ' baris), bukan armada',
+    pindahUnit.penuh === 0 && pindahUnit.baris === BARIS_KATALOG
+      && pindahUnit.sebagian <= 2 && pindahUnit.koleksi <= 2,
+    { ...pindahUnit, BARIS_KATALOG, JUMLAH_UNIT });
   catat('baris store yang lewat IPC sejak login sampai layar Unit terbuka', pindahUnit.baris);
 
   // Menu Perawatan Sistem adalah rute yang paling mahal di aplikasi ini SAMPAI #77:
@@ -420,9 +453,12 @@ async function run(wc) {
   catat('median waktu berganti halaman (ms)', medHalaman);
 
   // ══ 7. Agregat KPI di layar Kas ══════════════════════════════════════════
+  // Yang dibandingkan adalah isi kartu "Bulan Ini" di layar, jadi patokannya
+  // juga bulan berjalan — bukan total sepanjang waktu. Angka nol ditolak supaya
+  // profil yang salah tanggal tidak lolos sebagai "cocok".
   const harapanKas = {
-    masuk: DB.sumCollection('kas', 'jumlah', { tipe: 'MASUK' }),
-    keluar: DB.sumCollection('kas', 'jumlah', { tipe: 'KELUAR' }),
+    masuk: DB.sumCollection('kas', 'jumlah', { tipe: 'MASUK', month: BULAN_UJI }),
+    keluar: DB.sumCollection('kas', 'jumlah', { tipe: 'KELUAR', month: BULAN_UJI }),
   };
   await ev(wc, `window.location.hash = '#/finance'; return true;`);
   const kasSiap = await waitFor(wc, `/dari ${JUMLAH_KAS} record/.test(txt('#pager-info'))`, 'layar kas terisi', 60000);
@@ -434,7 +470,8 @@ async function run(wc) {
     const baris = document.querySelectorAll('#finance-table tbody tr').length;
     return { masuk: masuk && masuk.nilai, keluar: keluar && keluar.nilai, baris, info: txt('#pager-info') };`);
   ok('P.21 KPI arus kas benar pada 6.000 baris (dihitung SQLite, bukan renderer)',
-    kasLayar.masuk === harapanKas.masuk && kasLayar.keluar === harapanKas.keluar && kasLayar.baris === 25,
+    harapanKas.masuk > 0 && harapanKas.keluar > 0
+    && kasLayar.masuk === harapanKas.masuk && kasLayar.keluar === harapanKas.keluar && kasLayar.baris === 25,
     { kasLayar, harapanKas });
   const sumWaktu = await ev(wc, `
     const arr = [];

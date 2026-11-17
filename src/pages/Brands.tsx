@@ -1,18 +1,30 @@
 // src/pages/Brands.tsx - Modul Merek & Model Alat Berat FATHONI EQUIPMENT OS
+//
+// Katalog ini adalah collection store seperti master data lain (brands + models),
+// bukan state lokal halaman. Dua hal yang mengikuti dari situ:
+//   1. Perubahan masuk ke fathoni.db lewat autosave, jadi tidak hilang saat
+//      halaman ditutup atau aplikasi direstart;
+//   2. Penghapusan lewat removeRow, sehingga pemeriksaan rujukan di main process
+//      (electron/referential.ts) ikut berjalan: merek yang masih dipakai sebuah
+//      model atau sebuah unit tidak bisa dihapus begitu saja.
+// Katalog awal TIDAK dimuat otomatis — hanya lewat tombol "Muat Katalog Awal".
 
 import { useState } from 'react';
+import { useDataStore } from '../store/dataStore';
+import { dbAvailable, dbQuery } from '../services/dbClient';
 import { matchesQuery } from '../utils/searchMatch';
+import { validateField } from '../utils/validation';
+import { KATALOG_MEREK, KATALOG_MODEL } from '../data/katalogAwal';
 
-interface Brand {
+interface Merek {
   id: string;
   name: string;
   country: string;
   category: string;
-  modelCount: number;
   description: string;
 }
 
-interface UnitModel {
+interface ModelUnit {
   id: string;
   brandName: string;
   modelCode: string;
@@ -22,108 +34,191 @@ interface UnitModel {
   operatingWeight: string;
 }
 
-const INITIAL_BRANDS: Brand[] = [
-  { id: '1', name: 'SANY', country: 'Tiongkok', category: 'Excavator, Crane, Concrete Pump', modelCount: 18, description: 'Produsen alat berat terkemuka dunia dengan teknologi hidrolik canggih' },
-  { id: '2', name: 'Komatsu', country: 'Jepang', category: 'Excavator, Bulldozer, Dump Truck', modelCount: 24, description: 'Merek alat berat Jepang berstandar tinggi untuk konstruksi dan pertambangan' },
-  { id: '3', name: 'Caterpillar (CAT)', country: 'Amerika Serikat', category: 'Excavator, Wheel Loader, Dozer', modelCount: 30, description: 'Produsen mesin dan peralatan konstruksi/tambang terbesar di dunia' },
-  { id: '4', name: 'Kobelco', country: 'Jepang', category: 'Excavator, Crane', modelCount: 12, description: 'Spesialis excavator hemat energi dan efisiensi tinggi' },
-  { id: '5', name: 'Hitachi', country: 'Jepang', category: 'Excavator, Wheel Loader', modelCount: 15, description: 'Excavator pertambangan dan konstruksi berdaya tahan tinggi' },
-  { id: '6', name: 'Volvo CE', country: 'Swedia', category: 'Articulated Hauler, Wheel Loader', modelCount: 10, description: 'Peralatan konstruksi terdepan dalam keselamatan dan ergonomi' },
-];
-
-const INITIAL_MODELS: UnitModel[] = [
-  { id: 'm1', brandName: 'SANY', modelCode: 'SY215C', category: 'Excavator 20 Ton', capacity: '1.0 m³', enginePower: '128 kW / 2000 rpm', operatingWeight: '21.900 kg' },
-  { id: 'm2', brandName: 'SANY', modelCode: 'SY365H', category: 'Excavator 36 Ton', capacity: '1.6 m³', enginePower: '205 kW / 1900 rpm', operatingWeight: '36.200 kg' },
-  { id: 'm3', brandName: 'Komatsu', modelCode: 'PC200-8M0', category: 'Excavator 20 Ton', capacity: '0.93 m³', enginePower: '103 kW / 2000 rpm', operatingWeight: '20.500 kg' },
-  { id: 'm4', brandName: 'Komatsu', modelCode: 'D85ESS-2', category: 'Bulldozer', capacity: '3.4 m³ Blade', enginePower: '161 kW / 1900 rpm', operatingWeight: '20.670 kg' },
-  { id: 'm5', brandName: 'Caterpillar (CAT)', modelCode: '320 GX', category: 'Excavator 20 Ton', capacity: '1.0 m³', enginePower: '107 kW / 1800 rpm', operatingWeight: '20.500 kg' },
-  { id: 'm6', brandName: 'Caterpillar (CAT)', modelCode: '777G', category: 'Off-Highway Dump Truck', capacity: '60 m³', enginePower: '765 kW / 1750 rpm', operatingWeight: '163.000 kg' },
-];
+// Baris bisa datang dari payload lama, impor, atau pemulihan; field yang hilang
+// harus dibaca sebagai string kosong, bukan undefined yang tampil di layar.
+const teks = (nilai: any): string => (nilai === null || nilai === undefined ? '' : String(nilai));
+const kecil = (nilai: any): string => teks(nilai).trim().toLowerCase();
 
 export default function Brands() {
+  const { brands, setBrands, models, setModels, saveRow, saveRows, removeRow } = useDataStore();
+
+  const merekList = brands as Merek[];
+  const modelList = models as ModelUnit[];
+
   const [activeTab, setActiveTab] = useState<'brands' | 'models'>('brands');
   const [search, setSearch] = useState('');
-  const [brands, setBrands] = useState<Brand[]>(INITIAL_BRANDS);
-  const [models, setModels] = useState<UnitModel[]>(INITIAL_MODELS);
 
   // Modal State
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [showModelModal, setShowModelModal] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-  const [editingModel, setEditingModel] = useState<UnitModel | null>(null);
+  const [editingBrand, setEditingBrand] = useState<Merek | null>(null);
+  const [editingModel, setEditingModel] = useState<ModelUnit | null>(null);
+  const [busy, setBusy] = useState(false);
 
   // Form State Brand
   const [brandForm, setBrandForm] = useState({ name: '', country: '', category: '', description: '' });
 
   // Form State Model
-  const [modelForm, setModelForm] = useState({ brandName: 'SANY', modelCode: '', category: '', capacity: '', enginePower: '', operatingWeight: '' });
+  const [modelForm, setModelForm] = useState({ brandName: '', modelCode: '', category: '', capacity: '', enginePower: '', operatingWeight: '' });
 
   // Filter Data — setiap kata di kolom pencarian harus cocok
-  const filteredBrands = brands.filter(b =>
+  const filteredBrands = merekList.filter(b =>
     matchesQuery([b.name, b.country, b.category], search)
   );
 
-  const filteredModels = models.filter(m =>
+  const filteredModels = modelList.filter(m =>
     matchesQuery([m.brandName, m.modelCode, m.category], search)
   );
+
+  const jumlahModel = (namaMerek: string) =>
+    modelList.filter(m => kecil(m.brandName) === kecil(namaMerek)).length;
 
   // Open Handlers
   const openAddBrand = () => {
     setEditingBrand(null);
-    setBrandForm({ name: '', country: 'Jepang', category: 'Excavator, Heavy Machinery', description: '' });
+    setBrandForm({ name: '', country: '', category: '', description: '' });
     setShowBrandModal(true);
   };
 
-  const openEditBrand = (b: Brand) => {
+  const openEditBrand = (b: Merek) => {
     setEditingBrand(b);
-    setBrandForm({ name: b.name, country: b.country, category: b.category, description: b.description });
+    setBrandForm({ name: teks(b.name), country: teks(b.country), category: teks(b.category), description: teks(b.description) });
     setShowBrandModal(true);
   };
 
   const openAddModel = () => {
+    if (merekList.length === 0) {
+      alert('Belum ada merek di katalog. Tambahkan mereknya lebih dulu, lalu buat model di bawah merek tersebut.');
+      return;
+    }
     setEditingModel(null);
-    setModelForm({ brandName: brands[0]?.name || 'SANY', modelCode: '', category: 'Excavator 20 Ton', capacity: '1.0 m³', enginePower: '120 kW', operatingWeight: '20.000 kg' });
+    setModelForm({ brandName: teks(merekList[0].name), modelCode: '', category: '', capacity: '', enginePower: '', operatingWeight: '' });
     setShowModelModal(true);
   };
 
-  const openEditModel = (m: UnitModel) => {
+  const openEditModel = (m: ModelUnit) => {
     setEditingModel(m);
-    setModelForm({ brandName: m.brandName, modelCode: m.modelCode, category: m.category, capacity: m.capacity, enginePower: m.enginePower, operatingWeight: m.operatingWeight });
+    setModelForm({
+      brandName: teks(m.brandName), modelCode: teks(m.modelCode), category: teks(m.category),
+      capacity: teks(m.capacity), enginePower: teks(m.enginePower), operatingWeight: teks(m.operatingWeight),
+    });
     setShowModelModal(true);
   };
+
+  const idBaru = (awalan: string, urut: number) => `${awalan}-${Date.now()}-${urut}`;
 
   // Save Handlers
-  const saveBrand = () => {
-    if (!brandForm.name.trim()) return;
+  const saveBrand = async () => {
+    const name = brandForm.name.trim();
+    const namaError = validateField(name, { required: true, minLength: 2, maxLength: 60 }, 'Nama Merek');
+    if (namaError) {
+      alert(namaError);
+      return;
+    }
+    // Nama merek adalah kunci rujukan unit dan model, jadi tidak boleh rangkap —
+    // dua entri 'SANY' dan 'sany ' membuat unit menunjuk ke merek yang tidak
+    // jelas dan membuat pencarian katalog menemukan dua kartu untuk satu pabrikan.
+    if (merekList.some(b => kecil(b.name) === kecil(name) && String(b.id) !== String(editingBrand?.id))) {
+      alert(`Merek "${name}" sudah ada di katalog. Gunakan nama yang berbeda atau perbarui entri yang sudah ada.`);
+      return;
+    }
+    const ketError = validateField(brandForm.description, { maxLength: 300 }, 'Deskripsi');
+    if (ketError) {
+      alert(ketError);
+      return;
+    }
+
     if (editingBrand) {
-      setBrands(prev => prev.map(b => b.id === editingBrand.id ? { ...b, ...brandForm } : b));
+      const lama = teks(editingBrand.name);
+      if (lama !== name) {
+        const dipakai = await unitPakaiMerek(lama);
+        if (dipakai !== null && dipakai > 0) {
+          alert(`Nama merek tidak bisa diubah: masih ada ${dipakai} unit yang tercatat dengan merek "${lama}". Perbarui unitnya lebih dulu lewat menu Unit / Armada.`);
+          return;
+        }
+        // Model dengan brandName lama ikut diperbarui sekaligus
+        const modelBerubah = modelList
+          .filter(m => kecil(m.brandName) === kecil(lama))
+          .map(m => ({ ...m, brandName: name }));
+        if (modelBerubah.length > 0) await saveRows('models', modelBerubah);
+      }
+      await saveRow('brands', { ...editingBrand, ...brandForm, name });
     } else {
-      setBrands(prev => [...prev, { id: Date.now().toString(), ...brandForm, modelCount: 0 }]);
+      await saveRow('brands', { id: idBaru('brand', merekList.length), ...brandForm, name });
     }
     setShowBrandModal(false);
   };
 
-  const saveModel = () => {
-    if (!modelForm.modelCode.trim()) return;
+  const saveModel = async () => {
+    const modelCode = modelForm.modelCode.trim();
+    const kodeError = validateField(modelCode, { required: true, minLength: 2, maxLength: 40 }, 'Kode Model');
+    if (kodeError) {
+      alert(kodeError);
+      return;
+    }
+    // Model tanpa merek tidak bisa dirujuk oleh unit mana pun — mereklah yang
+    // membuat sebuah kode model berarti.
+    if (!merekList.some(b => kecil(b.name) === kecil(modelForm.brandName))) {
+      alert('Pilih merek yang sudah ada di katalog. Model hanya bisa dibuat di bawah sebuah merek.');
+      return;
+    }
+    if (modelList.some(m => kecil(m.modelCode) === kecil(modelCode) && String(m.id) !== String(editingModel?.id))) {
+      alert(`Kode model "${modelCode}" sudah ada di katalog. Gunakan kode yang berbeda atau perbarui entri yang sudah ada.`);
+      return;
+    }
+
+    const brandName = teks(merekList.find(b => kecil(b.name) === kecil(modelForm.brandName))?.name);
     if (editingModel) {
-      setModels(prev => prev.map(m => m.id === editingModel.id ? { ...m, ...modelForm } : m));
+      await saveRow('models', { ...editingModel, ...modelForm, brandName, modelCode });
     } else {
-      setModels(prev => [...prev, { id: Date.now().toString(), ...modelForm }]);
+      await saveRow('models', { id: idBaru('model', modelList.length), brandName, modelCode, category: modelForm.category, capacity: modelForm.capacity, enginePower: modelForm.enginePower, operatingWeight: modelForm.operatingWeight });
     }
     setShowModelModal(false);
   };
 
-  const deleteBrand = (id: string) => {
-    if (confirm('Hapus merek ini dari katalog?')) {
-      setBrands(prev => prev.filter(b => b.id !== id));
-    }
+  /**
+   * Berapa unit yang masih mencatat merek ini. Angka diambil dari SQLite, bukan
+   * dari array: halaman ini tidak memuat collection units, dan menebak dari array
+   * kosong akan selalu menjawab "0" — penolakan yang tidak pernah terjadi.
+   * null = mode browser tanpa database; di situ seluruh store memang ada di
+   * memori layar ini dan tidak ada file yang bisa ditinggalkan setengah jalan.
+   */
+  const unitPakaiMerek = async (nama: string): Promise<number | null> => {
+    if (!dbAvailable() || !nama) return null;
+    const hasil = await dbQuery({ collection: 'units', where: { brand: nama }, limit: 1 });
+    return hasil ? hasil.total : null;
   };
 
-  const deleteModel = (id: string) => {
-    if (confirm('Hapus model alat berat ini?')) {
-      setModels(prev => prev.filter(m => m.id !== id));
+  // Satu-satunya jalan masuk data katalog awal: tombol eksplisit. Halaman ini
+  // dulunya mengisi dirinya sendiri saat dibuka, sehingga yang tampil bukan
+  // katalog perusahaan tapi daftar bawaan komponen.
+  const muatKatalogAwal = () => {
+    if (merekList.length > 0 || modelList.length > 0) {
+      alert('Katalog sudah berisi data. Tambahkan atau perbarui entri satu per satu supaya tidak menimpa katalog yang sedang dipakai.');
+      return;
     }
+    if (!confirm('Muat katalog awal (merek pabrikan dan beberapa model umum)? Isinya bisa diedit atau dihapus setelahnya.')) return;
+    setBrands(KATALOG_MEREK.map((b, i) => ({ id: idBaru('brand', i), ...b })));
+    setModels(KATALOG_MODEL.map((m, i) => ({ id: idBaru('model', i), ...m })));
   };
+
+  const deleteBrand = async (id: string) => {
+    if (!confirm('Hapus merek ini dari katalog?')) return;
+    setBusy(true);
+    const hasil = await removeRow('brands', id);
+    setBusy(false);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
+  };
+
+  const deleteModel = async (id: string) => {
+    if (!confirm('Hapus model alat berat ini?')) return;
+    setBusy(true);
+    const hasil = await removeRow('models', id);
+    setBusy(false);
+    if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
+  };
+
+  const katalogKosong = merekList.length === 0 && modelList.length === 0;
 
   return (
     <div>
@@ -173,7 +268,7 @@ export default function Brands() {
             cursor: 'pointer',
           }}
         >
-          🏷️ Daftar Merek ({brands.length})
+          🏷️ Daftar Merek ({merekList.length})
         </button>
         <button
           onClick={() => setActiveTab('models')}
@@ -188,7 +283,7 @@ export default function Brands() {
             cursor: 'pointer',
           }}
         >
-          🚜 Spesifikasi Model Unit ({models.length})
+          🚜 Spesifikasi Model Unit ({modelList.length})
         </button>
       </div>
 
@@ -198,13 +293,24 @@ export default function Brands() {
           {filteredBrands.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: '60px 32px' }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>🏷️</div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Belum Ada Merek Ditemukan</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+                {merekList.length === 0 ? 'Katalog Masih Kosong' : 'Tidak Ada Merek yang Cocok'}
+              </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
-                Tambahkan merek manufaktur alat berat baru seperti SANY, Komatsu, CAT, dll.
+                {merekList.length === 0
+                  ? 'Merek yang ditambahkan di sini menjadi pilihan pada form Unit / Armada, dan tersimpan permanen di database.'
+                  : `Coba kata kunci lain — ${merekList.length} merek tersimpan di katalog.`}
               </p>
-              <button className="btn btn-primary" onClick={openAddBrand}>
-                Mulai Tambah Merek Baru
-              </button>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                <button className="btn btn-primary" onClick={openAddBrand}>
+                  Tambah Merek Baru
+                </button>
+                {katalogKosong && (
+                  <button className="btn btn-secondary" onClick={muatKatalogAwal}>
+                    Muat Katalog Awal
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
@@ -212,26 +318,27 @@ export default function Brands() {
                 <div key={b.id} className="card" style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                      <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{b.name}</span>
-                      <span className="badge badge-blue">{b.country}</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{teks(b.name)}</span>
+                      {b.country && <span className="badge badge-blue">{teks(b.country)}</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--sany-red)', fontWeight: 600, marginBottom: 8 }}>
-                      {b.category}
+                      {teks(b.category)}
                     </div>
                     <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4, marginBottom: 16 }}>
-                      {b.description}
+                      {teks(b.description)}
                     </p>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid var(--border-default)' }}>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      <strong>{b.modelCount}</strong> Model terdaftar
+                      <strong>{jumlahModel(teks(b.name))}</strong> Model terdaftar
                     </span>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-secondary btn-sm" onClick={() => openEditBrand(b)}>Edit</button>
                       <button
                         className="btn btn-sm"
                         style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--status-out)', border: '1px solid rgba(239,68,68,0.2)' }}
-                        onClick={() => deleteBrand(b.id)}
+                        disabled={busy}
+                        onClick={() => deleteBrand(String(b.id))}
                       >
                         Hapus
                       </button>
@@ -263,25 +370,28 @@ export default function Brands() {
               {filteredModels.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
-                    Tidak ada data model unit. Klik "Tambah Model Unit" di atas.
+                    {modelList.length === 0
+                      ? 'Belum ada model di katalog. Klik "Tambah Model Unit" di atas — model hanya bisa dibuat di bawah merek yang sudah ada.'
+                      : 'Tidak ada model yang cocok dengan kata kunci pencarian.'}
                   </td>
                 </tr>
               )}
               {filteredModels.map(m => (
                 <tr key={m.id}>
-                  <td><strong style={{ color: 'var(--text-primary)' }}>{m.modelCode}</strong></td>
-                  <td><span className="badge badge-red">{m.brandName}</span></td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{m.category}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{m.capacity}</td>
-                  <td style={{ fontSize: 12 }}>{m.enginePower}</td>
-                  <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{m.operatingWeight}</td>
+                  <td><strong style={{ color: 'var(--text-primary)' }}>{teks(m.modelCode)}</strong></td>
+                  <td><span className="badge badge-red">{teks(m.brandName)}</span></td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{teks(m.category)}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{teks(m.capacity)}</td>
+                  <td style={{ fontSize: 12 }}>{teks(m.enginePower)}</td>
+                  <td style={{ fontSize: 12, fontFamily: 'monospace' }}>{teks(m.operatingWeight)}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-secondary btn-sm" onClick={() => openEditModel(m)}>Edit</button>
                       <button
                         className="btn btn-sm"
                         style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--status-out)', border: '1px solid rgba(239,68,68,0.2)' }}
-                        onClick={() => deleteModel(m.id)}
+                        disabled={busy}
+                        onClick={() => deleteModel(String(m.id))}
                       >
                         Hapus
                       </button>
@@ -291,6 +401,13 @@ export default function Brands() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Katalog awal: hanya ditawarkan ketika katalog benar-benar masih kosong */}
+      {katalogKosong && activeTab === 'models' && (
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          <button className="btn btn-secondary" onClick={muatKatalogAwal}>Muat Katalog Awal</button>
         </div>
       )}
 
@@ -341,10 +458,17 @@ export default function Brands() {
                   onChange={e => setBrandForm(f => ({ ...f, description: e.target.value }))}
                 />
               </div>
+              {editingBrand && jumlahModel(teks(editingBrand.name)) > 0 && (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                  Merek ini dipakai {jumlahModel(teks(editingBrand.name))} model di katalog. Mengubah namanya akan
+                  memindahkan model-model itu ke nama baru; selama masih ada unit yang memakai nama lamanya,
+                  perubahan nama ditahan.
+                </p>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowBrandModal(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={saveBrand}>Simpan Merek</button>
+              <button className="btn btn-primary" disabled={busy} onClick={saveBrand}>Simpan Merek</button>
             </div>
           </div>
         </div>
@@ -367,8 +491,8 @@ export default function Brands() {
                     value={modelForm.brandName}
                     onChange={e => setModelForm(f => ({ ...f, brandName: e.target.value }))}
                   >
-                    {brands.map(b => (
-                      <option key={b.id} value={b.name}>{b.name}</option>
+                    {merekList.map(b => (
+                      <option key={b.id} value={teks(b.name)}>{teks(b.name)}</option>
                     ))}
                   </select>
                 </div>

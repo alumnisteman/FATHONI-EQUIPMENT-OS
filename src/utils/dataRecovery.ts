@@ -18,6 +18,7 @@ import {
   dbIntegrity, dbSnapshotClear, dbSnapshotCreate, dbSnapshotList, dbSnapshotRestore,
   dbStats, snapshotAvailable, type SnapshotMeta,
 } from '../services/dbClient';
+import { STORAGE_KEY } from '../store/collections';
 
 interface RecoveryConfig {
   autoBackup:     boolean;
@@ -39,14 +40,17 @@ interface Backup {
   reason?:    string;
 }
 
-// BUG-006 FIX: Key utama data store (lowercase, konsisten)
-const DATA_STORE_KEY = 'hems_data_store_v1';
-const APP_VERSION    = '1.0.0';
+// Bug fix: versi diambil dari Vite define (lihat vite.config.ts), bukan
+// di-hardcode — supaya metadata backup mencatat versi yang sama dengan
+// package.json dan app.getVersion() di main process.
+declare const __APP_VERSION__: string;
+
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
 const BACKUP_BUDGET_CHARS = 2 * 1024 * 1024; // 2MB maksimum untuk seluruh cadangan otomatis
 
 // Key kecil yang masih hidup di localStorage di desktop: belum pindah ke SQLite,
 // jadi harus ikut snapshot supaya pemulihan tidak mengembalikan aplikasi setengah.
-// Isi database (DATA_STORE_KEY) tidak pernah disebut di sini — itu tugas berkas
+// Isi database (STORAGE_KEY) tidak pernah disebut di sini — itu tugas berkas
 // SQLite, dan mengirimnya lewat localStorage akan membangkitkan arsip basi.
 const SETTINGS_KEYS = ['hems_settings', 'hems_business_modes'];
 
@@ -160,7 +164,7 @@ class DataRecovery {
     // Sesi login juga sengaja tidak ikut: token sesi hanya berlaku di proses
     // yang membuatnya, memulihnya dari berkas lain justru membingungkan.
     const data: Record<string, any> = {};
-    const keysToBackup = [DATA_STORE_KEY, 'hems_business_modes', 'hems_settings'];
+    const keysToBackup = ['hems_business_modes', 'hems_settings'];
 
     keysToBackup.forEach(key => {
       const val = localStorage.getItem(key);
@@ -381,7 +385,7 @@ class DataRecovery {
   }
 
   private removeDuplicates() {
-    const val = localStorage.getItem(DATA_STORE_KEY);
+    const val = localStorage.getItem(STORAGE_KEY);
     if (!val) return;
 
     try {
@@ -410,7 +414,7 @@ class DataRecovery {
       });
 
       if (changed) {
-        localStorage.setItem(DATA_STORE_KEY, JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
     } catch (e) {
       console.error('[DataRecovery] Gagal deduplikasi:', e);

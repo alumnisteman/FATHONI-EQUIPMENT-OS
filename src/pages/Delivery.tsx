@@ -32,7 +32,7 @@ const STATUS_MAP: Record<string, { label: string; badge: string }> = {
 };
 
 export default function Delivery() {
-  const { sales, deliveries: data, setDeliveries: setData, addDelivery, removeRow } = useDataStore();
+  const { sales, deliveries: data, setDeliveries: setData, addDelivery, saveRow, removeRow } = useDataStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
@@ -60,23 +60,17 @@ export default function Delivery() {
     return matchSearch && matchStatus;
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customerName || !form.unitModel) {
       alert('Isi nama penerima dan model unit');
       return;
     }
-    if (editingId) {
-      setData(data.map(i => i.id === editingId ? { ...i, ...form } : i));
-    } else {
-      const newItem: DeliveryOrder = {
-        id: Date.now().toString(),
-        ...form,
-        status: 'MENUNGGU',
-      };
-      // Add delivery to store (setData sudah menggunakan setDeliveries)
-      setData([newItem, ...data]);
-    }
+    const row = editingId
+      ? { ...(data.find(i => i.id === editingId) ?? { id: editingId } as any), ...form }
+      : { id: Date.now().toString(), ...form, status: 'MENUNGGU' };
+    const ok = await saveRow('deliveries', row);
+    if (!ok) return;
     setShowModal(false);
     setEditingId(null);
     setForm(formKosong);
@@ -97,8 +91,9 @@ export default function Delivery() {
     if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
-  const handleUpdateStatus = (id: string, newStatus: DeliveryOrder['status']) => {
-    setData(data.map(i => (i.id === id ? { ...i, status: newStatus } : i)));
+  const handleUpdateStatus = async (id: string, newStatus: DeliveryOrder['status']) => {
+    const item = data.find(i => i.id === id);
+    if (item) await saveRow('deliveries', { ...item, status: newStatus });
   };
 
   const openCreateModal = async () => {

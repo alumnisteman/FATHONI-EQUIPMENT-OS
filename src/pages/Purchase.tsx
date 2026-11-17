@@ -11,7 +11,9 @@ import {
   validateAmount,
   validateDateRange,
   validateName,
-  validatePurchaseCategory
+  validatePurchaseCategory,
+  PURCHASE_CATEGORY_LABELS,
+  PURCHASE_CATEGORY_LEGACY_LABELS
 } from '../utils/validation';
 
 interface PurchaseOrder {
@@ -19,7 +21,7 @@ interface PurchaseOrder {
   poNumber: string;
   supplierName: string;
   itemName: string;
-  category: 'UNIT' | 'SPAREPART' | 'CONSUMABLE';
+  category: string;
   orderDate: string;
   deliveryExpectedDate: string;
   totalAmount: number;
@@ -88,7 +90,7 @@ const STATUS_MAP: Record<string, { label: string; badge: string }> = {
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Purchase() {
-  const { purchases: data, setPurchases: setData, suppliers, receivePurchase, removeRow } = useDataStore();
+  const { purchases: data, setPurchases: setData, suppliers, receivePurchase, saveRow, removeRow } = useDataStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
@@ -100,7 +102,7 @@ export default function Purchase() {
     poNumber: nomorSementara(data, 'poNumber', nomorPO),
     supplierName: '',
     itemName: '',
-    category: 'SPAREPART' as 'UNIT' | 'SPAREPART' | 'CONSUMABLE',
+    category: 'SPAREPART',
     orderDate: new Date().toISOString().split('T')[0],
     deliveryExpectedDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
     totalAmount: 0,
@@ -118,7 +120,7 @@ export default function Purchase() {
   const totalSpent = data.filter(i => i.status === 'RECEIVED').reduce((acc, i) => acc + i.totalAmount, 0);
   const totalOutstanding = data.filter(i => i.status === 'ORDERED').reduce((acc, i) => acc + i.totalAmount, 0);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi nama supplier
@@ -171,7 +173,9 @@ export default function Purchase() {
     }
 
     if (editingId) {
-      setData(data.map(i => i.id === editingId ? { ...i, ...form, totalAmount: Number(form.totalAmount) } : i));
+      const row = { ...(data.find(i => i.id === editingId) ?? { id: editingId } as any), ...form, totalAmount: Number(form.totalAmount) };
+      const ok = await saveRow('purchases', row);
+      if (!ok) return;
     } else {
       const newItem: PurchaseOrder = {
         id: Date.now().toString(),
@@ -185,7 +189,7 @@ export default function Purchase() {
         status: 'ORDERED',
         notes: form.notes,
       };
-      setData([newItem, ...data]);
+      await saveRow('purchases', newItem);
     }
     setShowModal(false);
     setEditingId(null);
@@ -481,11 +485,18 @@ export default function Purchase() {
                     <select
                       className="form-select"
                       value={form.category}
-                      onChange={e => setForm({ ...form, category: e.target.value as any })}
+                      onChange={e => setForm({ ...form, category: e.target.value })}
                     >
-                      <option value="UNIT">Unit Alat Berat Baru/Bekas</option>
-                      <option value="SPAREPART">Spare Parts & Komponen</option>
-                      <option value="CONSUMABLE">Oli, Filter & Perlengkapan</option>
+                      {Object.entries(PURCHASE_CATEGORY_LABELS).map(([nilai, label]) => (
+                        <option key={nilai} value={nilai}>{label}</option>
+                      ))}
+                      {/* Baris lama boleh menyimpan kategori yang sudah tidak
+                          ditawarkan. Tanpa opsi ini, nilainya tidak ada di daftar,
+                          browser menampilkan opsi pertama, dan Simpan mengganti
+                          kategori record tanpa pernah diminta. */}
+                      {PURCHASE_CATEGORY_LEGACY_LABELS[form.category] && (
+                        <option value={form.category}>{PURCHASE_CATEGORY_LEGACY_LABELS[form.category]}</option>
+                      )}
                     </select>
                   </div>
                 </div>

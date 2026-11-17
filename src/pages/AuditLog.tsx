@@ -24,6 +24,8 @@ const LABEL: Record<Kejadian, string> = {
   USER_CREATED: 'Akun dibuat',
   USER_UPDATED: 'Akun diubah',
   USER_DELETED: 'Akun dihapus',
+  DATA_DELETE: 'Baris dihapus',
+  DATA_DENY: 'Tulis data ditolak',
 };
 
 const BADGE: Record<Kejadian, string> = {
@@ -36,6 +38,8 @@ const BADGE: Record<Kejadian, string> = {
   USER_CREATED: 'badge-success',
   USER_UPDATED: 'badge-warning',
   USER_DELETED: 'badge-danger',
+  DATA_DELETE: 'badge-warning',
+  DATA_DENY: 'badge-danger',
 };
 
 export default function AuditLogPage() {

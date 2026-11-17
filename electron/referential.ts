@@ -65,6 +65,18 @@ export const REFERENCE_RULES: Record<string, ReferenceRule[]> = {
     { child: 'deliveries', column: 'serialNumber', parentField: 'serialNumber', label: 'Surat Jalan', show: 'doNumber' },
     { child: 'breakdowns', column: 'unitSerialNumber', parentField: 'serialNumber', label: 'Laporan Kerusakan', show: 'breakdownNumber' },
   ],
+  // Katalog adalah rujukan, bukan catatan harian: menghapus merek yang masih
+  // dipakai sebuah unit atau sebuah model akan membuat layar Unit menampilkan
+  // merek yang tidak ada di katalog lagi. Kunci rujukannya NAMA MEREK dan KODE
+  // MODEL (kolom turunan `units.brand` / `units.model`), jadi perbandingannya
+  // persis — sama seperti cara halaman Unit menulisnya lewat dropdown katalog.
+  brands: [
+    { child: 'models', column: 'brandName', parentField: 'name', label: 'Model Unit', show: 'modelCode' },
+    { child: 'units', column: 'brand', parentField: 'name', label: 'Unit / Armada', show: 'serialNumber' },
+  ],
+  models: [
+    { child: 'units', column: 'model', parentField: 'modelCode', label: 'Unit / Armada', show: 'serialNumber' },
+  ],
   customers: [
     { child: 'sales', column: 'customerName', parentField: 'name', label: 'Pesanan Penjualan', show: 'orderNo' },
     { child: 'rentals', column: 'customerName', parentField: 'name', label: 'Kontrak Rental', show: 'contractNo' },

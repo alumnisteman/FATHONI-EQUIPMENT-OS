@@ -1,6 +1,7 @@
 // src/pages/Documents.tsx - Modul Manajemen Dokumen Legal & Administratif
 
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDataStore } from '../store/dataStore';
 import { getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
@@ -23,6 +24,7 @@ const JENIS_DOKUMEN = [
   'NPWP (Nomor Pokok Wajib Pajak)',
   'Sertifikat Kepemilikan Unit',
   'STNK (Surat Tanda Nomor Kendaraan)',
+  'BPKB (Bukti Kepemilikan Kendaraan)',
   'Asuransi Unit',
   'Perjanjian Sewa',
   'Kontrak Kerjasama',
@@ -39,11 +41,15 @@ const STATUS_CONFIG = {
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Documents() {
-  const { documents: data, setDocuments: setData, removeRow } = useDataStore();
-  
+  const { documents: data, setDocuments: setData, saveRow, removeRow } = useDataStore();
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [showModal, setShowModal] = useState(false);
+  // Pintasan dari kartu detail unit: form upload dibuka langsung, sama seperti
+  // tombol "+ Upload Dokumen" di halaman ini.
+  const [showModal, setShowModal] = useState(
+    Boolean((useLocation().state as { baru?: boolean } | null)?.baru)
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -61,23 +67,19 @@ export default function Documents() {
     return matchSearch && matchStatus;
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nomorDokumen || !form.masaBerlaku) {
       alert('Isi nomor dokumen dan masa berlaku');
       return;
     }
 
-    if (editingId) {
-      setData(data.map(i => i.id === editingId ? { ...i, ...form } : i));
-    } else {
-      const newItem: Document = {
-        id: Date.now().toString(),
-        ...form,
-        fileName: selectedFile?.name,
-      };
-      setData([newItem, ...data]);
-    }
+    const row: Document = editingId
+      ? { ...(data.find(i => i.id === editingId) ?? { id: editingId } as any), ...form }
+      : { id: Date.now().toString(), ...form, fileName: selectedFile?.name };
+
+    const ok = await saveRow('documents', row);
+    if (!ok) return;
     setShowModal(false);
     setEditingId(null);
     setSelectedFile(null);

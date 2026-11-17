@@ -196,7 +196,7 @@ async function phaseSeed(wc) {
   // orkestrator menghapus file database sesudah ini supaya fase import memulai
   // dari SQLite kosong seperti profil pengguna yang baru naik versi.
   const info = await ev(wc, `return await window.electronAPI.dbInfo();`);
-  ok('info database terbaca lewat IPC', info && typeof info.file === 'string' && info.collections?.length === 18, info);
+  ok('info database terbaca lewat IPC', info && typeof info.file === 'string' && info.collections?.length === 20, info);
   const stats = await ev(wc, `return await window.electronAPI.dbStats();`);
   ok('database profil baru masih kosong', stats && stats.totalRows === 0, stats);
 
@@ -265,6 +265,15 @@ async function phaseImport(wc) {
   const second = await addUnit(wc, 'FATHONI-DB-A2', 'PC200-8');
   ok('unit kedua tersimpan lewat UI', second.saved === 'clicked', second);
   await wait(250);
+  // Batas waktunya diukur seluruhnya di dalam proses utama: dari flush diminta
+  // sampai proses itu benar-benar keluar. Driver tidak boleh memakai jam sendiri,
+  // karena selisihnya lalu ikut berisi bongkar-proses renderer/GPU dan waktu
+  // bangun scheduler induk — di mesin 3,8 GB yang dipakai bersama proses lain,
+  // tambahan itu sudah cukup untuk melewati ambang tanpa ada simpanan yang
+  // tertinggal.
+  process.on('exit', () => {
+    try { console.log(`FLUSH-EXIT ${Date.now()}`); } catch { /* stdout mungkin sudah ditutup */ }
+  });
   console.log(`FLUSH-MARK ${Date.now()}`);
   app.quit();
   setTimeout(() => { console.log('FAIL quit tertahan lebih dari 8 detik'); selesai(app, 4); }, 8000);

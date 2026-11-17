@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Menu Operator — FATHONI EQUIPMENT OS 3.0.5</title>
+<style>
+@page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.5; color: #16202b; margin: 0; }
+h1 { font-size: 16pt; color: #b00016; margin: 0 0 4mm; border-bottom: 2.4pt solid #b00016; padding-bottom: 2mm; }
+h2 { font-size: 12.4pt; color: #0f2a4a; margin: 6mm 0 2mm; border-left: 4pt solid #b00016; padding-left: 3mm; }
+h3 { font-size: 10.8pt; color: #123c66; margin: 4.5mm 0 1.5mm; }
+p { margin: 0 0 2.2mm; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+li { margin-bottom: 1.1mm; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 9.2pt; }
+th { background: #0f2a4a; color: #fff; text-align: left; padding: 1.6mm 2mm; font-weight: 600; }
+td { border: 0.5pt solid #b9c4d0; padding: 1.4mm 2mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f4f7fa; }
+code, .k { font-family: "Consolas", monospace; font-size: 9pt; background: #eef2f6; padding: 0.3mm 1mm; border-radius: 2pt; }
+.lbl { font-weight: 600; }
+.kotak { border: 0.7pt solid #b9c4d0; border-radius: 3pt; padding: 2.6mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.meta td:first-child { width: 34mm; font-weight: 600; background: #eef2f6; }
+.gambar { margin: 0 0 3.8mm; page-break-inside: avoid; }
+.gambar img { max-width: 100%; height: auto; border: 0.7pt solid #b9c4d0; border-radius: 3pt; display: block; }
+.gambar figcaption { font-size: 8.8pt; color: #47566a; margin-top: 1.3mm; }
+.gambar figcaption b { color: #0f2a4a; }
+.cacat { border-left: 4pt solid #b00016; background: #fdf0f1; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.cacat b.ct { color: #b00016; }
+.efek { border-left: 4pt solid #1a7f4b; background: #f0f8f3; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.efek b.ct { color: #1a7f4b; }
+.wa { color: #b00016; font-weight: 700; }
+.auto { color: #47566a; font-style: italic; }
+footer.catatan-kaki { font-size: 8.6pt; color: #66748a; border-top: 0.6pt solid #b9c4d0; padding-top: 2mm; margin-top: 6mm; }
+a { color: #0f2a4a; }
+header.konf { text-align: right; font-size: 8.4pt; color: #66748a; margin-bottom: 2mm; }
+</style>
+</head>
+<body>
+<header class="konf">FATHONI EQUIPMENT OS 3.0.5 · Panduan Menu · 13 Oktober 2026</header>
+<h1>Panduan Menu — Operator</h1>
+<table class="meta"><tbody><tr><td>Kelompok sidebar</td><td>Master Data</td></tr><tr><td>Alamat</td><td><span class="k">#/operators</span> (klik menu <b>Operator</b> di sidebar)</td></tr><tr><td>Peran yang melihat</td><td>Super Admin</td></tr><tr><td>Mode bisnis</td><td>menu ini tampil bila salah satu profil bisnis aktif: Kontraktor, Perusahaan Sewa (Rental), Dealer / Distributor</td></tr><tr><td>Layar dipotret</td><td>1</td></tr><tr><td>Form dipotret</td><td><span class="k">Tambah Operator Baru</span></td></tr></tbody></table>
+<h2>1. Kegunaan menu ini</h2>
+<p>Daftar operator beserta lisensi, penugasan, dan jam kerja. Menu ini tulis-only untuk Super Admin (penegakan peran ada di proses utama).</p>
+<h2>2. Layar ketika dibuka</h2>
+<h3>Operator ketika dibuka</h3>
+<figure class="gambar"><img src="gambar/operator-layar.png" alt="Layar Operator (layar) saat data contoh PG-* dimuat."><figcaption><b>operator-layar.png</b> — 1184×967 piksel, 113 KB.</figcaption></figure>
+<p><span class="lbl">Kolom tabel</span> (1 baris terlihat pada potret):</p>
+<table><thead><tr><th style="width:12mm">No.</th><th>Nama kolom persis di layar</th></tr></thead><tbody><tr><td>1</td><td class="lbl">NO. OPERATOR</td></tr><tr><td>2</td><td class="lbl">NAMA</td></tr><tr><td>3</td><td class="lbl">TELEPON</td></tr><tr><td>4</td><td class="lbl">UNIT TERASSIGN</td></tr><tr><td>5</td><td class="lbl">PROJECT</td></tr><tr><td>6</td><td class="lbl">TOTAL JAM</td></tr><tr><td>7</td><td class="lbl">STATUS</td></tr><tr><td>8</td><td class="lbl">AKSI</td></tr></tbody></table>
+<p><span class="lbl">Kolom yang ada di luar form</span> (pencarian/pendaftar):</p><ul>
+<li>teks — <span class="auto">Cari operator...</span></li>
+<li>dropdown (5 pilihan)</li>
+</ul>
+<h2>3. Form satu per satu, kolom demi kolom</h2>
+<p>Urutan kolom, nama label, tanda wajib, dan isi bawaan di bawah ini dibaca dari layar yang dipotret, bukan dari kode sumber. Tanda <span class="wa">*</span> adalah kolom yang memang ditahan kosong oleh aplikasi.</p>
+<h3>Form “Tambah Operator Baru”</h3>
+<p>Dibuka dengan menekan tombol <span class="k">++ Tambah Operator</span>.</p>
+<figure class="gambar"><img src="gambar/operator-tambah-operator.png" alt="Jendela Tambah Operator Baru."><figcaption><b>operator-tambah-operator.png</b> — 1184×967 piksel, 113 KB.</figcaption></figure>
+<p>Lebar jendela 500 px. Seluruh kolom muat tanpa menggulir pada jendela tinggi 980 px; pada jendela yang lebih pendek bagian bawah tetap perlu digulir.</p>
+<table><thead><tr><th style="width:46mm">Label di layar</th><th style="width:38mm">Jenis kolom</th><th style="width:36mm">Isi saat jendela baru dibuka</th><th>Pilihan dropdown / teks bantu</th></tr></thead><tbody>
+<tr><td class="lbl">No. Operator</td><td>teks (terisi otomatis, tidak dapat diketik)</td><td><span class="auto">otomatis</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Nama Lengkap * <span class="wa">*</span></td><td>teks</td><td><span class="auto">Nama lengkap operator</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Telepon * <span class="wa">*</span></td><td>teks</td><td><span class="auto">08xxxxxxxxxx</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Email</td><td>email</td><td><span class="auto">email@example.com</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">NIK</td><td>teks</td><td><span class="auto">16 digit NIK</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Status *</td><td>dropdown (4 pilihan)</td><td>ACTIVE</td><td>Aktif; Non-Aktif; Cuti; Suspensi</td></tr>
+<tr><td class="lbl">Tanggal Mulai * <span class="wa">*</span></td><td>tanggal</td><td><span class="auto">kosong</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Unit Terassign</td><td>dropdown (3 pilihan)</td><td><span class="auto">kosong</span></td><td>Tidak ada; PG-PC200-002 - PC200-8; PG-SY215-001 - SY215C</td></tr>
+<tr><td class="lbl">Project Terassign</td><td>teks</td><td><span class="auto">Nama project</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Total Jam Kerja</td><td>angka</td><td>0</td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">No. Lisensi</td><td>teks</td><td><span class="auto">Nomor lisensi operator</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Masa Berlaku Lisensi</td><td>tanggal</td><td><span class="auto">kosong</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Catatan</td><td>uraian beberapa baris</td><td><span class="auto">Catatan tambahan...</span></td><td><span class="auto">-</span></td></tr>
+</tbody></table>
+<div class="kotak"><p><span class="lbl">Wajib diisi</span>: <b>Nama Lengkap *</b>, <b>Telepon *</b>, <b>Tanggal Mulai *</b></p><p><span class="lbl">Tombol di kaki jendela</span>: <span class="k">Batal</span> · <span class="k">Tambah Operator</span></p></div>
+<h2>4. Setelah disimpan — efek ke menu lain</h2>
+<div class="efek"><b class="ct">Yang terjadi di belakang layar</b><ul><li>Kontrak Rental hanya mencatat &quot;Termasuk Tenaga Operator&quot; sebagai kotak centang; nama operator dari menu ini tidak pernah dipilih di form mana pun (lihat cacat).</li><li>Kolom &quot;Unit Terassign&quot; adalah dropdown ke daftar unit; mengubahnya di sini tidak mengubah status unit di menu Unit.</li></ul></div>
+<h2>5. Perlu diketahui (apa adanya)</h2>
+<div class="cacat"><b class="ct">Batasan dan cacat yang terverifikasi di 3.0.5</b><ul><li>Label &quot;Telepon *&quot; menahan kosong di layar lama: bintangnya berbohong, karena `validatePhone` mengembalikan &quot;tidak ada kesalahan&quot; untuk nilai kosong (QA §4.20).</li><li>Jendela ini memakai gaya lama (`.modal-content` tidak ada di stylesheet) sehingga kolomnya tampil putih di atas jendela gelap.</li><li>NIK hanya diperiksa panjangnya kalau diisi, dan tidak ada pemeriksaan duplikat NIK.</li><li>Tidak ada satu pun form di menu lain yang mengambil nama dari daftar operator — hubungan antara operator dan kontrak sewa masih berupa kotak centang, dan tautan sungguhnya membutuhkan kolom baru (dicatat di QA sebagai sisa Tahap 2).</li></ul></div>
+<footer class="catatan-kaki"><p><b>Sumber dan cara potret.</b> Semua layar dan jendela di berkas ini diambil oleh <span class="k">scripts/panduan-menu.cjs</span> dari aplikasi berjalan pada jendela 1125×980 piksel CSS (1184×967 piksel perangkat), masuk sebagai akun uji di profil sementara, lalu dibaca DOM-nya ke <span class="k">panduan-menu/data.json</span> (2026-10-13T12:42:29.086Z). Berkas ini disusun <span class="k">scripts/panduan-menu-build.cjs</span>; tidak ada satu pun label yang diketik ulang dari kode sumber.</p><p><b>Angka pada gambar.</b> Profil potret diisi data contoh ber-id <span class="k">PG-*</span> (unit, pelanggan, transaksi) supaya dropdown tidak kosong dan tombol baris bisa dipotret. Nilai kartu, tabel, dan tanggal bawaan pada gambar adalah nilai data contoh itu, bukan nilai perusahaan Anda, dan bukan standar yang harus Anda capai.</p><p><b>Aksi yang sengaja tidak dijalankan.</b> Tidak ada tombol simpan, hapus, terima barang, backup, restore, muat data contoh, atau ekspor yang ditekan selama pembuatan panduan ini.</p><p><a href="00-indeks.html">Kembali ke indeks panduan menu</a> · <a href="../PANDUAN_PENGGUNA.html">Panduan pemakaian lengkap</a></p></footer>
+</body>
+</html>

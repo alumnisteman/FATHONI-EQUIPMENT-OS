@@ -275,6 +275,13 @@ async function phaseSnapshots(wc) {
   const counts = countsOf(await ev(wc, `return await window.electronAPI.dbStats();`));
   ok('pelanggan dan kas ikut termigrasi ke SQLite', counts.customers === 2 && counts.kas === 2, counts);
 
+  // Main process menolak tulisan dari jendela tanpa sesi. Fase ini menguji
+  // lapisan berkas snapshot, bukan lapis otorisasi, jadi sesinya ditanam lebih
+  // dulu lewat login biasa — tanpa ini baris uji tidak pernah masuk ke file dan
+  // seluruh assertions di bawahnya ikut runtuh.
+  const sesi = await ev(wc, `return await window.electronAPI.login('admin', 'admin123');`);
+  ok('sesi tulis tersedia sebelum menulis baris uji', sesi.success === true, sesi);
+
   const serials = await addUnitRow(wc, 'U-BK-A1', 'FATHONI-BK-A1');
   ok('baris uji masuk ke database', serials.includes('FATHONI-BK-A1'), serials);
 

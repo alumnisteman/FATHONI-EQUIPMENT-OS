@@ -25,8 +25,17 @@ const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
 
 const ROOT = path.join(__dirname, '..', '..');
-const EXE = path.join(ROOT, 'dist-app', 'win-unpacked', 'FATHONI.exe');
-const SANDBOX = path.join(ROOT, 'tmp-harness', 'appdata-smoke');
+// Rantai menguji paket hasil build di dist-app. Uji instalasi (checklist #97)
+// memakai SMOKE_EXE untuk menunjuk FATHONI.exe hasil INSTALER — tanpa itu
+// "paket berjalan" hanya membuktikan folder build, bukan apa yang benar-benar
+// terpasang di mesin pengguna. SMOKE_SANDBOX memisahkan folder data supaya uji
+// instalasi tidak memakai profil sandbox yang sama dengan uji paket.
+const EXE = process.env.SMOKE_EXE
+  ? path.resolve(process.env.SMOKE_EXE)
+  : path.join(ROOT, 'dist-app', 'win-unpacked', 'FATHONI.exe');
+const SANDBOX = process.env.SMOKE_SANDBOX
+  ? path.resolve(process.env.SMOKE_SANDBOX)
+  : path.join(ROOT, 'tmp-harness', 'appdata-smoke');
 const NAMA_PROFIL = 'hems-heavy-equipment-system';
 const PROFIL = path.join(SANDBOX, NAMA_PROFIL);
 const DB = path.join(PROFIL, 'fathoni.db');
@@ -45,6 +54,10 @@ const DI_IZINKAN = new Set([
   'set:hems_session_v2', 'del:hems_session_v2',   // token sesi aktif
   'del:hems_session',                             // sesi lama berbentuk JSON polos dibuang
   'set:hems_data_migration_v1',                   // penanda impor sekali jalan
+  // Profil bisnis adalah pengaturan tampilan/menu, bukan data operasional; pada
+  // instalasi baru layar pemilih profil menulisnya sekali. Sebelum langkah 2.4
+  // ada, kunci ini hanya datang dari arsip impor sehingga tidak pernah terlihat.
+  'set:hems_business_modes',
 ]);
 
 let lulus = 0, gagal = 0;
@@ -190,6 +203,27 @@ function siapkanSandbox() {
       const b=byText(/Simpan password/); if(b)b.click(); return !!b;`);
     ok('2.3 aplikasi terbuka setelah ganti password',
       await nilai(`${SET} return !document.querySelector('#cpw-next') && /Dasbor|Armada|Kontrol/i.test(document.body.innerText);`));
+
+    // Instalasi baru membuka pemilih profil bisnis setelah ganti password.
+    // Tanpa langkah ini setiap rute berikutnya hanya membaca layar pemilih itu,
+    // sehingga "halaman ter-render" lolos walau aplikasi tidak pernah masuk.
+    // Profil hasil impor sudah menyimpan pilihannya, jadi langkah ini opsional.
+    const perluProfil = await nilai(`${SET} return /Pilih satu atau lebih profil/.test(document.body.innerText);`);
+    if (perluProfil) {
+      console.log('INFO pemilih profil bisnis muncul (instalasi baru) — dipilih semua');
+      await evaluasi(`${SET}
+        const semua = byText(/Pilih Semua/); if (semua) semua.click(); return !!semua;`);
+      await tunggu(200);
+      await evaluasi(`${SET}
+        const b = byText(/Mulai Gunakan FATHONI/); if (b) b.click(); return !!b;`);
+      for (let x = 0; x < 20; x++) {
+        if (await nilai(`${SET} return !/Pilih satu atau lebih profil/.test(document.body.innerText);`)) break;
+        await tunggu(500);
+      }
+    }
+    ok('2.4 aplikasi benar-benar masuk ke menu utama (bukan tertahan di pemilih profil)',
+      await nilai(`${SET} return !/Pilih satu atau lebih profil/.test(document.body.innerText)
+        && /Dasbor|Control Tower|Armada/i.test(document.body.innerText);`));
 
     const adaIsi = mode === 'impor';
     for (const [rute, nama, mika] of [

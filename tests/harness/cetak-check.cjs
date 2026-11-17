@@ -20,7 +20,7 @@
 // Isi dokumennya sendiri dibaca sungguh-sungguh dari DOM jendela cetak.
 //
 // Jalankan (profil sementara dibuat sendiri, tidak menyentuh data pengguna):
-//   npx electron tests/harness/cetak-check.cjs
+//   node_modules/electron/dist/electron.exe tests/harness/cetak-check.cjs
 
 const { app, BrowserWindow } = require('electron');
 const selesai = require('./selesai.cjs');
@@ -98,7 +98,7 @@ function ev(wc, body) {
 // ── penangkap jendela cetak ════════════════════════════════════════════════
 // Jendela pertama yang dibuat main.js adalah jendela aplikasi; setiap jendela
 // 'window' sesudahnya adalah jendela cetak (popup renderer diblokir hardening,
-// jadi tidak ada sumber lain). Property print di-shadow SEBELUMElektron
+// jadi tidak ada sumber lain). Property print di-shadow SEBELUM Electron
 // sempat memanggil yang asli, sehingga dialog sistem tidak pernah menahan
 // mesin uji; kita tetap mencatat opsi yang diberikan renderer.
 let wcAplikasi = null;
@@ -253,6 +253,7 @@ const SATUSERIA = {
     totalWorkOrders: 214, totalHours: 5230, startDate: '2021-08-16', notes: 'Catatan teknisi uji',
   }],
   approvals: [{ id: 'CTK-AP1', requestNumber: 'APR/CTK/0001', type: 'MAINTENANCE_REQUEST', title: 'Perbaikan silinder boom kanan', description: 'Estimasi 42,5 juta termasuk seal kit asli', requestedBy: 'Agus Supriyatno', requestedAt: '2026-10-06', amount: 42_500_000, status: 'PENDING', approverLevel: 1, currentApprover: 'admin', notes: 'Catatan approval uji' }],
+  warehouse: [{ id: 'CTK-WH1', trxNo: 'MTS/CTK/0001', type: 'OUTBOUND', warehouseName: 'Gudang Cikande Induk', itemDescription: 'Seal Kit Boom SANY SY215C', qty: 2, unit: 'SET', referenceDoc: 'WO/CTK/0001', date: '2026-10-06', pic: 'Agus Supriyatno', notes: 'Pemakaian untuk perbaikan boom' }],
 };
 
 // Baris rusak: kolom daftar berbentuk TEKS, bukan array. Persis bentuk yang
@@ -282,6 +283,7 @@ const DOKUMEN = [
   ['#/operators', 'OP/CTK/0001', 'Operator Profile'],
   ['#/technicians', 'TECH/CTK/0001', 'Technician Profile'],
   ['#/approvals', 'APR/CTK/0001', 'Approval Request'],
+  ['#/warehouse', 'MTS/CTK/0001', 'Bukti Mutasi Gudang'],
 ];
 const DOKUMEN_RUSAK = [
   ['#/operators', 'OP/CTK/0002', 'Operator Profile (certifications berupa teks)'],
@@ -327,9 +329,9 @@ async function run(wc) {
     const r = await window.electronAPI.dbPatch(patch);
     localStorage.setItem('hems_business_modes', JSON.stringify({ modes: ['DEALER', 'RENTAL', 'CONTRACTOR'], customMenus: [], isSetupComplete: true }));
     localStorage.setItem('hems_settings', JSON.stringify({ name: ${JSON.stringify(PERUSAHAAN)}, address: 'Jl. Uji No. 1, Cikande' }));
-    return { sales: r.sales && r.sales.inserted, operators: r.operators && r.operators.inserted, technicians: r.technicians && r.technicians.inserted, breakdowns: r.breakdowns && r.breakdowns.inserted };`);
+    return { sales: r.sales && r.sales.inserted, operators: r.operators && r.operators.inserted, technicians: r.technicians && r.technicians.inserted, breakdowns: r.breakdowns && r.breakdowns.inserted, warehouse: r.warehouse && r.warehouse.inserted };`);
   ok('C.3 dokumen uji tertulis lewat jalur patch',
-    seed.sales === 1 && seed.operators === 3 && seed.technicians === 3 && seed.breakdowns === 2, seed);
+    seed.sales === 1 && seed.operators === 3 && seed.technicians === 3 && seed.breakdowns === 2 && seed.warehouse === 1, seed);
   await wc.reload();
   const shell2 = await waitFor(wc, `/Dasbor|Armada|Kontrol/i.test(document.body.innerText)`, 'shell sesudah reload', 45000);
   ok('C.4 aplikasi boot ulang membawa dokumen uji', shell2 === true, shell2);
@@ -366,6 +368,19 @@ async function run(wc) {
     ringkas.push({ label, ukuran: h.ukuran, tag: h.jumlahTag });
     console.log(`INFO cetak ${label}: ${h.jumlahTag} elemen, dokumen ${(h.ukuran || 0) / 1024} KB (base64)`);
   }
+
+  // ── 3b. bukti gudang: tombol ini dulu hanya memunculkan alert ════════════
+  // C.5 saja tidak cukup untuk kasus ini: alert lama juga membuat barisnya
+  // "bisa ditekan". Yang harus dibuktikan adalah jendela cetaknya muncul TANPA
+  // satu pun alert dan isinya formulir serah terima, bukan layar aplikasi.
+  const gudang = await cetak(wc, '#/warehouse', 'MTS/CTK/0001');
+  const gt = String((gudang.hasil || {}).teks || '');
+  ok('C.9b Bukti Mutasi Gudang mencetak formulir serah terima, bukan kotak dialog',
+    gudang.tampil === true && (gudang.alert || []).length === 0
+    && gudang.klik && gudang.klik.klik === true
+    && /BUKTI SERAH TERIMA MUTASI BARANG/.test(gt) && gt.includes('MTS/CTK/0001')
+    && /Penerima Barang/.test(gt) && (gudang.hasil || {}).jumlahTag > 20,
+    { tampil: gudang.tampil, klik: gudang.klik, alert: gudang.alert, potongan: gt.slice(0, 120) });
 
   // ── 4. hardening jendela cetak ═══════════════════════════════════════════
   const contoh = await cetak(wc, '#/operators', 'OP/CTK/0001');

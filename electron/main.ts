@@ -5,18 +5,20 @@ import os from 'os';
 import { pathToFileURL } from 'url';
 import {
   initAuth, login, logout, session as authSession, changePassword,
-  listAccounts, saveAccount, deleteAccount, auditLog,
-  type SaveAccountInput,
+  listAccounts, saveAccount, deleteAccount, auditLog, auditData,
+  type SaveAccountInput, type AccountRole,
 } from './auth';
 import {
   openDatabase, closeDatabase, databaseFile, collectionNames,
-  loadStore, rowCounts, saveStore, saveRows, queryCollection, sumCollection, groupCollection, stats, integrity,
+  loadStore, loadCollection, rowCounts, rowCount, saveStore, saveRows, queryCollection, sumCollection, groupCollection, stats, integrity,
   getMeta, setMeta, getMetaNumber, transact, rowReferences,
 } from './db';
 import {
   createSnapshot, listSnapshots, restoreSnapshot, clearSnapshots,
 } from './backup';
-import { isCollectionName } from './dbSchema';
+import { isCollectionName, SPEC_BY_NAME, nilaiAngkaCacat } from './dbSchema';
+import { bolehTulis, alasanTulis } from './authorization';
+import { dokumenKembarCacat, invoiceSumberKembarCacat, sewaTumpangTindihCacat } from './automation';
 
 // Kunci meta: menandai bahwa isi localStorage lama sudah dipindahkan ke SQLite.
 const META_IMPORTED = 'localStorageImportedAt';
@@ -372,13 +374,207 @@ function trustedHandle(
   });
 }
 
+// ── Otorisasi jalur tulis ──────────────────────────────────────────────────
+// Sesi diikat pada webContents yang sesi-nya sungguh-sungguh diterima main
+// process. Renderer tidak mengirim token pada setiap autosave; sebagai gantinya
+// kanal tulis bertanya "jendela ini sedang atas nama siapa", dan jawabannya
+// berasal dari proses yang memeriksa token itu sendiri. Menutup menu di sidebar
+// belum pernah menjadi pagar: selama `db-patch` menerima collection mana pun dari
+// pengirim yang hanya diverifikasi origin-nya, satu permintaan dari konsol
+// renderer tetap menulis ke tabel apa saja — termasuk kas, approvals, dan baris
+// yang sudah dihapus.
+//
+// Yang mengikat: `auth-login` (login lewat form ATAU panggilan IPC langsung) dan
+// `auth-session` (pemulihan sesi setelah muat ulang, dan validasi ulang berkala).
+// Tidak ada jalur lain yang bisa mengisi peta ini, jadi jendela yang tidak pernah
+// terbukti punya sesi tidak bisa menulis apa pun.
+const sesiWeb = new Map<number, string>();
+
+function ikatSesi(senderId: number, token: string): void {
+  sesiWeb.set(senderId, token);
+}
+
+// webContents yang mati tidak boleh meninggalkan token di peta: pemetaan ini
+// satu-satunya jalan bagi sebuah jendela untuk mengklaim identitas penulis.
+// Event per-contents dipakai (bukan event global) karena di sana objeknya sudah
+// pasti WebContents yang hidup, jadi id tersedia tanpa menebak bentuk argumen.
+app.on('web-contents-created', (_e, contents) => {
+  contents.on('destroyed', () => { sesiWeb.delete(contents.id); });
+});
+
+interface Penulis { username: string; role: AccountRole }
+type Putusan = { boleh: true; penulis: Penulis | null } | { boleh: false; error: string };
+
+/**
+ * Boot pertama di mesin baru: migrasi satu-kali dari localStorage lama ke SQLite
+ * terjadi SEBELUM ada sesi login, dan tidak ada satu pun baris yang boleh hilang
+ * karena itu. Penyimpangan ini hanya berlaku selama file masih kosong DAN penanda
+ * impor belum pernah diisi, jadi ia tidak bisa dipakai untuk menyelinap setelah
+ * data ada: semua tulisan berikutnya menuntut sesi.
+ */
+function dbMasihPerawan(): boolean {
+  return rowCounts().totalRows === 0 && getMeta(META_IMPORTED) === null;
+}
+
+async function putuskanTulis(
+  event: Electron.IpcMainInvokeEvent, collections: string[], adaHapus: boolean
+): Promise<Putusan> {
+  const token = sesiWeb.get(event.sender.id);
+  const sebut = collections.join(', ');
+  const tolak = (username: string, error: string): Putusan => {
+    void auditData(username, 'DATA_DENY', `${error} (collection: ${sebut || '-'})`);
+    return { boleh: false, error };
+  };
+
+  if (!token) {
+    if (!adaHapus && dbMasihPerawan()) return { boleh: true, penulis: null };
+    return tolak('-', 'Tulisan ditolak: jendela ini tidak punya sesi login.');
+  }
+
+  const hasil = await authSession(token);
+  if (!hasil.success) {
+    sesiWeb.delete(event.sender.id);
+    return tolak('-', 'Sesi berakhir. Masuk ulang untuk mengubah data.');
+  }
+
+  const penulis: Penulis = { username: hasil.user.username, role: hasil.user.role };
+  for (const nama of collections) {
+    if (!bolehTulis(penulis.role, nama)) {
+      return tolak(penulis.username, alasanTulis(penulis.role, nama));
+    }
+  }
+  return { boleh: true, penulis };
+}
+
+/**
+ * Nilai yang HADIR tapi bukan angka pada kolom REAL/INTEGER. Dibiarkan masuk
+ * berarti NULL diam-diam di file dan SUM di Dasbor/Laporan kehilangan transaksi
+ * tanpa pesan — persis kelas cacat yang membuat laporan tidak bisa dipercaya.
+ * Kolom yang tidak diisi (undefined/null/'') tetap sah dan menjadi NULL.
+ */
+function angkaCacat(rows: Record<string, unknown[]>): string | null {
+  for (const [nama, daftar] of Object.entries(rows)) {
+    const spec = SPEC_BY_NAME[nama];
+    if (!spec) continue;
+    for (const row of daftar) {
+      const pesan = nilaiAngkaCacat(spec, row);
+      if (pesan) return `Baris ${String((row as any)?.id ?? '?')} pada "${nama}": ${pesan}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Meter yang MUNDUR hanya sah bila barisnya membawa jejak koreksi untuk langkah
+ * itu. Aturan ini dulu hanya hidup di form (src/utils/validation.ts), sehingga
+ * satu tulisan IPC langsung bisa menurunkan unit 520 HM menjadi 300 tanpa
+ * centang dan tanpa alasan, lalu menyeret turun seluruh siklus servis dan biaya
+ * per jam. Bentuk jejak yang diterima sama dengan yang ditulis layar Unit:
+ * `hmKoreksi: [{ dari, ke, alasan, pada }]`.
+ *
+ * Gerbangnya sengaja hanya dipasang di jalur patch baris — jalur tulis layar —
+ * dan TIDAK di db-save penuh. db-save dipakai migrasi satu-kali localStorage dan
+ * menu Restore, dan tugas Restore justru membawa berkas kembali ke keadaan lama,
+ * meter yang lebih kecil termasuk. Menolaknya akan merusak satu-satunya menu
+ * yang menyelamatkan data.
+ */
+function meterMundurCacat(rows: unknown[], sebelum?: unknown[]): string | null {
+  const tersentuh = rows.filter(r => {
+    const mentah = (r as any)?.hourMeter;
+    return mentah !== undefined && mentah !== null && mentah !== '';
+  });
+  if (tersentuh.length === 0) return null;
+  const daftar = (sebelum ?? loadCollection('units')) as any[];
+  const sebelumnya = new Map<string, any>(daftar.map((u: any) => [String(u.id), u]));
+  for (const row of tersentuh) {
+    const baru = Number((row as any).hourMeter);
+    if (!Number.isFinite(baru)) continue;              // angkaCacat yang menilai bentuknya
+    const lamaRow = sebelumnya.get(String((row as any).id));
+    const lama = Number(lamaRow?.hourMeter);
+    if (!lamaRow || !Number.isFinite(lama) || baru >= lama) continue;
+    const jejak = Array.isArray((row as any).hmKoreksi) ? (row as any).hmKoreksi : [];
+    const tercatat = jejak.some((k: any) =>
+      Number(k?.ke) === baru && Number(k?.dari) === lama && String(k?.alasan ?? '').trim() !== '');
+    if (!tercatat) {
+      return `Baris ${String((row as any).id)} pada "units": Hour Meter mundur dari ${lama} ke ${baru} `
+        + 'tanpa jejak koreksi. Centang "Ini koreksi pembacaan meter" dan isi alasannya, atau perbaiki angkanya.';
+    }
+  }
+  return null;
+}
+
+/**
+ * Satu pembayaran hanya boleh masuk ke kas satu kali. Kuncinya sama dengan aturan
+ * yang sudah lama hidup di jalur otomatis (`addKasEntry`): referensi + kategori +
+ * tipe. Yang belum terjaga adalah layar Kas & Bank — probe membuktikan pembayaran
+ * PO yang sama tercatat dua kali (Rp72 juta untuk satu faktur Rp36 juta) dan
+ * duplikatnya bertahan lintas muat ulang karena tidak ada UNIQUE di SQLite.
+ *
+ * Hanya baris yang id-nya BELUM ada di kas yang dinilai. Menyunting baris yang
+ * sudah ada selalu lolos, termasuk di profil yang memang sudah terlanjur memuat
+ * baris kembar — di sana menjebak pengguna saat memperbaiki salah ketik justru
+ * lebih merusak daripada duplikatnya; cara menghapusnya adalah lewat hapus baris.
+ * db-save penuh juga dikecualikan, dengan alasan yang sama seperti gerbang meter:
+ * migrasi boot dan menu Restore membawa berkas lama apa adanya.
+ */
+function kasKembarCacat(rows: unknown[], removeIds: unknown[], sebelum?: unknown[]): string | null {
+  const akanHilang = new Set(removeIds.map(id => String(id)));
+  const ada = ((sebelum ?? loadCollection('kas')) as any[]).filter((k: any) => !akanHilang.has(String(k?.id)));
+  const kunci = (r: any) => [
+    String(r?.tipe ?? '').trim().toUpperCase(),
+    String(r?.kategori ?? '').trim().toUpperCase(),
+    String(r?.referensi ?? '').trim().toLowerCase(),
+  ].join('|');
+  const pemakai = new Map<string, string>(
+    ada.map((k: any) => [kunci(k), String(k.id)])
+  );
+  for (const row of rows) {
+    const referensi = String((row as any)?.referensi ?? '').trim();
+    if (referensi === '') continue;                    // tanpa referensi tidak ada dokumen yang bisa ditaut
+    const id = String((row as any).id);
+    if (ada.some((k: any) => String(k.id) === id)) continue;
+    const sudah = pemakai.get(kunci(row));
+    if (sudah !== undefined && sudah !== id) {
+      return `Baris ${id} pada "kas": transaksi ${String((row as any).tipe ?? '')}/`
+        + `${String((row as any).kategori ?? '')} dengan referensi "${referensi}" sudah tercatat `
+        + `di baris ${sudah}. Satu dokumen hanya boleh dibayar sekali — bila ini memang pembayaran `
+        + 'kedua (mis. DP lalu pelunasan), pakai nomor referensi yang berbeda.';
+    }
+    pemakai.set(kunci(row), id);                       // satu batch tidak boleh berisi dua kembar
+  }
+  return null;
+}
+
+function catatHapus(penulis: Penulis | null, hasil: Record<string, { deleted?: number }>) {  const rincian = Object.entries(hasil)
+    .filter(([, v]) => Number(v?.deleted) > 0)
+    .map(([k, v]) => `${k}=${v!.deleted}`)
+    .join(' ');
+  if (!rincian) return;
+  void auditData(penulis?.username ?? 'sistem-migrasi', 'DATA_DELETE', `Hapus baris: ${rincian}`);
+}
+
 // ── Autentikasi lokal ──────────────────────────────────────────────────────
 // Password dan hash hanya hidup di process ini. Lihat electron/auth.ts.
-trustedHandle('auth-login', (_e, username: unknown, password: unknown) => login(username, password));
+trustedHandle('auth-login', async (event, username: unknown, password: unknown) => {
+  const hasil = await login(username, password);
+  if (hasil.success && hasil.token) ikatSesi(event.sender.id, String(hasil.token));
+  return hasil;
+});
 
-trustedHandle('auth-logout', (_e, token: unknown) => logout(token));
+trustedHandle('auth-logout', (event, token: unknown) => {
+  sesiWeb.delete(event.sender.id);
+  return logout(token);
+});
 
-trustedHandle('auth-session', (_e, token: unknown) => authSession(token));
+trustedHandle('auth-session', async (event, token: unknown) => {
+  const hasil = await authSession(token);
+  // Hanya sesi yang terbukti hidup yang boleh mengisi peta. Token mati yang ditanya
+  // dari luar (uji, probe, sesi bekas) tidak boleh menghapus ikatan jendela ini:
+  // penulis yang sedang berlaku tetap dinilai ulang pada setiap tulisan, jadi
+  // ikatannya tidak bisa dipakai lebih dari token itu sendiri.
+  if (hasil.success) ikatSesi(event.sender.id, String(token));
+  return hasil;
+});
 
 trustedHandle('auth-change-password', (_e, token: unknown, current: unknown, next: unknown) =>
   changePassword(token, current, next));
@@ -422,7 +618,7 @@ trustedHandle('db-load', (_e, names?: unknown) => {
   return loadStore(names.map(String));
 });
 
-trustedHandle('db-save', (_e, partial: unknown) => {
+trustedHandle('db-save', async (event, partial: unknown) => {
   if (!partial || typeof partial !== 'object') throw new Error('Muatan simpan tidak valid');
   const allowed = new Set(collectionNames());
   const clean: Record<string, any[]> = {};
@@ -431,14 +627,34 @@ trustedHandle('db-save', (_e, partial: unknown) => {
     if (!Array.isArray(rows)) throw new Error(`Isi "${name}" bukan daftar`);
     clean[name] = rows;
   }
-  return saveStore(clean);
+  // Simpan penuh menghapus apa pun yang tidak ada di muatan, jadi "ada hapus"
+  // dinilai dari selisih jumlah baris, bukan dari permintaan renderer.
+  const putusan = await putuskanTulis(
+    event,
+    Object.keys(clean),
+    Object.entries(clean).some(([nama, rows]) => rowCount(nama) > rows.length)
+  );
+  if (putusan.boleh === false) return { error: putusan.error, dilarang: true };
+  // Gerbang angka hanya untuk tulisan interaktif. Jalur migrasi boot boleh tetap
+  // masuk walau ada warisan "1.,5": menolak di sana membuat impor diulang terus
+  // dan pengguna tidak pernah bisa membuka datanya sama sekali.
+  if (putusan.penulis) {
+    const cacat = angkaCacat(clean);
+    if (cacat) {
+      void auditData(putusan.penulis.username, 'DATA_DENY', cacat);
+      return { error: cacat, dilarang: true };
+    }
+  }
+  const hasil = saveStore(clean);
+  catatHapus(putusan.penulis, hasil);
+  return hasil;
 });
 
 // Patch baris: hanya baris yang benar-benar berubah yang melintasi IPC dan hanya
 // baris yang disebut yang ditulis. Ini jalur autosave untuk collection besar —
 // db-save penuh memaksa renderer menyalin seluruh isi collection (dan main
 // process mem-parse-nya) setiap kali satu record berubah.
-trustedHandle('db-patch', (_e, patches: unknown) => {
+trustedHandle('db-patch', async (event, patches: unknown) => {
   if (!patches || typeof patches !== 'object') throw new Error('Muatan patch tidak valid');
   const siap: { name: string; upsert: unknown[]; removeIds: unknown[] }[] = [];
   for (const [name, patch] of Object.entries(patches as Record<string, unknown>)) {
@@ -460,14 +676,76 @@ trustedHandle('db-patch', (_e, patches: unknown) => {
     }
     siap.push({ name, upsert, removeIds });
   }
+  const putusan = await putuskanTulis(
+    event,
+    siap.map(p => p.name),
+    siap.some(p => p.removeIds.length > 0)
+  );
+  if (putusan.boleh === false) return { error: putusan.error, dilarang: true };
+  if (putusan.penulis) {
+    const cacat = angkaCacat(Object.fromEntries(siap.map(p => [p.name, p.upsert])));
+    if (cacat) {
+      void auditData(putusan.penulis.username, 'DATA_DENY', cacat);
+      return { error: cacat, dilarang: true };
+    }
+    // Isi tabel sebelum patch dibaca sekali per collection: penjaga meter,
+    // penjaga kas, penjaga nomor dokumen, dan penjaga sewa memakai sumber yang
+    // sama, dan collection besar tidak boleh di-parse tiga kali untuk satu klik.
+    const cacheLama = new Map<string, any[]>();
+    const barisLama = (nama: string) => {
+      if (!cacheLama.has(nama)) cacheLama.set(nama, loadCollection(nama));
+      return cacheLama.get(nama)!;
+    };
+    const barisUnit = siap.filter(p => p.name === 'units').flatMap(p => p.upsert);
+    const mundur = barisUnit.length > 0 ? meterMundurCacat(barisUnit, barisLama('units')) : null;
+    if (mundur) {
+      void auditData(putusan.penulis.username, 'DATA_DENY', mundur);
+      return { error: mundur, dilarang: true };
+    }
+    const patchKas = siap.find(p => p.name === 'kas');
+    const kembar = patchKas ? kasKembarCacat(patchKas.upsert, patchKas.removeIds, barisLama('kas')) : null;
+    if (kembar) {
+      void auditData(putusan.penulis.username, 'DATA_DENY', kembar);
+      return { error: kembar, dilarang: true };
+    }
+    // Kontrak `duplicates` di skema kini ditegakkan di titik tulis, bukan hanya
+    // dilaporkan integrity() setelah datanya terlanjur kembar.
+    for (const p of siap) {
+      const nomor = dokumenKembarCacat(p.name, SPEC_BY_NAME[p.name]?.duplicates, barisLama(p.name), p.upsert, p.removeIds);
+      if (nomor) {
+        void auditData(putusan.penulis.username, 'DATA_DENY', nomor);
+        return { error: nomor, dilarang: true };
+      }
+    }
+    const patchInvoice = siap.find(p => p.name === 'invoices');
+    const sumber = patchInvoice
+      ? invoiceSumberKembarCacat(barisLama('invoices'), patchInvoice.upsert, patchInvoice.removeIds)
+      : null;
+    if (sumber) {
+      void auditData(putusan.penulis.username, 'DATA_DENY', sumber);
+      return { error: sumber, dilarang: true };
+    }
+    const patchSewa = siap.find(p => p.name === 'rentals');
+    const bentrok = patchSewa
+      ? sewaTumpangTindihCacat(barisLama('rentals'), patchSewa.upsert, patchSewa.removeIds)
+      : null;
+    if (bentrok) {
+      void auditData(putusan.penulis.username, 'DATA_DENY', bentrok);
+      return { error: bentrok, dilarang: true };
+    }
+  }
   // Semua collection ditulis dalam SATU transaksi: autosave yang membawa tiga
   // collection tidak boleh menyisakan dua di antaranya tertulis kalau yang
-  // ketiga gagal di tengah jalan.
-  return transact(() => {
+  // ketiga gagal di tengah jalan. Catatan penghapusan dibuat SETELAH transaksi
+  // selesai — audit yang mengklaim "baris hilang" tidak boleh tertinggal kalau
+  // transaksinya akhirnya dibatalkan.
+  const hasil = transact(() => {
     const out: Record<string, unknown> = {};
     for (const p of siap) out[p.name] = saveRows(p.name, { upsert: p.upsert, removeIds: p.removeIds });
     return out;
   });
+  catatHapus(putusan.penulis, hasil as Record<string, { deleted?: number }>);
+  return hasil;
 });
 
 // Pemeriksaan "masih dirujuk" untuk tindakan hapus. Hanya membaca; yang menolak

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { usePagedCollection } from '../hooks/usePagedCollection';
 import { nomorBerikut, nomorSementara } from '../utils/nomorBerikut';
+import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import Pager from '../components/Pager';
 
 interface WarehouseMutation {
@@ -109,6 +110,48 @@ export default function Warehouse() {
       return;
     }
     paged.refresh();
+  };
+
+  /**
+   * Bukti serah terima mutasi. Tombol ini dulu hanya memunculkan nomor trxNo di
+   * kotak dialog sementara labelnya berjanji "Cetak", jadi formulirnya kini
+   * dibangun dan dikirim ke jendela cetak lewat jalur yang sama dengan Surat
+   * Jalan dan PO.
+   */
+  const cetakBukti = (item: WarehouseMutation) => {
+    const jenis = (TYPE_CONFIG as any)[item.type]?.label || item.type;
+    const html = `<!DOCTYPE html><html><head><title>Bukti Serah Terima Mutasi</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+        .company { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        table { width:100%; border-collapse:collapse; margin-top:16px; }
+        th,td { border:1px solid #ccc; padding:8px 12px; text-align:left; }
+        th { background:#f0f0f0; font-weight: bold; width: 220px; }
+        .footer { margin-top:40px; display:flex; justify-content:space-between; }
+        .sign { text-align:center; width:160px; } .sign-line { border-top:1px solid #111; margin-top:60px; }
+        @media print { body { padding: 20px; } }
+      </style></head><body>
+      <div class="header">
+        <div class="company">${sanitize(getCompanyName())}</div>
+        <h2>BUKTI SERAH TERIMA MUTASI BARANG</h2>
+      </div>
+      <p><strong>No. Transaksi:</strong> ${sanitize(item.trxNo)} &nbsp;&nbsp; <strong>Tanggal:</strong> ${sanitize(item.date)}</p>
+      <table>
+        <tr><th>Jenis Mutasi</th><td>${sanitize(jenis)}</td></tr>
+        <tr><th>Gudang / Lokasi</th><td>${sanitize(item.warehouseName)}</td></tr>
+        <tr><th>Uraian Barang / Unit</th><td>${sanitize(item.itemDescription)}</td></tr>
+        <tr><th>Jumlah</th><td>${sanitize(String(item.qty ?? ''))} ${sanitize(item.unit || '')}</td></tr>
+        <tr><th>Referensi Dokumen</th><td>${sanitize(item.referenceDoc || '-')}</td></tr>
+        <tr><th>Petugas (PIC)</th><td>${sanitize(item.pic || '-')}</td></tr>
+        <tr><th>Catatan</th><td>${sanitize(item.notes || '-')}</td></tr>
+      </table>
+      <div class="footer">
+        <div class="sign"><div class="sign-line"></div><div>Petugas Gudang</div></div>
+        <div class="sign"><div class="sign-line"></div><div>Admin Logistik</div></div>
+        <div class="sign"><div class="sign-line"></div><div>Penerima Barang</div></div>
+      </div>
+    </body></html>`;
+    printDocument(html, `Bukti Mutasi ${item.trxNo}`);
   };
 
   /** Bentuk record dari isian formulir; field di luar formulir ikut terbawa. */
@@ -277,7 +320,7 @@ export default function Warehouse() {
                     </button>
                     <button
                       className="btn btn-sm btn-secondary"
-                      onClick={() => alert(`Bukti Serah Terima Mutasi ${item.trxNo}`)}
+                      onClick={() => cetakBukti(item)}
                     >
                       Cetak Bukti
                     </button>
@@ -352,7 +395,7 @@ export default function Warehouse() {
                     onChange={e => setForm({ ...form, warehouseName: e.target.value })}
                   >
                     {WAREHOUSE_LOCATIONS.map((loc, i) => (
-                      <option key={i} value={loc.name}>{loc.name}</option>
+                      <option key={loc.name} value={loc.name}>{loc.name}</option>
                     ))}
                   </select>
                 </div>

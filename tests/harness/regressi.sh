@@ -1,12 +1,18 @@
 #!/bin/sh
 # tests/harness/regressi.sh
-# Rantai regresi lengkap: limabelas harness berjalan BERURUTAN, ditambah satu
+# Rantai regresi lengkap: sembilan belas harness berjalan BERURUTAN, ditambah satu
 # audit dependensi. Urutan bukan hiasan — mesin ini hanya 3,8 GB RAM, dua
 # harness Electron paralel langsung membuat yang kedua macet di tengah layar.
 # Setiap harness electron membuka profil baru (HEMS_DATA_DIR dibersihkan lebih
 # dulu) karena marker migrasi hems_data_migration_v1 hanya berlaku sekali per
 # profil. Harness bertenaga node (migration, unit, store, backup) tidak butuh
 # profil dan tidak memakan RAM Electron.
+#
+# Satu-satunya pengecualian aturan "satu profil per harness" adalah tahan: dia
+# justru MEMBUTUHKAN profil yang sama bertahan lintas tiga tahap, karena tahap
+# ketiga membuktikan apa yang tersisa di file setelah tahap kedua dibunuh paksa.
+# tahan tetap dijalankan oleh node (driver), dan driver itu memanggil
+# electron.exe secara berURUTAN satu per satu — tidak pernah paralel.
 #
 # Langkah terakhir (paket) menguji FATHONI.exe HASIL PAKET, jadi ia butuh
 # `npm run make:installer` atau `npm run dist:dir` lebih dulu; tanpa paket harness
@@ -101,20 +107,34 @@ TOTAL=0
 RUSAK=''
 KOTOR=''
 
-rm -rf /d/SANY/tmp-harness/r-gui /d/SANY/tmp-harness/r-flow /d/SANY/tmp-harness/r-handoff /d/SANY/tmp-harness/r-usable
+rm -rf /d/SANY/tmp-harness/r-gui /d/SANY/tmp-harness/r-flow /d/SANY/tmp-harness/r-handoff /d/SANY/tmp-harness/r-usable /d/SANY/tmp-harness/r-otorisasi /d/SANY/tmp-harness/r-crud
 jalan migration node tests/harness/migration-check.cjs
 jalan unit node tests/harness/validation-check.cjs
+# Penjaga otomatisasi (nomor dokumen, satu sumber satu invoice, sewa tumpang
+# tindih) diuji murni di sini; jalur IPC-nya dibuktikan otorisasi di bawah.
+jalan otomatisasi node tests/harness/automation-check.cjs
 jalan auth "$ELEKTRON" tests/harness/auth-check.cjs
+jalan otorisasi env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-otorisasi "$ELEKTRON" tests/harness/otorisasi-check.cjs
 jalan gui env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui "$ELEKTRON" tests/harness/gui-check.cjs
 jalan flow env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow "$ELEKTRON" tests/harness/flow-check.cjs
 jalan handoff env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff "$ELEKTRON" tests/harness/handoff-check.cjs
 jalan usable env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable "$ELEKTRON" tests/harness/usable-check.cjs
+# crud-check menggerakkan tombolTambah/Edit/Hapus dan kotak cari halaman, bukan
+# IPC — jadi ia membuktikan tidak ada duplikasi dari klik berulang di kursi
+# pengguna.
+jalan crud env HEMS_DATA_DIR=D:/SANY/tmp-harness/r-crud "$ELEKTRON" tests/harness/crud-check.cjs
 # cetak-check membuat folder datanya sendiri (mkdtemp) seperti db-check/compat/perf.
 jalan cetak "$ELEKTRON" tests/harness/cetak-check.cjs
 jalan db "$ELEKTRON" tests/harness/db-check.cjs
 jalan integritas "$ELEKTRON" tests/harness/integrity-check.cjs
 jalan compat "$ELEKTRON" tests/harness/compat-check.cjs
 jalan perf "$ELEKTRON" tests/harness/perf-check.cjs
+# tahan-check tidak bisa menilai dirinya sendiri: salah satu tahapnya harus mati
+# dipaksa, dan proses Electron tidak boleh membunuh lalu menghidupkan dirinya
+# kembali. tahan-run.cjs adalah pengemudi bertenaga node yang memanggil
+# electron.exe tiga kali berurutan atas SATU profil, memakai taskkill /F /T untuk
+# tahap "listrik padam", dan mencetak satu ringkasan PASS/FAIL untuk rantai.
+jalan tahan node tests/harness/tahan-run.cjs
 jalan store node tests/harness/db-store-run.cjs
 jalan backup node tests/harness/db-backup-run.cjs
 jalan paket node tests/harness/smoke-paket-check.cjs

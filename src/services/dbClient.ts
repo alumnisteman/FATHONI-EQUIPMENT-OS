@@ -115,8 +115,8 @@ export interface ReferenceReport {
 interface DesktopDbApi {
   dbInfo(): Promise<Partial<DbInfo> & { error?: string }>;
   dbLoad(names?: string[]): Promise<Record<string, any> & { error?: string }>;
-  dbSave(partial: Record<string, any[]>): Promise<SaveCounts & { error?: string }>;
-  dbPatch(patches: Record<string, RowPatch>): Promise<Record<string, RowPatchResult> & { error?: string }>;
+  dbSave(partial: Record<string, any[]>): Promise<SaveCounts & { error?: string; dilarang?: boolean }>;
+  dbPatch(patches: Record<string, RowPatch>): Promise<Record<string, RowPatchResult> & { error?: string; dilarang?: boolean }>;
   dbQuery(req: DbQueryRequest): Promise<Partial<DbQueryResult> & { error?: string }>;
   dbSum(collection: string, column: string, where?: Record<string, unknown>): Promise<number | { error?: string }>;
   dbGroup(req: DbGroupRequest): Promise<{ groups?: DbGroupRow[] } & { error?: string }>;
@@ -140,6 +140,30 @@ function fail(resp: any): string | null {
   if (!resp) return 'Tidak ada balasan dari main process';
   if (typeof resp === 'object' && resp.error) return String(resp.error);
   return null;
+}
+
+/**
+ * Alasan penolakan tulis terakhir dari main process.
+ *
+ * `dilarang` berarti main process MENOLAK secara sengaja (sesi tidak ada, peran
+ * tidak berwenang, angka cacat) — mengirim ulang muatan yang sama lewat jalur
+ * collection penuh hanya akan ditolak lagi, sementara penundanya membuat layar
+ * mengira perubahannya sudah aman. Pemanggil harus menampilkan pesannya apa ada
+ * adanya, bukan diam-diam jatuh ke jalur lain.
+ */
+export interface TolakTulis { error: string; dilarang: boolean }
+let tolakTerakhir: TolakTulis | null = null;
+
+export function tulisDitolak(): TolakTulis | null {
+  return tolakTerakhir;
+}
+
+function catatTolak(resp: any): string | null {
+  const pesan = fail(resp);
+  tolakTerakhir = pesan
+    ? { error: pesan, dilarang: typeof resp === 'object' && resp.dilarang === true }
+    : null;
+  return pesan;
 }
 
 export async function dbInfo(): Promise<DbInfo | null> {
@@ -170,19 +194,20 @@ export async function dbSaveStore(partial: Record<string, any[]>): Promise<SaveC
   const a = api();
   if (!a) return null;
   const resp = await a.dbSave(partial);
-  return fail(resp) ? null : (resp as SaveCounts);
+  return catatTolak(resp) ? null : (resp as SaveCounts);
 }
 
 /**
  * Tulis hanya baris yang berubah. Mengembalikan null bila main process menolak
  * patch itu — pemanggil harus mengulang lewat dbSaveStore penuh, bukan
- * membiarkan perubahan hilang.
+ * membiarkan perubahan hilang. Tulis yang DILARANG secara sengaja (lihat
+ * tulisDitolak) tidak boleh diulang dengan cara itu.
  */
 export async function dbPatchStore(patches: Record<string, RowPatch>): Promise<Record<string, RowPatchResult> | null> {
   const raw = (window as any).electronAPI;
   if (!raw || typeof raw.dbPatch !== 'function' || !api()) return null;
   const resp = await (raw as DesktopDbApi).dbPatch(patches);
-  return fail(resp) ? null : (resp as Record<string, RowPatchResult>);
+  return catatTolak(resp) ? null : (resp as Record<string, RowPatchResult>);
 }
 
 export async function dbQuery<T = any>(req: DbQueryRequest): Promise<DbQueryResult<T> | null> {

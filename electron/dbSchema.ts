@@ -16,6 +16,7 @@
 export interface ColumnSpec {
   /** Nama kolom SQL. */
   col: string;
+  field?: string;
   type: 'TEXT' | 'REAL' | 'INTEGER';
   /** Pengambil nilai dari record. Hasil selalu dikonversi ke tipe kolom. */
   get: (row: any) => unknown;
@@ -63,9 +64,9 @@ export function searchBlob(row: any, fields: string[]): string {
     .join(' ');
 }
 
-const TEXT = (col: string, field: string): ColumnSpec => ({ col, type: 'TEXT', get: r => r[field] });
-const REAL = (col: string, field: string): ColumnSpec => ({ col, type: 'REAL', get: r => num(r[field]) });
-const INT = (col: string, field: string): ColumnSpec => ({ col, type: 'INTEGER', get: r => num(r[field]) });
+const TEXT = (col: string, field: string): ColumnSpec => ({ col, field, type: 'TEXT', get: r => r[field] });
+const REAL = (col: string, field: string): ColumnSpec => ({ col, field, type: 'REAL', get: r => num(r[field]) });
+const INT = (col: string, field: string): ColumnSpec => ({ col, field, type: 'INTEGER', get: r => num(r[field]) });
 
 /**
  * 'YYYY-MM' dari field tanggal ISO, untuk agregat per bulan di SQLite.
@@ -142,6 +143,28 @@ export const COLLECTION_SPECS: CollectionSpec[] = [
     search: ['serialNumber', 'brand', 'model', 'category', 'location', 'status', 'notes', 'year'],
     sort: 'purchaseDate',
     duplicates: ['serialNumber'],
+  },
+  {
+    // Katalog merek dipisahkan dari unit: halaman Unit mengambil pilihan merek
+    // dari sini, dan `units.brand` yang ditulis tangan tidak pernah menjadi
+    // kunci rujukan — penjagaannya lewat pemeriksaan "merek masih dipakai"
+    // (referential.ts), bukan lewat FOREIGN KEY.
+    name: 'brands',
+    columns: [TEXT('name', 'name'), TEXT('country', 'country'), TEXT('category', 'category')],
+    search: ['name', 'country', 'category', 'description'],
+    sort: 'name',
+    duplicates: ['name'],
+  },
+  {
+    name: 'models',
+    columns: [
+      TEXT('brandName', 'brandName'), TEXT('modelCode', 'modelCode'), TEXT('category', 'category'),
+    ],
+    // Kapasitas/daya/berat ikut blob: pencarian "SY215C 21.900" di halaman katalog
+    // harus menemukan barisnya, sama seperti kolom yang dicari lewat matchesQuery.
+    search: ['brandName', 'modelCode', 'category', 'capacity', 'enginePower', 'operatingWeight'],
+    sort: 'modelCode',
+    duplicates: ['modelCode'],
   },
   {
     name: 'customers',
@@ -363,4 +386,30 @@ export function toColumnValue(spec: CollectionSpec, col: ColumnSpec, row: any): 
   if (col.type === 'TEXT') return str(raw);
   if (raw === null || raw === undefined || raw === '' || !Number.isFinite(Number(raw))) return null;
   return col.type === 'INTEGER' ? Math.trunc(Number(raw)) : Number(raw);
+}
+
+/**
+ * Nilai angka yang cacat pada satu baris, atau null bila barisnya bersih.
+ *
+ * Ini BUKAN pengganti `toColumnValue`: lapisan itu tetap mengubah nilai kosong
+ * menjadi NULL (dan itu diuji db-check bagian 13). Yang dijaga di sini adalah
+ * nilai yang HADIR tapi bukan angka — "1.,5", "12x", NaN — yang kalau dibiarkan
+ * masuk menjadi NULL diam-diam, sehingga SUM di Dasbor dan Laporan kehilangan
+ * transaksi tanpa satu pesan pun. Kanal tulis karena itu menolak barisnya sebelum
+ * satu pun collection tertulis. Kolom turunan ikut diperiksa: `get()`-nya selalu
+ * mengembalikan angka atau null, jadi ia tidak pernah menjadi sumber penolakan.
+ */
+export function nilaiAngkaCacat(spec: CollectionSpec, row: any): string | null {
+  for (const col of spec.columns) {
+    if (col.type === 'TEXT') continue;
+    const raw = col.field
+      ? (row ? row[col.field] : undefined)
+      : (row && row[col.col] !== undefined ? row[col.col] : col.get(row || {}));
+    if (raw === null || raw === undefined || raw === '') continue;
+    const t = typeof raw === 'string' ? raw.trim() : raw;
+    if (typeof t === 'boolean') return `"${col.col}" berisi ${String(t)}`;
+    if (typeof t === 'object') return `"${col.col}" berisi objek, bukan angka`;
+    if (!Number.isFinite(Number(t))) return `"${col.col}" berisi "${String(t).slice(0, 40)}" yang bukan angka`;
+  }
+  return null;
 }

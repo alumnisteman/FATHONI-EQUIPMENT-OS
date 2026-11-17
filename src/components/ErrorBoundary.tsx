@@ -80,7 +80,9 @@ class ErrorBoundary extends Component<Props, State> {
 
   private sendToMonitoring(errorLog: any) {
     // Di production, ini bisa dikirim ke monitoring service seperti Sentry, LogRocket, dll
-    console.log('Error logged for monitoring:', errorLog);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Error logged for monitoring:', errorLog);
+    }
   }
 
   private attemptAutoRecovery(error: Error) {
@@ -117,12 +119,19 @@ class ErrorBoundary extends Component<Props, State> {
 
   private handleResetApp = () => {
     if (confirm('Apakah Anda ingin mereset aplikasi ke keadaan awal? Data yang belum disimpan akan hilang.')) {
-      // Clear localStorage kecuali error logs
-      const errorLogs = localStorage.getItem('hems_error_logs');
+      // Clear localStorage kecuali kunci yang masih dibutuhkan
+      const preserveKeys = [
+        'hems_error_logs',
+        'hems_business_modes',
+        'hems_settings',
+      ];
+      const preserved: Record<string, string> = {};
+      preserveKeys.forEach(key => {
+        const val = localStorage.getItem(key);
+        if (val) preserved[key] = val;
+      });
       localStorage.clear();
-      if (errorLogs) {
-        localStorage.setItem('hems_error_logs', errorLogs);
-      }
+      Object.entries(preserved).forEach(([key, val]) => localStorage.setItem(key, val));
       window.location.reload();
     }
   };

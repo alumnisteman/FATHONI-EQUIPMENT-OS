@@ -21,7 +21,7 @@ const STATUS_MAP: Record<OperatorStatus, { label: string; badge: string }> = {
 };
 
 export default function Operators() {
-  const { operators, setOperators, units, removeRow } = useDataStore();
+  const { operators, setOperators, units, saveRow, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -66,7 +66,7 @@ export default function Operators() {
   const onLeave = operators.filter(o => o.status === 'ON_LEAVE').length;
   const suspended = operators.filter(o => o.status === 'SUSPENDED').length;
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi nama
@@ -106,8 +106,10 @@ export default function Operators() {
     }
 
     if (editingId) {
-      setOperators(operators.map(o => o.id === editingId ? {
-        ...o,
+      const existing = operators.find(o => o.id === editingId);
+      if (!existing) return;
+      await saveRow('operators', {
+        ...existing,
         operatorNumber: form.operatorNumber,
         name: form.name,
         phone: form.phone,
@@ -121,7 +123,7 @@ export default function Operators() {
         licenseNumber: form.licenseNumber,
         licenseExpiry: form.licenseExpiry,
         notes: form.notes,
-      } : o));
+      });
     } else {
       const newItem: Operator = {
         id: Date.now().toString(),
@@ -140,7 +142,7 @@ export default function Operators() {
         licenseExpiry: form.licenseExpiry,
         notes: form.notes,
       };
-      setOperators([newItem, ...operators]);
+      await saveRow('operators', newItem);
     }
     setShowModal(false);
     setEditingId(null);

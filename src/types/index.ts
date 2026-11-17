@@ -305,11 +305,11 @@ export interface ServiceType {
   serialNumber: string;
   hourMeter: number;
   customerOrProject: string;
-  serviceType: 'PERIODIC_250H' | 'PERIODIC_500H' | 'CORRECTIVE' | 'OVERHAUL' | 'INSPECTION';
+  serviceType: 'PERIODIC_250H' | 'PERIODIC_500H' | 'PERIODIC_1000H' | 'CORRECTIVE' | 'OVERHAUL' | 'INSPECTION' | 'BREAKDOWN' | 'PREVENTIVE';
   complaintNotes?: string;
   mechanicName: string;
   estimatedCost: number;
-  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_PARTS' | 'COMPLETED' | 'CANCELLED';
   openDate: string;
   completeDate?: string;
 }

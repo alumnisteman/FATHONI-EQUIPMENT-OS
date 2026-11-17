@@ -8,7 +8,7 @@
 // database lewat IPC, bukan dari localStorage lagi.
 //
 // Jalankan:
-//   HEMS_DATA_DIR=D:/SANY/tmp-harness/handoff npx electron tests/harness/handoff-check.cjs
+//   HEMS_DATA_DIR=D:/SANY/tmp-harness/handoff node_modules/electron/dist/electron.exe tests/harness/handoff-check.cjs
 
 const { app } = require('electron');
 const selesai = require('./selesai.cjs');
@@ -95,6 +95,12 @@ const SEED = {
   units: [
     { id: 'H-U1', serialNumber: 'HAND-SY-001', brand: 'SANY', model: 'SY215C', status: 'MAINTENANCE', hourMeter: 120, purchasePrice: 1_500_000_000 },
     { id: 'H-U2', serialNumber: 'HAND-PC-002', brand: 'KOMATSU', model: 'PC200-8', status: 'AVAILABLE', hourMeter: 4000, purchasePrice: 1_800_000_000 },
+    // 210 HM hanya jatuh tempo di mata siklus 250 (250-210 = 40), tidak di siklus
+    // 500 (500-210 = 290). Satu baris ini yang membuat layar Dasbor bisa
+    // membedakan kedua aturan: kalau siklus 250 kembali masuk ke kolom turunan
+    // SQLite atau ke kartu alert, unit ini muncul di Alert Center padahal tidak
+    // seharusnya, dan bagian 6.5d membacanya sebagai kegagalan.
+    { id: 'H-U3', serialNumber: 'HAND-XG-003', brand: 'SANY', model: 'EX60', status: 'AVAILABLE', hourMeter: 210, purchasePrice: 1_200_000_000 },
   ],
   customers: [{ id: 'H-C1', name: 'PT Hand Uji Konstruksi', segment: 'KONTRAKTOR', contactPerson: 'Uji', phone: '0812', email: 'uji@example.com', address: 'Cikande' }],
   suppliers: [],
@@ -105,12 +111,26 @@ const SEED = {
     serialNumber: 'HAND-SY-001', orderDate: '2026-09-05', totalPrice: 1_000_000_000, downPayment: 200_000_000,
     paymentScheme: 'LEASING', status: 'CONFIRMED', salesPerson: 'Budi',
   }],
-  rentals: [],
+  rentals: [
+    // Sewa tanpa jam minimum: satu-satunya jalan membuktikan Dasbor tidak lagi
+    // mengarang tarif per jam. Kontrak ini punya Rp/bulan yang sah tapi tidak
+    // menyatakan dasar jam, jadi kartu harus menulis "tarif/jam belum ada",
+    // bukan Rp350.000/HM seperti sebelumnya.
+    {
+      id: 'H-R1', contractNo: 'RCT-HAND-0001', customerName: 'PT Hand Uji Konstruksi',
+      unitModel: 'Komatsu PC200-8', serialNumber: 'HAND-PC-002', startDate: '2026-10-01',
+      endDate: '2027-03-31', location: 'Cikande', monthlyRate: 55_000_000, minimumHours: 0,
+      operatorIncluded: false, status: 'ACTIVE',
+    },
+  ],
   services: [
     {
       id: 'H-WO1', woNumber: 'WO-HAND-001', unitModel: 'SANY SY215C', serialNumber: 'HAND-SY-001',
       customerOrProject: 'PT Hand Uji Konstruksi', serviceType: 'BREAKDOWN', mechanicName: 'Agus',
-      hourMeter: 120, openDate: '2026-10-01', estimatedCost: 5_000_000, status: 'IN_PROGRESS', complaintNotes: 'Uji handoff',
+      // HM Work Order sengaja BEDA dari HM unit (120): kalau keduanya sama,
+      // bagian 4 tetap lolos walaupun completeService tidak pernah menaikkan
+      // Hour Meter unit — padahal itulah inti rantai servis → armada.
+      hourMeter: 145, openDate: '2026-10-01', estimatedCost: 5_000_000, status: 'IN_PROGRESS', complaintNotes: 'Uji handoff',
     },
     {
       id: 'H-WO2', woNumber: 'WO-HAND-002', unitModel: 'Komatsu PC200-8', serialNumber: 'HAND-PC-002',
@@ -125,6 +145,15 @@ const SEED = {
     id: 'H-PO1', poNumber: 'PO-HAND-001', supplierName: 'PT Pemasok Uji', itemName: '6 Filter Oli Uji',
     category: 'SPAREPART', orderDate: '2026-09-01', deliveryExpectedDate: '2026-09-20', totalAmount: 1_800_000,
     status: 'ORDERED', notes: 'Uji handoff penerimaan',
+  }, {
+    // Kategori lama yang sudah terlanjur ada di berkas data. Layar tidak boleh
+    // menawarkan CONSUMABLE, tapi WAJIB bisa menyimpan ulang baris ini tanpa
+    // menggantinya diam-diam — bagian 3c membuktikannya lewat form, bukan lewat
+    // teks sumber.
+    id: 'H-PO2', poNumber: 'PO-HAND-002', supplierName: 'PT Pertamina Lubricants',
+    itemName: '4 Drum Oli Mesin', category: 'CONSUMABLE', orderDate: '2026-09-12',
+    deliveryExpectedDate: '2026-09-30', totalAmount: 25_600_000, status: 'DRAFT',
+    notes: 'Baris lama, kategori di luar daftar baru',
   }],
   documents: [],
   bankAccounts: [{ id: 'H-B1', namaBank: 'BCA Uji', nomorRekening: '999888777', namaPemilik: 'PT Uji', cabang: 'Cikande', mataUang: 'IDR', isActive: true, keterangan: '' }],
@@ -178,7 +207,11 @@ async function seedDatabase(wc) {
   require('../../dist-electron/db.js').saveStore(migrated.store);
   await ev(wc, `
     localStorage.setItem('hems_data_migration_v1', ${JSON.stringify(JSON.stringify(migrated.report))});
-    localStorage.setItem('hems_business_modes', JSON.stringify({ modes: ['DEALER'], customMenus: [], isSetupComplete: true }));
+    // Dua profil, DEALER lebih dulu: kartu-kartu transaksi (6.5b) dibaca di
+    // tampilan Dealer, sedangkan panel biaya per jam per unit (6.5d) hanya ada di
+    // tampilan Pemilik Alat. Dengan satu profil saja pemilih tab tidak muncul dan
+    // panel itu mustahil dibuka lewat UI.
+    localStorage.setItem('hems_business_modes', JSON.stringify({ modes: ['DEALER', 'PERSONAL'], customMenus: [], isSetupComplete: true }));
     localStorage.setItem('HEMS_SUPPLIERS', ${JSON.stringify(JSON.stringify(LEGACY_SUPPLIERS))});
     localStorage.removeItem('hems_session');
     localStorage.removeItem('hems_session_v2');
@@ -223,7 +256,14 @@ async function run(wc) {
     const raw = localStorage.getItem('hems_data_migration_v1');
     return raw ? JSON.parse(raw) : null;`);
   ok('2.1 marker migrasi dibaca aplikasi', marker && typeof marker.at === 'string', marker);
-  ok('2.2 backfill menagihkan 1 penjualan + 1 servis selesai', marker && marker.backfilledInvoices === 2, marker);
+  // Angka diharapkan dihitung dari SEED, bukan ditulis mentah: aturan migrasi
+  // menagih SETIAP penjualan, SETIAP sewa, dan setiap Work Order berstatus
+  // COMPLETED, jadi menambah fixture di atas tidak boleh membuat assertions ini
+  // gagal karena alasan buku besar sementara cacat yang diuji masih nyata.
+  const tagihanSeharusnya = SEED.sales.length + SEED.rentals.length
+    + SEED.services.filter(s => s.status === 'COMPLETED').length;
+  ok(`2.2 backfill menagihkan ${SEED.sales.length} penjualan + ${SEED.rentals.length} sewa + ${tagihanSeharusnya - SEED.sales.length - SEED.rentals.length} servis selesai`,
+    marker && marker.backfilledInvoices === tagihanSeharusnya, marker);
   ok('2.2b pemasok warisan tercatat diimpor', marker && marker.imported.suppliers === 1, marker && marker.imported);
 
   const dump = await ev(wc, `
@@ -327,6 +367,86 @@ async function run(wc) {
   // dari sini akan membacanya sebagai cacat.
   await ev(wc, `window.__alerts.length = 0; return true;`);
 
+  // ── 3c. T1: kategori yang ditawarkan layar = kategori yang bisa disimpan ──
+  // Dulu dropdown Pembelian menulis <option> sendiri dan isinya berbeda dari
+  // daftar validasi: "Oli, Filter & Perlengkapan" (CONSUMABLE) bisa dipilih tapi
+  // selalu ditolak, sedangkan FUEL/LUBRICANT sah tapi tidak muncul di layar mana
+  // pun. Bagian ini membuktikannya lewat form sungguhan, bukan lewat teks sumber.
+  // Pencari label lewat .form-group: tidak setiap form-group punya .form-label
+  // (kotak centang dan group tombol tidak berlabel), dan innerText dari objek
+  // kosong adalah undefined. Tanpa String(... || ''), satu group tanpa label
+  // melempar "reading 'indexOf'" dan seluruh rantai berhenti sebagai
+  // HARNESS ERROR, bukan sebagai assertion yang gagal.
+  const PENCARI_GROUP = `
+    const group = (root, label) => [...(root ? root.querySelectorAll('.form-group') : [])]
+      .find(x => String((x.querySelector('.form-label') || {}).innerText || '').indexOf(label) >= 0);`;
+  const AMBIL_KATEGORI = `${PENCARI_GROUP}
+    const selKategori = group(document.querySelector('.modal') || document, 'Kategori Pembelian').querySelector('select');`;
+
+  await ev(wc, `const b = byText(/Buat PO Baru/); if (b) b.click(); return !!b;`);
+  ok('3c.1 form PO baru terbuka',
+    await waitFor(wc, `/Buat Purchase Order \\(PO\\) Baru/.test(document.body.innerText)`, 'form PO'));
+  const opsiBaru = await ev(wc, `${AMBIL_KATEGORI}
+    return [...selKategori.options].map(o => [o.value, o.innerText.trim()]);`);
+  ok('3c.2 BBM (FUEL) bisa dipilih dari layar Pembelian',
+    opsiBaru.some(o => o[0] === 'FUEL' && /BBM/.test(o[1])), opsiBaru);
+  ok('3c.3 kategori lama tidak ditawarkan lagi untuk PO baru',
+    !opsiBaru.some(o => o[0] === 'CONSUMABLE'), opsiBaru);
+
+  await ev(wc, `${PENCARI_GROUP}
+    const setK = (label, nilai, select) => {
+      const g = group(document.querySelector('.modal') || document, label);
+      const el = g.querySelector(select ? 'select' : 'input');
+      if (select) setSelect(el, nilai); else setVal(el, nilai);
+    };
+    setK('Nomor PO', 'PO-HAND-003', false);
+    setK('Kategori Pembelian', 'FUEL', true);
+    setK('Nama Pemasok', 'PT Pertamina Uji', false);
+    setK('Nama Barang', '2000 Liter Solar Uji', false);
+    setK('Total Nilai', '45000000', false);
+    return true;`);
+  const kategoriTerpilih = await ev(wc, `${AMBIL_KATEGORI}
+    return selKategori.value;`);
+  ok('3c.4 form benar-benar menyimpan FUEL sebagai kategori terpilih',
+    kategoriTerpilih === 'FUEL', kategoriTerpilih);
+  await ev(wc, `window.__alerts.length = 0; const b = byText(/Terbitkan PO/); if (b) b.click(); return !!b;`);
+  const poBbm = await waitForStore(wc, `
+    const p = (s.purchases || []).find(x => x.poNumber === 'PO-HAND-003');
+    if (!p) return false;
+    return { kategori: p.category, jumlah: p.totalAmount, alerts: (window.__alerts || []).slice() };
+  `, 'PO BBM tersimpan');
+  ok('3c.5 PO kategori BBM tersimpan tanpa ditolak validasi',
+    poBbm && poBbm.kategori === 'FUEL' && poBbm.alerts.length === 0, poBbm);
+
+  // Baris lama dengan kategori di luar daftar: nilainya harus tetap kelihatan di
+  // dropdown dan tetap sama sesudah Simpan ditekan. Tanpa opsi warisan ini, browser
+  // menampilkan option pertama dan kategori record berganti tanpa diminta.
+  const suntingLama = await ev(wc, `
+    const baris = [...document.querySelectorAll('tr')].find(r => /PO-HAND-002/.test(r.innerText));
+    const b = baris && [...baris.querySelectorAll('button')].find(x => /^Edit$/.test((x.innerText || '').trim()));
+    if (b) b.click();
+    return !!b;`);
+  ok('3c.6 baris PO lama bisa dibuka untuk disunting', suntingLama === true
+    && await waitFor(wc, `/Edit Purchase Order/.test(document.body.innerText)`, 'form sunting PO lama'));
+  const nilaiLama = await ev(wc, `${AMBIL_KATEGORI}
+    return { nilai: selKategori.value,
+             adaDiDaftar: [...selKategori.options].some(o => o.value === 'CONSUMABLE'),
+             label: (selKategori.selectedOptions[0] || {}).innerText };`);
+  ok('3c.7 kategori lama tetap terpilih di dropdown, bukan diam-diam pindah ke option pertama',
+    nilaiLama.nilai === 'CONSUMABLE' && nilaiLama.adaDiDaftar === true, nilaiLama);
+  await ev(wc, `
+    window.__alerts.length = 0;
+    const b = byText(/Simpan Perubahan/); if (b) b.click();
+    return !!b;`);
+  const lamaTersimpan = await waitForStore(wc, `
+    const p = (s.purchases || []).find(x => x.poNumber === 'PO-HAND-002');
+    if (!p) return false;
+    return { kategori: p.category, jumlah: p.totalAmount, alerts: (window.__alerts || []).slice() };
+  `, 'PO lama tersimpan ulang');
+  ok('3c.8 menyimpan ulang PO lama tidak mengubah kategorinya dan tidak memunculkan error',
+    lamaTersimpan && lamaTersimpan.kategori === 'CONSUMABLE'
+      && lamaTersimpan.jumlah === 25_600_000 && lamaTersimpan.alerts.length === 0, lamaTersimpan);
+
   // ── 4. Handoff Servis → part terpakai + gudang OUTBOUND + Invoice SERVICE ──
   await ev(wc, `window.location.hash = '#/service'; return true;`);
   ok('4.1 halaman Servis memuat', await waitFor(wc, `/WO-HAND-001/.test(document.body.innerText)`, 'daftar WO', 30000));
@@ -386,6 +506,184 @@ async function run(wc) {
     afterService && afterService.inv);
   ok('4.10 tidak ada alert validasi yang tertahan',
     afterService && afterService.alerts.length === 0, afterService && afterService.alerts);
+
+  // ── 4b. T3: servis selesai benar-benar memutar siklus meter di database ──
+  // Angka 145 datang dari Work Order, 120 dari unit. Mutasi yang menghapus
+  // `hourMeter: maju ? hmServis : u.hourMeter` di dataStore membuat assertion
+  // ini jatuh, sementara 4.8 (status AVAILABLE) tetap lolos — persis pemisahan
+  // yang bikin bug ini tak terlihat selama ini.
+  ok('4.11 Hour Meter unit naik ke pembacaan Work Order yang selesai',
+    afterService && afterService.unit && Number(afterService.unit.hourMeter) === 145,
+    afterService && afterService.unit);
+  ok('4.12 lastServiceHM unit tercatat pada pembacaan yang sama',
+    afterService && afterService.unit && Number(afterService.unit.lastServiceHM) === 145,
+    afterService && afterService.unit);
+  const kolomUnit = await ev(wc, `
+    const baris = (await window.electronAPI.dbQuery({ collection: 'units', where: { id: 'H-U1' }, limit: 1 })).rows[0] || {};
+    return { hourMeter: baris.hourMeter, lastServiceHM: baris.lastServiceHM };`);
+  ok('4.13 keduanya tersimpan sebagai baris SQLite, bukan hanya memori renderer',
+    Number(kolomUnit.hourMeter) === 145 && Number(kolomUnit.lastServiceHM) === 145, kolomUnit);
+  // serviceDueIn adalah kolom TURUNAN: queryCollection hanya SELECT payload
+  // (electron/db.ts), jadi angkanya tidak pernah ikut keluar di baris hasil dan
+  // membacanya dari rows[0] akan selalu undefined — assertion yang lolos tanpa
+  // membuktikan apa pun. Yang bisa dibaca dari luar adalah kolom mana yang
+  // COCOK: 500-(145%500)=355 harus menemukan unit ini, 250-(145%250)=105 (aturan
+  // lama yang dibuang T2) harus tidak menemukannya.
+  const due = await ev(wc, `
+    const cocok = async (angka) => {
+      const r = await window.electronAPI.dbQuery({ collection: 'units', where: { serviceDueIn: angka }, limit: 20 });
+      return (r.rows || []).some(x => x.id === 'H-U1');
+    };
+    return { benar: await cocok(${500 - (145 % 500)}), salah: await cocok(${250 - (145 % 250)}) };`);
+  ok('4.14 kolom serviceDueIn di SQLite memakai siklus 500 HM, bukan 250',
+    due.benar === true && due.salah === false, due);
+
+  // ── 4c. T4: pembacaan meter yang MUNDUR hanya lewat gerbang koreksi ──
+  // Unit H-U2 tercatat 4000 HM. Work Order ini membaca 3900. Tanpa penanda
+  // koreksi form harus menolak; dengan penanda + alasan ia tersimpan dengan
+  // jejaknya, dan menyelesaikan WO itu sama sekali tidak boleh menurunkan HM
+  // unit maupun mencatat lastServiceHM di angka yang lebih rendah.
+  await ev(wc, `window.__alerts.length = 0; return true;`);
+  const bukaWO = await ev(wc, `
+    const b = byText(/Buka Work Order Servis/); if (b) b.click();
+    return !!b;`);
+  ok('4c.1 formulir Work Order baru terbuka', bukaWO === true
+    && await waitFor(wc, `/Buka Work Order Servis Baru/.test(document.body.innerText)`, 'form WO'));
+
+  // Kontrol dicari lewat label form-group, bukan urutan input: begitu gerbang
+  // koreksi muncul, jumlah dan urutan input berubah dan indeks akan salah.
+  const isiWO = (hm) => ev(wc, `${PENCARI_GROUP}
+    const modal = document.querySelector('.modal');
+    const kontrol = (label, tag) => {
+      const g = modal && group(modal, label);
+      return g && g.querySelector(tag);
+    };` + `
+    const hilang = [];
+    const isi = (label, tag, nilai) => {
+      const el = kontrol(label, tag);
+      if (!el) { hilang.push(label); return; }
+      if (tag === 'select') setSelect(el, nilai); else setVal(el, nilai);
+    };
+    isi('Nomor Work Order', 'input', 'WO-HAND-003');
+    isi('Pilih Unit', 'select', 'HAND-PC-002');
+    isi('Pelanggan', 'select', 'PT Hand Uji Konstruksi');
+    isi('Hour Meter', 'input', '${hm}');
+    isi('Teknisi', 'input', 'Rudi');
+    isi('Estimasi Biaya', 'input', '3000000');
+    return { hilang, serial: (kontrol('Pilih Unit', 'select') || {}).value,
+             hm: (kontrol('Hour Meter', 'input') || {}).value };`);
+
+  const formMundur = await isiWO('3900');
+  ok('4c.2 formulir membaca unit 4000 HM vs work order 3900 HM',
+    formMundur.hilang.length === 0 && formMundur.serial === 'HAND-PC-002' && formMundur.hm === '3900',
+    formMundur);
+  // Kotak gerbang hanya muncul bila layarnya mengenali meter yang mundur.
+  ok('4c.3 layar menampilkan gerbang koreksi saat meter mundur',
+    await waitFor(wc, `/Pembacaan meter mundur/.test(document.body.innerText)`, 'gerbang koreksi'));
+
+  await ev(wc, `
+    const b = byText(/Terbitkan Work Order/); if (b) b.click();
+    return !!b;`);
+  const tolak = await waitForStore(wc, `
+    const alert = (window.__alerts || []).join(' | ');
+    if (!alert) return false;
+    return { alert, sudahMasuk: (s.services || []).some(x => x.woNumber === 'WO-HAND-003') };
+  `, 'penolakan meter mundur', 20000);
+  ok('4c.4 tanpa penanda koreksi, WO ditolak dengan pesan yang menyebut kedua angka',
+    tolak && /Hour Meter mundur dari 4000 ke 3900 \(100 jam\)/.test(tolak.alert)
+      && /Ini koreksi pembacaan meter/.test(tolak.alert), tolak);
+  ok('4c.5 WO yang ditolak tidak masuk database',
+    tolak && tolak.sudahMasuk === false, tolak);
+
+  await ev(wc, `
+    const b = document.querySelector('.modal input[type=checkbox]');
+    if (b) b.click();
+    return !!b;`);
+  ok('4c.6 setelah dicentang, kolom alasan muncul',
+    await waitFor(wc, `!![...document.querySelectorAll('.modal input')].find(i => /Alasan koreksi/.test(i.placeholder||''))`, 'kolom alasan'));
+  await ev(wc, `
+    const b = byText(/Terbitkan Work Order/); if (b) b.click();
+    return !!b;`);
+  const tanpaAlasan = await waitForStore(wc, `
+    const a = (window.__alerts || []).join(' | ');
+    return /wajib disertai alasan/.test(a) ? a : false;`, 'penolakan alasan kosong', 20000);
+  ok('4c.7 koreksi tanpa alasan tetap ditolak',
+    typeof tanpaAlasan === 'string' && /wajib disertai alasan/.test(tanpaAlasan), tanpaAlasan);
+
+  await ev(wc, `
+    const i = [...document.querySelectorAll('.modal input')].find(x => /Alasan koreksi/.test(x.placeholder || ''));
+    if (i) setVal(i, 'salah baca formulir lapangan');
+    // Dua penolakan di atas memang meninggalkan alert; supaya 4c.8 berarti
+    // "penyimpanan yang sah ini tidak memunculkan peringatan apa pun", kasetnya
+    // dibersihkan sesaat sebelum percobaan terakhir.
+    window.__alerts.length = 0;
+    const b = byText(/Terbitkan Work Order/); if (b) b.click();
+    return { adaAlasan: !!i, clicked: !!b };`);
+  const koreksiTersimpan = await waitForStore(wc, `
+    const w = (s.services || []).find(x => x.woNumber === 'WO-HAND-003');
+    if (!w) return false;
+    return { wo: w, alerts: (window.__alerts || []).slice() };
+  `, 'WO koreksi tersimpan');
+  ok('4c.8 dengan penanda + alasan, WO 3900 HM tersimpan',
+    koreksiTersimpan && Number(koreksiTersimpan.wo.hourMeter) === 3900
+      && koreksiTersimpan.alerts.length === 0, koreksiTersimpan);
+  // Jejaknya menempel di record, bukan di kepala mekanik: angka 3900 akan
+  // ditimpa kapan pun, pesan koreksi tidak.
+  ok('4c.9 jejak koreksi HM tertulis di record dan tersimpan',
+    koreksiTersimpan && /\[KOREKSI HM 4000 -> 3900: salah baca formulir lapangan\]/
+      .test(String(koreksiTersimpan.wo.hmKoreksi || '')), koreksiTersimpan && koreksiTersimpan.wo.hmKoreksi);
+
+  await ev(wc, `window.__alerts.length = 0; return true;`);
+  const mulaiWO3 = await ev(wc, `
+    const kartu = [...document.querySelectorAll('[draggable]')].find(d => /WO-HAND-003/.test(d.innerText));
+    const b = kartu && [...kartu.querySelectorAll('button')].find(x => x.title === 'Mulai Kerja');
+    if (b) b.click();
+    return !!b;`);
+  ok('4c.10 WO hasil koreksi bisa dimulai dari kartunya', mulaiWO3 === true
+    && await waitFor(wc, `[...document.querySelectorAll('[draggable]')].some(d => /WO-HAND-003/.test(d.innerText)
+      && [...d.querySelectorAll('button')].some(x => /^Selesai/.test(x.title || '')))`, 'kartu WO-HAND-003 siap diselesaikan'));
+  const selesaiWO3 = await ev(wc, `
+    const kartu = [...document.querySelectorAll('[draggable]')].find(d => /WO-HAND-003/.test(d.innerText));
+    const b = kartu && [...kartu.querySelectorAll('button')].find(x => /^Selesai/.test(x.title || ''));
+    if (b) b.click();
+    return !!b;`);
+  ok('4c.11 modal penyelesaian WO koreksi terbuka', selesaiWO3 === true
+    && await waitFor(wc, `/Selesaikan Servis WO-HAND-003/.test(document.body.innerText)`, 'modal WO3'));
+  const isiBiaya = await ev(wc, `${PENCARI_GROUP}
+    const modal = document.querySelector('.modal');
+    const g = modal && group(modal, 'Biaya Aktual Tagihan');
+    const biaya = g && g.querySelector('input');
+    if (biaya) setVal(biaya, '3000000');
+    const b = byText(/Tandai Selesai/); if (b) b.click();
+    return { biaya: biaya ? biaya.value : null, clicked: !!b };`);
+  ok('4c.11a biaya aktual tercatat di modal penyelesaian',
+    isiBiaya && isiBiaya.biaya === '3000000' && isiBiaya.clicked === true, isiBiaya);
+  const unitSetelahMundur = await waitForStore(wc, `
+    const w = (s.services || []).find(x => x.woNumber === 'WO-HAND-003');
+    if (!w || w.status !== 'COMPLETED') return false;
+    return {
+      wo: w,
+      unit: (s.units || []).find(x => x.id === 'H-U2'),
+      alerts: (window.__alerts || []).slice(),
+    };
+  `, 'WO koreksi selesai');
+  // Di sininya gerbang koreksi dan completeService bertemu: 3900 sah tercatat
+  // di Work Order, tapi HM unit 4000 tidak boleh ikut turun dan lastServiceHM
+  // tidak boleh tertulis di angka yang lebih rendah dari meter unit.
+  ok('4c.12 menyelesaikan WO bermeter mundur TIDAK menurunkan Hour Meter unit',
+    unitSetelahMundur && Number(unitSetelahMundur.unit.hourMeter) === 4000,
+    unitSetelahMundur && unitSetelahMundur.unit);
+  ok('4c.13 lastServiceHM unit tidak tertulis ke angka yang lebih rendah',
+    unitSetelahMundur && !(Number(unitSetelahMundur.unit.lastServiceHM) > 0
+      && Number(unitSetelahMundur.unit.lastServiceHM) < 4000),
+    unitSetelahMundur && unitSetelahMundur.unit);
+  const barisU2 = await ev(wc, `
+    const baris = (await window.electronAPI.dbQuery({ collection: 'units', where: { id: 'H-U2' }, limit: 1 })).rows[0] || {};
+    return { hourMeter: baris.hourMeter, lastServiceHM: baris.lastServiceHM ?? null };`);
+  ok('4c.14 meter unit hasil koreksi tetap utuh di baris SQLite',
+    Number(barisU2.hourMeter) === 4000
+      && !(Number(barisU2.lastServiceHM) > 0 && Number(barisU2.lastServiceHM) < 4000), barisU2);
+  await ev(wc, `window.__alerts.length = 0; return true;`);
 
   // ── 5. Handoff Invoice → Kas ──
   await ev(wc, `window.location.hash = '#/invoices'; return true;`);
@@ -547,13 +845,130 @@ async function run(wc) {
   ok('6.5c Alert Center hanya muncul bila database memang punya masalah',
     alertDiag && (alertDiag.harapan > 0) === alertDiag.ada, alertDiag);
 
+  // ── 6.5d T5 + T2: kartu Cost per Hour memakai angka milik unitnya sendiri ──
+  // Panel ini hanya ada di tampilan profil 'Pemilik Alat', jadi tab-nya dipilih
+  // lewat pemilih profil yang memang ditawarkan layar (profil uji ini punya dua
+  // mode, DEALER tetap yang pertama sehingga kartu transaksi di 6.5b tidak berubah).
+  const pilihTabPemilik = await ev(wc, `
+    const b = [...document.querySelectorAll('button')]
+      .find(x => /Pilih Tampilan Profil/.test(document.body.innerText)
+        && (x.innerText || '').includes('Pemilik Alat'));
+    if (b) b.click();
+    return { ketemu: !!b, tab: [...document.querySelectorAll('button')]
+      .map(x => (x.innerText || '').replace(/\\s+/g, ' ').trim()).filter(t => /Alat|Dealer|Rental|Workshop|Kontraktor|Trader/.test(t)).slice(0, 8) };`);
+  ok('6.5c2 panel biaya per jam terbuka lewat pemilih tab profil',
+    pilihTabPemilik.ketemu === true
+      && await waitFor(wc, `/Cost per Hour Analysis/.test(document.body.innerText)`, 'panel cost per hour', 30000),
+    pilihTabPemilik);
+  // Harga perolehan tiga unit uji sengaja berbeda (1,5 M / 1,8 M / 1,2 M). Kalau
+  // Dasbor masih menuliskan satu konstanta untuk semua alat — atau mengambil angka
+  // dari unit lain — perbandingan ini jatuh. Asumsi umur ekonomis yang memang
+  // dinyatakan di layar (12.000 HM, nilai sisa 10%) ditulis ulang di sini sebagai
+  // saksi luar: sumber yang mengubah asumsinya harus mengubah ini secara sadar.
+  let biayaDiag = null;
+  const mulaiBiaya = Date.now();
+  while (Date.now() - mulaiBiaya < 25000) {
+    biayaDiag = await ev(wc, `
+      const s = await readStore();
+      const rp = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+      const kartu = (serial) => {
+        const semua = [...document.querySelectorAll('div')].filter(d =>
+          /BIAYA TERCATAT/.test(d.innerText) && d.innerText.includes('(' + serial + ')'));
+        return semua.length ? semua[semua.length - 1].innerText.replace(/\\s+/g, ' ') : '';
+      };
+      const harapan = ['H-U1', 'H-U2', 'H-U3'].map(id => {
+        const u = (s.units || []).find(x => x.id === id) || {};
+        const wo = (s.services || []).filter(x => x.status === 'COMPLETED'
+          && String(x.serialNumber || '').trim().toLowerCase() === String(u.serialNumber || '').trim().toLowerCase());
+        const sewa = (s.rentals || []).filter(x => x.status === 'ACTIVE'
+          && String(x.serialNumber || '').trim().toLowerCase() === String(u.serialNumber || '').trim().toLowerCase());
+        const tagihan = wo.reduce((a, x) => a + (Number(x.estimatedCost) || 0), 0);
+        return {
+          id, serial: u.serialNumber,
+          biaya: rp((Number(u.purchasePrice) * (1 - 0.1)) / 12000),
+          sewa: sewa.length ? sewa.length + ' kontrak • ' + rp(sewa.reduce((a, x) => a + (Number(x.monthlyRate) || 0), 0)) + '/bulan' : null,
+          tagihan: wo.length ? wo.length + ' WO • ' + rp(tagihan) : 'belum ada WO selesai',
+          teks: kartu(u.serialNumber),
+        };
+      });
+      const semuaTeks = harapan.map(h => h.teks).join(' ');
+      // Angka yang benar-benar terpasang di kartu, bukan angka yang kita harapkan:
+      // membandingkan harapan dengan dirinya sendiri selalu benar, jadi dasbor yang
+      // memakai satu konstanta untuk semua alat lolos dari pemeriksaan ini.
+      const angkaTerpasang = harapan.map(h => (h.teks.match(/BIAYA TERCATAT (Rp[\\d.]+)/) || [])[1] || '-');
+      return {
+        cocok: harapan.every(h => h.teks && h.teks.includes('BIAYA TERCATAT ' + h.biaya + '/HM')),
+        harapan,
+        tigaBerbeda: new Set(harapan.map(h => h.biaya)).size === 3,
+        angkaTerpasang,
+        tigaAngkaTerpasangBerbeda: new Set(angkaTerpasang).size === 3,
+        konstantaLama: (semuaTeks.match(/Rp\\s?(85|32|18|25|350)[\\.,]000/g) || []),
+        belumTercatat: (semuaTeks.match(/belum tercatat per unit/g) || []).length,
+        tarifBelumAda: harapan.every(h => h.teks.includes('tarif/jam belum ada')),
+        marginBelumBisa: harapan.every(h => h.teks.includes('belum dapat dihitung')),
+        sewaCocok: harapan.every(h => h.sewa === null ? h.teks.includes('tidak ada kontrak aktif')
+          : h.teks.includes('Sewa aktif ' + h.sewa)),
+        tagihanCocok: harapan.every(h => h.teks.includes('Tagihan WO selesai ' + h.tagihan)),
+      };`);
+    if (biayaDiag && biayaDiag.cocok && biayaDiag.tigaBerbeda && biayaDiag.tigaAngkaTerpasangBerbeda) break;
+    await wait(300);
+  }
+  const kartuH = (id) => (biayaDiag.harapan || []).find(h => h.id === id) || {};
+  ok('6.5d biaya tercatat tiap unit = penyusutan harga perolehannya sendiri, bukan konstanta',
+    biayaDiag && biayaDiag.cocok === true, biayaDiag && biayaDiag.harapan);
+  ok('6.5e tiga unit dengan harga berbeda menghasilkan tiga angka biaya yang berbeda',
+    biayaDiag && biayaDiag.tigaAngkaTerpasangBerbeda === true,
+    biayaDiag && { terpasang: biayaDiag.angkaTerpasang, harapan: biayaDiag.harapan.map(h => h.biaya) });
+  ok('6.5f tidak ada satu pun konstanta lama (85/32/18/25/350 ribu) yang tersisa di kartu',
+    biayaDiag && biayaDiag.konstantaLama.length === 0, biayaDiag && biayaDiag.konstantaLama);
+  ok('6.5g BBM, sparepart dan operator dinyatakan belum tercatat per unit, bukan dikarang',
+    biayaDiag && biayaDiag.belumTercatat === 9, biayaDiag && biayaDiag.belumTercatat);
+  ok('6.5h tarif per jam hanya ada bila kontraknya menyebut dasar jam',
+    biayaDiag && biayaDiag.tarifBelumAda === true, biayaDiag && biayaDiag.harapan);
+  ok('6.5i margin hanya dihitung bila pendapatannya benar-benar ada',
+    biayaDiag && biayaDiag.marginBelumBisa === true, biayaDiag && biayaDiag.harapan);
+  ok('6.5j sewa aktif per unit datang dari kontrak unit itu sendiri di database',
+    biayaDiag && biayaDiag.sewaCocok === true, biayaDiag && biayaDiag.harapan);
+  ok('6.5k tagihan WO selesai dikelompokkan per nomor sasis, bukan jumlah seluruh armada',
+    biayaDiag && biayaDiag.tagihanCocok === true, biayaDiag && biayaDiag.harapan);
+
+  // Siklus servis: H-U3 (210 HM) hanya "jatuh tempo" kalau aturan 250 HM masih
+  // hidup di suatu sisi. Kolom turunan tidak ikut keluar di baris hasil
+  // (queryCollection hanya SELECT payload), jadi pembuktiannya lewat kecocokan
+  // filter: angka siklus 500 (290) harus menemukan unit ini, angka siklus 250 (40)
+  // tidak — dan 40 itu sendiri jatuh di jendela alert Dasbor (1..50).
+  const dueDiag = await ev(wc, `
+    const cocok = async (angka) => {
+      const r = await window.electronAPI.dbQuery({ collection: 'units', where: { serviceDueIn: angka }, limit: 20 });
+      return (r.rows || []).map(x => x.serialNumber).join(',');
+    };
+    const due = (await window.electronAPI.dbQuery({ collection: 'units', where: { serviceDueIn: { gte: 1, lte: 50 } }, limit: 20 }));
+    return {
+      benar: await cocok(${500 - (210 % 500)}),
+      salah: await cocok(${250 - (210 % 250)}),
+      dueSerial: (due.rows || []).map(r => r.serialNumber).join(','),
+      adaAlertServis: /Service due in/.test((document.body.innerText || '').replace(/\\s+/g, ' ')),
+    };`);
+  ok('6.5l kolom serviceDueIn memakai siklus 500 HM (210 HM belum jatuh tempo)',
+    String(dueDiag.benar).includes('HAND-XG-003') && !String(dueDiag.salah).includes('HAND-XG-003')
+      && !String(dueDiag.dueSerial).includes('HAND-XG-003'), dueDiag);
+  // Angka 40 HM adalah hasil siklus 250 untuk 210 HM. Alert seperti itu di layar
+  // berarti salah satu sisi (kartu Dasbor atau kolom SQLite) kembali ke siklus
+  // lama — dan karena tidak ada unit yang truly due, satu alert servis pun di
+  // sini adalah kegagalan.
+  ok('6.5m Dasbor tidak memasang alert servis palsu untuk unit yang belum due',
+    dueDiag.adaAlertServis === false, dueDiag);
+
   await ev(wc, `window.location.hash = '#/finance'; return true;`);
   // Tunggu judul halaman, bukan sekadar kata "Kas" yang sudah ada di menu samping:
   // halaman dimuat sebagai chunk terpisah, teksnya baru muncul setelah chunk tiba.
   ok('6.6 halaman Kas memuat', await waitFor(wc, `/Kas & Bank/.test(document.body.innerText)`, 'kas', 30000));
   // Chunk-nya tiba sebelum tabel terisi; tanpa jeda ini baris dibacanya terlalu
-  // awal dan arus kas terlihat kosong walau database berisi.
-  await waitFor(wc, `document.querySelectorAll('tbody tr').length > 0`, 'tabel kas terisi', 30000);
+  // awal dan arus kas terlihat kosong walau database berisi. Baris "Mengambil
+  // data..." juga sebuah <tr>, jadi jumlah baris saja bukan tanda selesai — kelas
+  // kegagalan yang sama dengan penanda halaman yang dijaga validation-check §28.
+  await waitFor(wc, `document.querySelectorAll('tbody tr').length > 0`
+    + ` && !/Mengambil data/.test(document.querySelector('tbody').innerText)`, 'tabel kas terisi', 30000);
   const financeText = await bodyText(wc);
   const financeDiag = await ev(wc, `
     const rows = [...document.querySelectorAll('tbody tr')].map(r => r.innerText.replace(/\\s+/g, ' ').slice(0, 120));
@@ -592,6 +1007,28 @@ async function run(wc) {
   }
   ok('6.8c lima kartu fleet adalah lima COUNT atas collection units yang sama',
     menaraDiag && menaraDiag.cocok === true, menaraDiag);
+
+  // ── 6.8V1–V4 QUICK ACTIONS: labelnya berjanji "View All", kliknya harus berpindah ──
+  // Keempat tombol ini lahir tanpa onClick: tampilannya tombol, perilakunya teks.
+  // Panduan 3.0.3 sampai harus menulis "papan ini untuk melihat, bukan untuk
+  // membuka dokumen" — janji yang diuji di bawah ini justru yang dihapus di 3.0.4.
+  // Idnya 6.8V1–V4, bukan 6.8e, karena 6.8e sudah dipakai kartu riwayat passport di
+  // bawah: dua assertion dengan id sama membuat log rantai tidak bisa dibaca per baris.
+  for (const [nomor, label, rute] of [
+    [1, 'View All Units', '#/units'],
+    [2, 'View All Services', '#/service'],
+    [3, 'View All Spareparts', '#/spareparts'],
+    [4, 'View All Invoices', '#/invoices'],
+  ]) {
+    await ev(wc, `window.location.hash = '#/control-tower'; return true;`);
+    await waitFor(wc, `/QUICK ACTIONS/.test(document.body.innerText)`, 'quick actions', 20000);
+    const klik = await ev(wc, `
+      const b = [...document.querySelectorAll('button')].find(x => (x.innerText || '').includes(${JSON.stringify(label)}));
+      if (!b) return 'tanpa-tombol';
+      b.click(); return 'ok';`);
+    const pindah = await waitFor(wc, `window.location.hash === ${JSON.stringify(rute)}`, 'hash ' + rute, 15000);
+    ok(`6.8V${nomor} tombol ${label} berpindah ke ${rute}`, klik === 'ok' && pindah, { klik, pindah });
+  }
 
   // ── 6.8d Equipment Passport: unit dan riwayatnya dicari lewat query, bukan array store ──
   // Sejak boot tidak lagi memuat seluruh collection, '#/equipment-passport/<id>'
@@ -826,6 +1263,136 @@ async function run(wc) {
   ok('8.1 halaman Unit hanya menampilkan satu halaman kartu tapi melaporkan jumlah sebenarnya',
     unitAwal.info.includes('dari ' + unitAwal.sql + ' record') && unitAwal.kartu > 0 && unitAwal.kartu <= 12,
     unitAwal);
+
+  // ── 8.1b T2 + T3 di layar unit: kartu servis berikutnya ikut membaca meter baru ──
+  // Kartu ini dulu menulis `hourMeter + 250` sementara alert Dasbor memakai siklus
+  // 500, jadi dua menu melaporkan angka berbeda untuk alat yang sama. H-U1 sekarang
+  // 145 HM dengan servis terakhir 145 HM (hasil bagian 4): 145 + 250 = 395, siklus
+  // 500 jatuh di 500.
+  const bacaKartuUnit = async (serial) => {
+    const ketemu = await ev(wc, `
+      const kartu = [...document.querySelectorAll('#units-grid .card')]
+        .find(c => (c.innerText || '').includes('${serial}'));
+      if (kartu) kartu.click();
+      return !!kartu;`);
+    if (!ketemu) return null;
+    const siap = await waitFor(wc, `/Kembali ke Daftar Fleet/.test(document.body.innerText)`, 'detail unit ' + serial);
+    if (!siap) return null;
+    const teks = await ev(wc, `
+      const g = [...document.querySelectorAll('.card')]
+        .find(c => /Service Periodik Selanjutnya/.test(c.innerText || ''));
+      return g ? (g.innerText || '').replace(/\\s+/g, ' ') : '';`);
+    await ev(wc, `const b = byText(/Kembali ke Daftar Fleet/); if (b) b.click(); return !!b;`);
+    await waitFor(wc, `!!document.querySelector('#units-grid')`, 'kembali ke daftar fleet');
+    return teks;
+  };
+  const kartuU1 = await bacaKartuUnit('HAND-SY-001');
+  ok('8.1b detail unit terbuka dari kartunya', kartuU1 !== null && kartuU1 !== '', kartuU1);
+  ok('8.1c kartu servis berikutnya memakai siklus 500 HM, bukan +250',
+    /Service Periodik Selanjutnya 500 HM/.test(kartuU1 || ''), kartuU1);
+  ok('8.1d servis terakhir yang tampil adalah meter Work Order yang selesai (T3)',
+    /siklus 500 HM • servis terakhir 145 HM/.test(kartuU1 || ''), kartuU1);
+  const kartuU3 = await bacaKartuUnit('HAND-XG-003');
+  ok('8.1e unit yang belum pernah diservis menyatakan servis terakhir belum tercatat',
+    /Service Periodik Selanjutnya 500 HM/.test(kartuU3 || '')
+      && /servis terakhir belum tercatat/.test(kartuU3 || ''), kartuU3);
+
+  // ── 8.1f T4 di layar Unit: gerbang koreksi harus BISA dipenuhi ──
+  // Bagian 4c membuktikan gerbang di layar Servis menolak dan menerima; layar Unit
+  // punya salinan state yang sama dan dulu punya cacat yang sama: state menyimpan
+  // kunci `aktif`, validator membaca `koreksi`, jadi objek yang dikirim apa adanya
+  // membuat opts.koreksi undefined — meter yang mundur ditolak SELAMANYA, bahkan
+  // setelah dicentang dan diberi alasan. Hanya lapisan runtime yang bisa melihat
+  // itu, karena pemanggilannya memang ada; hanya isinya yang salah.
+  // H-U3 dipakai (bukan H-U2) karena mereknya sudah sah di daftar merek, dan
+  // angkanya tidak dibaca lagi oleh bagian setelah sini.
+  await ev(wc, `window.location.hash = '#/units'; return true;`);
+  await waitFor(wc, `!!document.querySelector('#units-grid .card')`, 'daftar unit');
+  const bukaEdit = await ev(wc, `
+    const kartu = [...document.querySelectorAll('#units-grid .card')]
+      .find(c => (c.innerText || '').includes('HAND-XG-003'));
+    const b = kartu && [...kartu.querySelectorAll('button')].find(x => (x.innerText || '').trim() === 'Edit');
+    if (b) b.click();
+    return !!b;`);
+  ok('8.1f form sunting unit terbuka', bukaEdit === true
+    && await waitFor(wc, `/Edit Unit Alat Berat/.test(document.body.innerText)`, 'form sunting unit'));
+  await ev(wc, `window.__alerts.length = 0; return true;`);
+  const isiMeterUnit = (hm) => ev(wc, `${PENCARI_GROUP}
+    const modal = document.querySelector('.modal');
+    const hilang = [];
+    const el = (label, tag) => { const g = group(modal, label); return g && g.querySelector(tag); };
+    const isi = (label, nilai) => {
+      const e = el(label, 'input');
+      if (!e) { hilang.push(label); return; }
+      setVal(e, nilai);
+    };
+    isi('Hour Meter', '${hm}');
+    isi('Lokasi', 'Cikande');
+    isi('Tahun', '2021');
+    return { hilang, hm: (el('Hour Meter', 'input') || {}).value };`);
+  const meterUnit = await isiMeterUnit('190');
+  ok('8.1g form mengenali 190 HM sebagai kemunduran terhadap 210 HM yang tercatat',
+    meterUnit.hilang.length === 0 && meterUnit.hm === '190'
+      && await waitFor(wc, `/Meter mundur dari 210 ke 190/.test(document.body.innerText)`, 'gerbang koreksi unit'),
+    meterUnit);
+
+  await ev(wc, `const b = byText(/^Simpan Unit$/); if (b) b.click(); return !!b;`);
+  const tolakUnit = await waitForStore(wc, `
+    const a = (window.__alerts || []).join(' | ');
+    if (!a) return false;
+    return { alert: a, hm: ((s.units || []).find(x => x.id === 'H-U3') || {}).hourMeter };
+  `, 'penolakan meter mundur di layar Unit', 20000);
+  ok('8.1h tanpa penanda, simpan unit ditolak dan meter tidak tertulis',
+    tolakUnit && /Hour Meter mundur dari 210 ke 190 \(20 jam\)/.test(tolakUnit.alert)
+      && Number(tolakUnit.hm) === 210, tolakUnit);
+
+  await ev(wc, `
+    const c = document.querySelector('.modal input[type=checkbox]');
+    if (c) c.click();
+    return !!c;`);
+  const adaAlasan = await waitFor(wc, `!![...document.querySelectorAll('.modal input')].find(i => /Alasan koreksi/.test(i.placeholder||''))`, 'kolom alasan unit');
+  await ev(wc, `const b = byText(/^Simpan Unit$/); if (b) b.click(); return !!b;`);
+  const tolakTanpaAlasan = await waitForStore(wc, `
+    const a = (window.__alerts || []).join(' | ');
+    return /wajib disertai alasan/.test(a) ? a : false;`, 'penolakan alasan kosong di layar Unit', 20000);
+  ok('8.1i koreksi tanpa alasan tetap ditolak',
+    adaAlasan === true && typeof tolakTanpaAlasan === 'string', { adaAlasan, tolakTanpaAlasan });
+
+  // Inti cacat tadi: SETELAH dicentang dan diberi alasan, penyimpanan harus
+  // benar-benar lolos. Selama pemetaan kunci salah, langkah ini ditolak dengan
+  // pesan yang menyuruh mencentang — dan tidak ada jalan lain untuk mengoreksi
+  // meter unit.
+  await ev(wc, `${PENCARI_GROUP}
+    const i = [...document.querySelectorAll('.modal input')].find(x => /Alasan koreksi/.test(x.placeholder || ''));
+    if (i) setVal(i, 'salah salin dari kartu harian');
+    window.__alerts.length = 0;
+    const b = byText(/^Simpan Unit$/); if (b) b.click();
+    return { alasan: i ? i.value : null, clicked: !!b };`);
+  const unitTerkoreksi = await waitForStore(wc, `
+    const u = (s.units || []).find(x => x.id === 'H-U3') || {};
+    if (Number(u.hourMeter) !== 190) return false;
+    return { hm: u.hourMeter, koreksi: (u.hmKoreksi || []).slice(-1)[0] || null,
+             alerts: (window.__alerts || []).slice() };
+  `, 'unit 190 HM tersimpan lewat gerbang koreksi', 20000);
+  ok('8.1j centang + alasan benar-benar menyimpan meter yang dikoreksi',
+    unitTerkoreksi && Number(unitTerkoreksi.hm) === 190 && unitTerkoreksi.alerts.length === 0,
+    unitTerkoreksi);
+  ok('8.1k jejak koreksi unit menyimpan dari/ke/alasan',
+    unitTerkoreksi && unitTerkoreksi.koreksi && Number(unitTerkoreksi.koreksi.dari) === 210
+      && Number(unitTerkoreksi.koreksi.ke) === 190
+      && unitTerkoreksi.koreksi.alasan === 'salah salin dari kartu harian',
+    unitTerkoreksi && unitTerkoreksi.koreksi);
+  const barisU3 = await ev(wc, `
+    const baris = (await window.electronAPI.dbQuery({ collection: 'units', where: { id: 'H-U3' }, limit: 1 })).rows[0] || {};
+    const due = await window.electronAPI.dbQuery({ collection: 'units', where: { serviceDueIn: ${500 - (190 % 500)} }, limit: 20 });
+    return { hourMeter: baris.hourMeter, koreksi: (baris.hmKoreksi || []).length,
+             kolomBaru: (due.rows || []).some(r => r.id === 'H-U3') };`);
+  ok('8.1l meter terkoreksi dan kolom turunannya ikut tertulis di baris SQLite',
+    Number(barisU3.hourMeter) === 190 && barisU3.koreksi === 1 && barisU3.kolomBaru === true, barisU3);
+  await ev(wc, `
+    const b = byText(/^Batal$/); if (b) b.click();
+    window.__alerts.length = 0;
+    return true;`);
 
   // Pencarian yang diminta pengguna: "SANY SY215C" harus ditemukan, sekarang di
   // sisi SQLite. Harapan dihitung dengan aturan normalisasi yang sama.
@@ -1308,13 +1875,17 @@ async function run(wc) {
     + ` && !/Terjadi Kesalahan/.test(document.body.innerText)`,
     'baris asing tampil di Breakdown tanpa layar kesalahan', 25000);
   await ev(wc, `window.location.hash = '#/customers'; return true;`);
-  // Sekaligus menunggu barisnya datang: rute ini baru saja dihidrasi dari file,
-  // dan judul "Pelanggan" sudah tampil sebelum tabelnya terisi.
-  const pulih = await waitFor(wc,
-    `/Pelanggan/.test(document.body.innerText)`
-    + ` && !/Terjadi Kesalahan/.test(document.body.innerText)`
-    + ` && document.querySelectorAll('tbody tr').length > 0`,
-    'menu Pelanggan tetap terbuka sesudah baris asing dibuka', 25000);
+  const judulPelanggan = await waitFor(wc, `/Pelanggan/.test(document.body.innerText)
+    && !/Terjadi Kesalahan/.test(document.body.innerText)`, 'menu Pelanggan terbuka', 25000);
+  // Baris tabel tidak boleh dibaca saat rute masih berpindah: tbody halaman
+  // Breakdown masih ter-mount ketika hash baru dipasang, sehingga "tbody tr > 0"
+  // saja pernah lolos dari tabel halaman SEBELUMNYA dan hitungan berikutnya
+  // membaca halaman yang masih kosong. Tanda tangannya nama pelanggan uji, yang
+  // hanya ada di tabel halaman ini.
+  const tampilPelanggan = await waitFor(wc,
+    `[...document.querySelectorAll('tbody tr')].some(r => /PT Hand Uji Konstruksi/.test(r.innerText || ''))`,
+    'tabel Pelanggan terisi dari file', 25000);
+  const pulih = judulPelanggan === true && tampilPelanggan === true;
   const daftarPelanggan = await ev(wc, `return document.querySelectorAll('tbody tr').length;`);
   ok('10.14 baris dengan nilai di luar daftar tetap tampil dan tidak meruntuhkan menu lain',
     barisRusak.breakdowns.inserted === 1 && masukSetelahRusak === true && tampil === true

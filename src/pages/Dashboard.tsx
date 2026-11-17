@@ -14,8 +14,10 @@ import { useConfig, PROFILE_INFO, BusinessMode } from '../store/configStore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useDataStore } from '../store/dataStore';
 import { isoDay, lastMonthKeys } from '../domain/revenue';
+import { serviceDueInOf, SIKLUS_SERVIS_HM } from '../domain/derivedColumns';
 import {
   useCollectionCount, useCollectionGroup, useCollectionQuery, useCollectionSum,
+  type GroupRow,
 } from '../hooks/useCollectionTotals';
 
 const fmt = (n: number) => {
@@ -120,7 +122,7 @@ export default function Dashboard() {
       ...serviceDueAlerts.rows.map((u: any) => ({
         type: 'warning' as const,
         title: `${u.brand} ${u.model}`,
-        message: `Service due in ${(500 - ((u.hourMeter || 0) % 500))} HM`,
+        message: `Service due in ${serviceDueInOf(u.hourMeter) ?? '-'} HM`,
         unitId: u.id,
       })),
       ...lowStockAlerts.rows.map((sp: any) => ({
@@ -167,57 +169,87 @@ export default function Dashboard() {
     if (unit.status === 'BREAKDOWN') score -= 30;
     else if (unit.status === 'MAINTENANCE') score -= 15;
     
-    // Factor 4: Maintenance recency (mock - should be calculated from service history)
-    const lastServiceHM = unit.lastServiceHM || (hm - 500);
-    const hmSinceService = hm - lastServiceHM;
-    if (hmSinceService > 500) score -= 10;
-    else if (hmSinceService > 250) score -= 5;
+    // Factor 4: Jarak sejak servis terakhir. `lastServiceHM` ditulis oleh
+    // completeService (menu Servis). Dulu kartu ini memakai `hm - 500` saat field
+    // itu belum ada, yang berarti "belum pernah diservis" selalu terbaca seperti
+    // "baru saja diservis" dan skor kesehatan alat baru terlihat sempurna.
+    // Tanpa catatan servis, faktor ini tidak menghukum apa pun.
+    const lastServiceHM = Number(unit.lastServiceHM);
+    if (Number.isFinite(lastServiceHM) && lastServiceHM >= 0) {
+      const hmSinceService = hm - lastServiceHM;
+      if (hmSinceService > SIKLUS_SERVIS_HM) score -= 10;
+      else if (hmSinceService > SIKLUS_SERVIS_HM / 2) score -= 5;
+    }
     
     return Math.max(0, Math.min(100, score));
   };
 
   // ========================================
-  // COST PER HOUR CALCULATION
+  // BIAYA & PENDAPATAN PER JAM — dari transaksi, bukan konstanta
   // ========================================
-  const calculateCostPerHour = (unit: any) => {
-    const hm = unit.hourMeter || 1;
-    const purchasePrice = unit.purchasePrice || 0;
-    
-    // Depreciation (10% per year)
-    const age = new Date().getFullYear() - (unit.year || 2020);
-    const depreciationCost = (purchasePrice * 0.1) / 12 / 30 / 8; // Rough estimate per hour
-    
-    // Fuel cost (mock - should be from actual fuel data)
-    const fuelCost = 85000; // Avg 85K per HM
-    
-    // Maintenance cost (mock - should be from service history)
-    const maintenanceCost = 32000; // Avg 32K per HM
-    
-    // Spare part cost (mock - should be from parts usage)
-    const sparepartCost = 18000; // Avg 18K per HM
-    
-    // Operator cost (mock - should be from operator data)
-    const operatorCost = 25000; // Avg 25K per HM
-    
-    const totalCost = depreciationCost + fuelCost + maintenanceCost + sparepartCost + operatorCost;
-    
-    return totalCost;
+  // Penyusutan adalah-satu-satunya komponen biaya per alat yang bisa dihitung dari
+  // data yang ada (harga perolehan unit), dan itupun butuh satu asumsi umur ekonomis
+  // yang dinyatakan di layar. BBM, sparepart dan operator TIDAK punya tautan ke
+  // unit: Purchase Order hanya menyimpan nama barang, kas hanya kategori, dan
+  // pemakaian sparepart tercatat per Work Order tanpa jam alat. Ketiganya dulu
+  // ditulis sebagai Rp85.000 / Rp18.000 / Rp25.000 per HM — angka yang sama untuk
+  // excavator 12.000 HM maupun unit baru 40 HM, dan tidak pernah berubah seberapa
+  // banyak pun data masuk. Sekarang ketiganya ditandai belum tercatat.
+  const NILAI_SISA_EKONOMIS = 0.1;
+  const UMUR_EKONOMIS_HM = 12_000;
+
+  const kelompokSerial = (groups: GroupRow[], serial: unknown, kolom = 0): GroupRow[] => {
+    const kunci = String(serial || '').trim().toLowerCase();
+    if (!kunci) return [];
+    return groups.filter(g => String(g.keys[kolom] || '').trim().toLowerCase() === kunci);
   };
 
-  // ========================================
-  // UNIT PROFITABILITY CALCULATION
-  // ========================================
-  const calculateProfitability = (unit: any) => {
-    const costPerHour = calculateCostPerHour(unit);
-    const revenuePerHour = 350000; // Mock revenue - should be from actual contract data
-    const grossMargin = revenuePerHour - costPerHour;
-    const marginPercent = (grossMargin / revenuePerHour) * 100;
-    
+  interface AngkaPerUnit {
+    hm: number;
+    penyusutanPerJam: number;
+    punyaHarga: boolean;
+    kontrakAktif: number;
+    sewaPerBulan: number;
+    sewaPerJam: number | null;
+    woSelesai: number;
+    tagihanServis: number;
+    biayaPerJam: number;
+  }
+
+  const angkaPerUnit = (unit: any): AngkaPerUnit => {
+    const hm = Math.max(0, Math.trunc(Number(unit?.hourMeter) || 0));
+    const harga = Math.max(0, Number(unit?.purchasePrice) || 0);
+    const sewa = kelompokSerial(sewaPerSerial, unit?.serialNumber);
+    const servis = kelompokSerial(biayaServisPerSerial, unit?.serialNumber);
+    const tagihanServis = servis.reduce((acc, g) => acc + g.sum, 0);
+    const woSelesai = servis.reduce((acc, g) => acc + g.count, 0);
+    const sewaPerBulan = sewa.reduce((acc, g) => acc + g.sum, 0);
+    // Tarif per jam hanya ada bila SEMUA kontrak aktif untuk serial ini menyimpan
+    // jam minimum. Bila salah satu kosong, hasilnya nol atau null, bukan
+    // Rp350.000/HM karangan lama.
+    const tarifKontrak = sewa.map(g => {
+      const jam = Math.max(0, Math.trunc(Number(g.keys[1]) || 0));
+      return jam > 0 ? g.sum / jam : null;
+    });
+    const sewaPerJam = tarifKontrak.length > 0 && tarifKontrak.every(v => v !== null)
+      ? tarifKontrak.reduce<number>((acc, v) => acc + (v as number), 0)
+      : null;
+    const penyusutanPerJam = harga > 0
+      ? (harga * (1 - NILAI_SISA_EKONOMIS)) / UMUR_EKONOMIS_HM
+      : 0;
+
     return {
-      costPerHour,
-      revenuePerHour,
-      grossMargin,
-      marginPercent,
+      hm,
+      penyusutanPerJam,
+      punyaHarga: harga > 0,
+      kontrakAktif: sewa.reduce((acc, g) => acc + g.count, 0),
+      sewaPerBulan,
+      sewaPerJam,
+      woSelesai,
+      tagihanServis,
+      // Yang boleh dinamai "biaya tercatat" hanya penyusutan; WO servis adalah
+      // tagihan ke pelanggan/proyek (pendapatan), bukan biaya yang ditanggung armada.
+      biayaPerJam: penyusutanPerJam,
     };
   };
   // ========================================
@@ -292,6 +324,22 @@ export default function Dashboard() {
     const byStatus = new Map(serviceStatusGroups.map(g => [g.keys[0], g.count]));
     return (...statuses: string[]) => statuses.reduce((acc, s) => acc + (byStatus.get(s) || 0), 0);
   }, [serviceStatusGroups]);
+
+  // ── Biaya & pendapatan PER ALAT, diambil dari transaksi ──
+  // Dua kartu di bawah dulu berisi konstanta: Fuel Rp85.000/HM, Maintenance
+  // Rp32.000/HM, Sparepart Rp18.000/HM, Operator Rp25.000/HM dan revenue
+  // Rp350.000/HM — angka yang sama untuk excavator 12.000 HM dan untuk unit baru
+  // 40 HM, dan tidak pernah berubah seberapa banyak pun data masuk. Sekarang yang
+  // punya tautan dihitung (Work Order COMPLETED per serial, sewa AKTIF per serial),
+  // dan yang tidak punya tautan dinyatakan belum ada, bukan dikarang.
+  const biayaServisPerSerial = useCollectionGroup(
+    { collection: 'services', by: ['serialNumber'], sum: 'estimatedCost', where: WHERE_WO_COMPLETED },
+    services, savedTick.services);
+  // Jam minimum ikut menjadi kunci kelompok: tarif per jam hanya bisa dihitung
+  // dari Rp/bulan bila kontrak itu sendiri yang menyatakan dasar jamnya.
+  const sewaPerSerial = useCollectionGroup(
+    { collection: 'rentals', by: ['serialNumber', 'minimumHours'], sum: 'monthlyRate', where: WHERE_RENTAL_ACTIVE },
+    rentals, savedTick.rentals);
 
   return (
     <div>
@@ -507,7 +555,7 @@ export default function Dashboard() {
                 const healthPercent = Math.max(0, Math.min(100, healthScore));
                 
                 return (
-                  <div key={i} style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
+                  <div key={u.id || u.serialNumber} style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div style={{ fontWeight: 700 }}>{u.brand} {u.model}</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: healthColor }}>{healthPercent}%</div>
@@ -526,51 +574,56 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Cost per Hour Card */}
+          {/* Biaya & pendapatan per jam: angka transaksi + satu asumsi bernama */}
           <div className="card mb-4 stagger-4">
-            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>💰 Cost per Hour Analysis</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>💰 Cost per Hour Analysis</h3>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 16px', maxWidth: 820 }}>
+              Hanya biaya yang punya tautan ke unit yang ikut dihitung. Penyusutan memakai asumsi umur ekonomis{' '}
+              {new Intl.NumberFormat('id-ID').format(UMUR_EKONOMIS_HM)} HM dengan nilai sisa{' '}
+              {Math.round(NILAI_SISA_EKONOMIS * 100)}% dari harga perolehan. BBM, sparepart dan operator belum bisa
+              dinyatakan per jam alat karena pembelian tidak menautkan barisnya ke satu unit dan belum ada catatan
+              jam operasi per hari.
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
               {unitSorotan.rows.slice(0, 3).map((u, i) => {
-                const profitability = calculateProfitability(u);
-                
+                const a = angkaPerUnit(u);
+                const rp = (n: number) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+                const baris = (label: string, nilai: string, warna?: string) => (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span>{label}</span>
+                    <span style={warna ? { color: warna } : undefined}>{nilai}</span>
+                  </div>
+                );
+                const margin = a.sewaPerJam === null ? null : a.sewaPerJam - a.biayaPerJam;
+                const marginPersen = a.sewaPerJam ? (Number(margin) / a.sewaPerJam) * 100 : 0;
+
                 return (
-                  <div key={i} style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
-                    <div style={{ fontWeight: 700, marginBottom: 12 }}>{u.brand} {u.model} ({u.serialNumber})</div>
+                  <div key={u.id || u.serialNumber} style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
+                    <div style={{ fontWeight: 700, marginBottom: 2 }}>{u.brand} {u.model} ({u.serialNumber})</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                      {new Intl.NumberFormat('id-ID').format(a.hm)} HM tercatat
+                    </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Fuel</span>
-                        <span>Rp85.000/HM</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Maintenance</span>
-                        <span>Rp32.000/HM</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Sparepart</span>
-                        <span>Rp18.000/HM</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Operator</span>
-                        <span>Rp25.000/HM</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Depreciation</span>
-                        <span>Rp20.000/HM</span>
-                      </div>
+                      {baris('Penyusutan (asumsi)', a.punyaHarga ? `${rp(a.penyusutanPerJam)}/HM` : 'harga perolehan belum diisi')}
+                      {baris('BBM', 'belum tercatat per unit', 'var(--text-muted)')}
+                      {baris('Sparepart', 'belum tercatat per unit', 'var(--text-muted)')}
+                      {baris('Operator', 'belum tercatat per unit', 'var(--text-muted)')}
                       <div style={{ height: '1px', background: 'var(--border-default)', margin: '8px 0' }}></div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, marginBottom: 4 }}>
-                        <span>TOTAL COST</span>
-                        <span style={{ color: '#EF4444' }}>Rp{profitability.costPerHour.toLocaleString('id-ID')}/HM</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, marginBottom: 4 }}>
-                        <span>REVENUE</span>
-                        <span style={{ color: '#10B981' }}>Rp{profitability.revenuePerHour.toLocaleString('id-ID')}/HM</span>
-                      </div>
+                      {baris('BIAYA TERCATAT', `${rp(a.biayaPerJam)}/HM`, '#EF4444')}
+                      {baris('Sewa aktif', a.kontrakAktif > 0
+                        ? `${a.kontrakAktif} kontrak • ${rp(a.sewaPerBulan)}/bulan`
+                        : 'tidak ada kontrak aktif')}
+                      {baris('PENDAPATAN', a.sewaPerJam !== null ? `${rp(a.sewaPerJam)}/HM` : 'tarif/jam belum ada', '#10B981')}
+                      {baris('Tagihan WO selesai', a.woSelesai > 0
+                        ? `${a.woSelesai} WO • ${rp(a.tagihanServis)}`
+                        : 'belum ada WO selesai')}
                       <div style={{ height: '1px', background: 'var(--border-default)', margin: '8px 0' }}></div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 12 }}>
                         <span>GROSS MARGIN</span>
-                        <span style={{ color: profitability.marginPercent >= 30 ? '#10B981' : '#F59E0B' }}>
-                          Rp{profitability.grossMargin.toLocaleString('id-ID')}/HM ({profitability.marginPercent.toFixed(1)}%)
+                        <span style={{ color: margin === null ? 'var(--text-muted)' : marginPersen >= 30 ? '#10B981' : '#F59E0B' }}>
+                          {margin === null
+                            ? 'belum dapat dihitung'
+                            : `${rp(margin)}/HM (${marginPersen.toFixed(1)}%)`}
                         </span>
                       </div>
                     </div>
@@ -622,11 +675,11 @@ export default function Dashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {unitSorotan.rows.slice(0, 3).map((u, i) => {
                   const healthScore = calculateHealthScore(u);
-                  const profitability = calculateProfitability(u);
+                  const a = angkaPerUnit(u);
                   const healthColor = healthScore >= 80 ? '#10B981' : healthScore >= 60 ? '#F59E0B' : '#EF4444';
                   
                   return (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 8 }}>
+                    <div key={u.id || u.serialNumber} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 8 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700 }}>{u.brand} {u.model} ({u.serialNumber})</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -639,7 +692,13 @@ export default function Dashboard() {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ fontSize: 10 }}>💰</span>
-                            <span>Rp{profitability.costPerHour.toLocaleString('id-ID')}/HM</span>
+                            <span>
+                              {a.kontrakAktif > 0
+                                ? `Sewa ${fmt(a.sewaPerBulan)}/bulan`
+                                : a.woSelesai > 0
+                                  ? `${a.woSelesai} WO selesai • ${fmt(a.tagihanServis)}`
+                                  : 'belum ada transaksi alat ini'}
+                            </span>
                           </div>
                         </div>
                       </div>

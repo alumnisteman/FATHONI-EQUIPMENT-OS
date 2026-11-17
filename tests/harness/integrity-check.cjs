@@ -2,7 +2,7 @@
 // Harness Fase 6: atomisitas tulis, rollback di tengah tulisan, dan penolakan
 // hapus record yang masih disebut dokumen lain.
 //
-//   npx electron tests/harness/integrity-check.cjs
+//   node_modules/electron/dist/electron.exe tests/harness/integrity-check.cjs
 //
 // Folder data dibuat sendiri di temp (fs.mkdtempSync) jadi profil pengguna
 // sungguhan tidak pernah dibuka. Butuh `npm run build:electron` lebih dulu
@@ -188,6 +188,17 @@ function main() {
       { id: 'TECH-3', technicianNumber: 'TECH-003', name: 'Budi', status: 'ACTIVE', totalHours: 5 },
     ],
     documents: [{ id: 'DOC-1', jenisDokumen: 'Faktur', nomorDokumen: 'F-1', statusLegalitas: 'LENGKAP', masaBerlaku: '2027-01-01' }],
+    // Katalog: SANY/SY215C dipakai unit U-1..U-3, Kobelco hanya dipakai sebuah
+    // model katalog (tidak ada unitnya), dan Volvo tidak dipakai apa pun.
+    brands: [
+      { id: 'BR-1', name: 'SANY', country: 'Tiongkok', category: 'Excavator' },
+      { id: 'BR-2', name: 'Kobelco', country: 'Jepang', category: 'Crane' },
+      { id: 'BR-3', name: 'Volvo', country: 'Swedia', category: 'Wheel Loader' },
+    ],
+    models: [
+      { id: 'MD-1', brandName: 'SANY', modelCode: 'SY215C', category: 'Excavator 20 Ton' },
+      { id: 'MD-2', brandName: 'Kobelco', modelCode: 'CKK900', category: 'Crawler Crane' },
+    ],
   };
   DB.saveStore(profil);
   ok('profil rujukan tertanam', DB.rowCounts().totalRows > 20, DB.rowCounts().totalRows);
@@ -309,6 +320,30 @@ function main() {
     const operator = DB.rowReferences('operators', 'OP-1');
     ok('nama satu kata ("Joko") diketahui tidak tertahan, tanpa error',
       operator.blocked === false && !operator.error, operator);
+  }
+
+  // 2d-katalog. Merek & Model dirujuk dengan NAMA MEREK dan KODE MODEL, sama
+  // seperti cara unit mencatatnya. Menghapus entri yang masih dipakai membuat
+  // layar Unit menampilkan merek yang tidak ada di katalog lagi — dan koreksi
+  // namanya tidak bisa dilakukan dari daftar unit.
+  {
+    const r = DB.rowReferences('brands', 'BR-1');
+    ok('merek tertahan model katalog yang dibuat di bawahnya',
+      r.blocked === true && !!hitLabel(r, 'models') && hitLabel(r, 'models').contoh.includes('SY215C'), r.hits);
+    ok('merek tertahan unit yang mencatat mereknya',
+      !!hitLabel(r, 'units') && hitLabel(r, 'units').contoh.includes('SY215C-001'), r.hits);
+    const cumaModel = DB.rowReferences('brands', 'BR-2');
+    ok('merek tanpa unit tapi berpindah model tetap tertahan',
+      cumaModel.blocked === true && !!hitLabel(cumaModel, 'models') && !hitLabel(cumaModel, 'units'), cumaModel.hits);
+    const bebas = DB.rowReferences('brands', 'BR-3');
+    ok('merek yang belum dipakai apa pun boleh dihapus', bebas.blocked === false && !bebas.error, bebas);
+
+    const kode = DB.rowReferences('models', 'MD-1');
+    ok('kode model tertahan unit yang memakainya',
+      kode.blocked === true && !!hitLabel(kode, 'units') && hitLabel(kode, 'units').contoh.includes('SY215C-001'), kode.hits);
+    const kodeBebas = DB.rowReferences('models', 'MD-2');
+    ok('kode model yang belum menjadi unit boleh dihapus (mereknya sendiri yang tertahan)',
+      kodeBebas.blocked === false && !kodeBebas.error, kodeBebas);
   }
 
   // 2e. daun tanpa aturan: hapusnya tidak pernah meninggalkan rujukan

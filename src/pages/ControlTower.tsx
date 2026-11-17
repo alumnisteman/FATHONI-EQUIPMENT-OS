@@ -5,6 +5,7 @@
 // membuat jendela membeku begitu menu dibuka.
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDataStore } from '../store/dataStore';
 import { isoDay } from '../domain/revenue';
 import { useCollectionCount, useCollectionQuery } from '../hooks/useCollectionTotals';
@@ -23,6 +24,7 @@ const WHERE_LOW_STOCK = { stockShortfall: { lte: 0 } };
 const LIVE_LIMIT = 8;
 
 const ControlTower: React.FC = () => {
+  const navigate = useNavigate();
   const { units, services, spareParts, invoices, savedTick } = useDataStore();
 
   // Piutang lewat tempo: `gt: ''` mengeluarkan invoice tanpa tanggal jatuh tempo,
@@ -209,16 +211,16 @@ const ControlTower: React.FC = () => {
       <div className="card" style={{ padding: 24 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>QUICK ACTIONS</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-          <button className="btn btn-primary" style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" style={{ textAlign: 'left', justifyContent: 'flex-start' }} onClick={() => navigate('/units')}>
             🚜 View All Units
           </button>
-          <button className="btn btn-secondary" style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+          <button className="btn btn-secondary" style={{ textAlign: 'left', justifyContent: 'flex-start' }} onClick={() => navigate('/service')}>
             🔧 View All Services
           </button>
-          <button className="btn btn-secondary" style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+          <button className="btn btn-secondary" style={{ textAlign: 'left', justifyContent: 'flex-start' }} onClick={() => navigate('/spareparts')}>
             📦 View All Spareparts
           </button>
-          <button className="btn btn-secondary" style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+          <button className="btn btn-secondary" style={{ textAlign: 'left', justifyContent: 'flex-start' }} onClick={() => navigate('/invoices')}>
             💰 View All Invoices
           </button>
         </div>

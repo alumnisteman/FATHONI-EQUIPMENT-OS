@@ -5,7 +5,7 @@
 // data saya saat aplikasi boot".
 //
 // Jalankan:
-//   HEMS_DATA_DIR=D:/SANY/tmp-harness/livecopy npx electron tests/harness/profile-inspect.cjs
+//   HEMS_DATA_DIR=D:/SANY/tmp-harness/livecopy node_modules/electron/dist/electron.exe tests/harness/profile-inspect.cjs
 //   node tests/harness/migration-dryrun.cjs D:/SANY/tmp-harness/livecopy/localStorage-dump.json
 
 const path = require('path');

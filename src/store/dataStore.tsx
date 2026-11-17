@@ -23,10 +23,23 @@ import {
 } from './dataMigration';
 import {
   dbInfo, dbLoadStore, dbSaveStore, dbPatchStore, dbMarkImported, dbOnFlushRequest, dbFlushDone,
+  tulisDitolak,
   dbReferences, type RowPatch, type ReferenceReport,
 } from '../services/dbClient';
 import { COLLECTION_KEYS, STORAGE_KEY } from './collections';
 import { rencanakanTulis, rowKey } from './writeGuard';
+import { validateKasKembar } from '../utils/validation';
+
+// ── Penolakan tulis dari main process ─────────────────────────
+// Main process bisa menolak dengan sengaja: jendela tidak punya sesi, peran tidak
+// berwenang atas collection itu, atau nilainya bukan angka. Ketiganya berarti
+// "muatan ini tidak akan pernah masuk", jadi renderer tidak boleh jatuh ke jalur
+// simpanan penuh — yang hanya mengulang penolakan yang sama sambil membuat layar
+// mengira perubahannya sudah aman.
+function pesanDitolak(): string | null {
+  const t = tulisDitolak();
+  return t && t.dilarang ? t.error : null;
+}
 
 // ── Status restore ────────────────────────────────────────────
 // Saat proses restore sedang berlangsung, setiap penulisan store dari
@@ -127,6 +140,8 @@ const EMPTY_STORE: Record<string, any[]> = emptyStore();
 // ── Context Type ──────────────────────────────────────────────
 interface DataContextType {
   units: any[];
+  brands: any[];
+  models: any[];
   customers: Customer[];
   suppliers: Supplier[];
   spareParts: SparePart[];
@@ -195,6 +210,8 @@ interface DataContextType {
   savedTick: Record<string, number>;
 
   setUnits: React.Dispatch<React.SetStateAction<any[]>>;
+  setBrands: React.Dispatch<React.SetStateAction<any[]>>;
+  setModels: React.Dispatch<React.SetStateAction<any[]>>;
   setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
   setSpareParts: React.Dispatch<React.SetStateAction<SparePart[]>>;
@@ -220,6 +237,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Database selalu mulai kosong. Data contoh hanya masuk lewat loadSampleData(),
   // dan data warisan masuk lewat migrasi sekali jalan di bawah.
   const [units, setUnits]           = useState<any[]>([]);
+  const [brands, setBrands]         = useState<any[]>([]);
+  const [models, setModels]         = useState<any[]>([]);
   const [customers, setCustomers]   = useState<Customer[]>([]);
   const [suppliers, setSuppliers]   = useState<Supplier[]>([]);
   const [spareParts, setSpareParts] = useState<SparePart[]>([]);
@@ -273,6 +292,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ── Peta nama collection → setter state ──────────────────────
   const collectionSetters = useMemo<Record<string, React.Dispatch<React.SetStateAction<any[]>>>>(() => ({
     units: setUnits, customers: setCustomers, suppliers: setSuppliers,
+    brands: setBrands, models: setModels,
     spareParts: setSpareParts, invoices: setInvoices, sales: setSales,
     rentals: setRentals, services: setServices, kas: setKas,
     deliveries: setDeliveries, warehouse: setWarehouse, purchases: setPurchases,
@@ -550,16 +570,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (Object.keys(patches).length > 0) {
       const patched = await dbPatchStore(patches);
       if (patched) saved.push(...Object.keys(patches));
-      // Main process menolak patch (mis. build lama tanpa kanal db-patch):
-      // collection yang SUDAH termuat penuh ikut dikirim penuh di bawah supaya
-      // tidak ada perubahan yang hilang. Yang belum termuat tidak pernah boleh
-      // lewat jalur itu — itulah yang dijaga di atas.
-      else for (const name of Object.keys(patches)) {
-        if (loadedRef.current[name]) full[name] = store[name];
-        else tertahan.push(name);
+      else {
+        const ditolak = pesanDitolak();
+        // Penolakan sengaja dari main process (peran, sesi, angka cacat): jalur
+        // collection penuh mengirim muatan yang sama dan ditolak lagi, jadi yang
+        // perlu terjadi adalah pengguna membaca alasannya, bukan menyimpan dua kali.
+        if (ditolak) {
+          setHasUnsavedChanges(true);
+          setStorageWarning(`🚨 ${ditolak}\nPerubahan pada "${Object.keys(patches).join(', ')}" TIDAK tersimpan.`);
+          return false;
+        }
+        // Main process menolak patch (mis. build lama tanpa kanal db-patch):
+        // collection yang SUDAH termuat penuh ikut dikirim penuh di bawah supaya
+        // tidak ada perubahan yang hilang. Yang belum termuat tidak pernah boleh
+        // lewat jalur itu — itulah yang dijaga di atas.
+        for (const name of Object.keys(patches)) {
+          if (loadedRef.current[name]) full[name] = store[name];
+          else tertahan.push(name);
+        }
       }
     }
-    if (Object.keys(full).length > 0 && await dbSaveStore(full)) saved.push(...Object.keys(full));
+    if (Object.keys(full).length > 0) {
+      const fullSaved = await dbSaveStore(full);
+      if (fullSaved) saved.push(...Object.keys(full));
+      else {
+        const ditolak = pesanDitolak();
+        if (ditolak) {
+          setHasUnsavedChanges(true);
+          setStorageWarning(`🚨 ${ditolak}\nPerubahan pada "${Object.keys(full).join(', ')}" TIDAK tersimpan.`);
+          return false;
+        }
+      }
+    }
 
     // Hanya yang benar-benar sampai di file yang boleh dianggap tersimpan.
     for (const name of saved) lastSavedRef.current[name] = store[name];
@@ -621,8 +663,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // yang memang sudah termuat penuh. Untuk yang belum, jalur penuh itu berarti
     // menghapus baris yang tidak pernah dibaca layar ini.
     let ok = (await dbPatchStore({ [name]: patch })) !== null;
-    if (!ok && loadedRef.current[name]) ok = (await dbSaveStore({ [name]: nextRows })) !== null;
+    const ditolak = ok ? null : pesanDitolak();
+    if (!ok && !ditolak && loadedRef.current[name]) ok = (await dbSaveStore({ [name]: nextRows })) !== null;
 
+    if (ditolak) {
+      // Penolakan sengaja: perannya, sesinya, atau angkanya — bukan kegagalan
+      // teknis yang layak diulang. Beritahu alasannya apa adanya.
+      setHasUnsavedChanges(true);
+      setStorageWarning(`🚨 ${ditolak}`);
+      return false;
+    }
     if (!ok) {
       setHasUnsavedChanges(true);
       setStorageWarning(loadedRef.current[name]
@@ -637,6 +687,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     lastSavedRef.current[name] = nextRows;
     bumpSaved([name]);
     setHasUnsavedChanges(false);
+    // Peringatan "TIDAK TERSIMPAN" dari percobaan sebelumnya tidak boleh
+    // menetap setelah baris ini benar-benar masuk file — operator akan mengira
+    // datanya masih hilang. Bila masih ada masalah lain, jalur simpan
+    // berikutnya memasang peringatan itu lagi beserta alasannya.
+    setStorageWarning(null);
     return true;
   }, [collectionSetters, persist, useDb, bumpSaved]);
 
@@ -702,7 +757,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!isLoaded) return;
 
     dataRef.current = {
-      units, customers, suppliers, spareParts, invoices, sales, rentals, services,
+      units, brands, models, customers, suppliers, spareParts, invoices, sales, rentals, services,
       kas, deliveries, warehouse, purchases, documents, bankAccounts, breakdowns,
       operators, technicians, approvals,
     };
@@ -726,7 +781,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, 800);
   }, [
     isLoaded, persist,
-    units, customers, suppliers, spareParts, invoices, sales, rentals, services,
+    units, brands, models, customers, suppliers, spareParts, invoices, sales, rentals, services,
     kas, deliveries, warehouse, purchases, documents, bankAccounts, breakdowns,
     operators, technicians, approvals,
   ]);
@@ -807,10 +862,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const createInvoiceFromRental = useCallback((rental: any) => pushInvoice(invoiceFromRental(rental)), [pushInvoice]);
 
   const addKasEntry = useCallback((entry: Omit<TransaksiKas, 'id'> & { id?: string }) => {
-    setKas(prev => {
-      const exists = prev.some(k => k.referensi === entry.referensi && k.kategori === entry.kategori && k.tipe === entry.tipe);
-      return exists ? prev : [{ id: entry.id ?? `${Date.now()}-kas`, ...entry }, ...prev];
-    });
+    setKas(prev => (validateKasKembar(entry, prev) ? prev : [{ id: entry.id ?? `${Date.now()}-kas`, ...entry }, ...prev]));
   }, []);
 
   const addWarehouseMovement = useCallback((movement: {
@@ -916,8 +968,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     actualCost?: number,
   ) => {
     const wo = services.find(s => s.id === serviceId);
+    // WO yang sudah COMPLETED tidak diproses ulang. Invoice, mutasi gudang, dan
+    // kas sudah menolak duplikatnya sendiri, tetapi stok suku cadang TIDAK:
+    // pemanggilan kedua tetap mengurangi stok sekali lagi. Satu Work Order
+    // hanya boleh menutup sekali; membuka kembali WO adalah tindakan sadar
+    // yang mengubah statusnya lebih dulu.
+    if (!wo || wo.status === 'COMPLETED') return;
 
-    setServices(prev => prev.map(s => (s.id === serviceId ? { ...s, status: 'COMPLETED', completedDate: today() } : s)));
+    const biaya = Number(actualCost);
+    const biayaSah = actualCost !== undefined && actualCost !== null && Number.isFinite(biaya) && biaya >= 0;
+
+    setServices(prev => prev.map(s => (s.id === serviceId
+      ? {
+        ...s,
+        status: 'COMPLETED',
+        completedDate: today(),
+        // Biaya aktual yang diketik di modal harus mendarat di baris Work Order,
+        // bukan hanya di invoice: kartu Unit membaca kolom ini untuk memilih
+        // "aktual" alih-alih "estimasi", dan tanpa ini kolom itu selamanya
+        // menampilkan estimasi walau teknisinya sudah mengisi angka sebenarnya.
+        ...(biayaSah ? { actualCost: biaya } : {}),
+      }
+      : s)));
 
     (sparePartsUsed || []).forEach(({ partId, quantity }) => {
       const part = spareParts.find(p => p.id === partId);
@@ -935,7 +1007,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     const serial = String(wo?.serialNumber || '').trim().toLowerCase();
-    if (serial) setUnits(prev => prev.map(u => String(u.serialNumber || '').trim().toLowerCase() === serial ? { ...u, status: 'AVAILABLE' } : u));
+    // HM yang tercatat di Work Order adalah pembacaan meter paling baru yang
+    // sah, dan servis berkala dihitung dari sana. Dulu completeService hanya
+    // memulihkan status unit: `units.hourMeter` tidak pernah naik, `lastServiceHM`
+    // tidak pernah ditulis (halaman Dasbor menjatuhkannya ke angka karangan
+    // `hm - 500`), jadi siklus servis tidak pernah benar-benar berputar.
+    // Meter yang MUNDUR terhadap unit tidak pernah diambil: ia dibiarkan apa
+    // adanya, karena menurunkan HM akan menyeret turun seluruh hitungan servis
+    // dan biaya per jam tanpa jejak koreksi.
+    const hmServis = Number(wo?.hourMeter);
+    const hmSah = Number.isFinite(hmServis) && hmServis >= 0;
+    if (serial) {
+      setUnits(prev => prev.map(u => {
+        if (String(u.serialNumber || '').trim().toLowerCase() !== serial) return u;
+        const hmUnit = Number(u.hourMeter);
+        const maju = hmSah && hmServis >= (Number.isFinite(hmUnit) ? hmUnit : 0);
+        return {
+          ...u,
+          status: 'AVAILABLE',
+          hourMeter: maju ? hmServis : u.hourMeter,
+          lastServiceHM: maju ? hmServis : u.lastServiceHM,
+        };
+      }));
+    }
 
     if (wo) pushInvoice(invoiceFromService(wo, actualCost));
   }, [services, spareParts, consumeSparePart, addWarehouseMovement, pushInvoice]);
@@ -1010,7 +1104,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // objek baru sehingga SELURUH halaman yang memakai useDataStore ikut render ulang.
   const contextValue = useMemo<DataContextType>(() => ({
     // State
-    units, customers, suppliers, spareParts, invoices, sales, rentals, services, kas,
+    units, brands, models, customers, suppliers, spareParts, invoices, sales, rentals, services, kas,
     deliveries, warehouse, purchases, documents, bankAccounts, breakdowns,
     operators, technicians, approvals, storageWarning, loadError, hasUnsavedChanges,
     migrationReport, savedTick,
@@ -1022,12 +1116,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     receivePurchase, loadSampleData, saveRow, saveRows, removeRow, ensureLoaded,
 
     // Setters
-    setUnits, setCustomers, setSuppliers, setSpareParts, setInvoices, setSales,
+    setUnits, setBrands, setModels, setCustomers, setSuppliers, setSpareParts, setInvoices, setSales,
     setRentals, setServices, setKas, setDeliveries, setWarehouse, setPurchases,
     setDocuments, setBankAccounts, setBreakdowns, setOperators, setTechnicians,
     setApprovals,
   }), [
-    units, customers, suppliers, spareParts, invoices, sales, rentals, services, kas,
+    units, brands, models, customers, suppliers, spareParts, invoices, sales, rentals, services, kas,
     deliveries, warehouse, purchases, documents, bankAccounts, breakdowns,
     operators, technicians, approvals, storageWarning, loadError, hasUnsavedChanges,
     migrationReport, savedTick,
@@ -1037,9 +1131,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     receivePurchase, loadSampleData, saveRow, saveRows, removeRow, ensureLoaded,
   ]);
 
-  // Jangan render anak sampai data dimuat (mencegah flash dengan data mock)
-  if (!isLoaded) return null;
-
+  // Login tidak memanggil useDataStore sehingga aman dirender sebelum boot selesai.
+  // ProtectedRoute + RouteGate memastikan rute yang butuh data sudah terhidrasi.
   return (
     <DataContext.Provider value={contextValue}>
       {children}

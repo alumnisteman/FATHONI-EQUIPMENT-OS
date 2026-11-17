@@ -33,13 +33,7 @@ const STATUS_MAP: Record<BreakdownStatus, { label: string; badge: string }> = {
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Breakdown() {
-  const {
-    breakdowns,
-    setBreakdowns,
-    units,
-    updateUnitStatus,
-    removeRow,
-  } = useDataStore();
+  const { breakdowns, setBreakdowns, saveRow, units, updateUnitStatus, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
@@ -94,7 +88,7 @@ export default function Breakdown() {
     ? resolvedBreakdowns.reduce((acc, b) => acc + (b.downtimeHours || 0), 0) / resolvedBreakdowns.length
     : 0;
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi serial number unit
@@ -191,8 +185,8 @@ export default function Breakdown() {
           downtimeHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
         }
 
-        setBreakdowns(breakdowns.map(b => b.id === editingId ? {
-          ...b,
+        await saveRow('breakdowns', {
+          ...breakdown,
           breakdownNumber: form.breakdownNumber,
           unitSerialNumber: form.unitSerialNumber,
           unitModel: form.unitModel,
@@ -205,11 +199,11 @@ export default function Breakdown() {
           assignedTechnician: form.assignedTechnician,
           estimatedRepairCost: form.estimatedRepairCost,
           actualRepairCost: form.actualRepairCost,
-          startTime: form.startTime || b.startTime,
-          endTime: form.endTime || b.endTime,
+          startTime: form.startTime || breakdown.startTime,
+          endTime: form.endTime || breakdown.endTime,
           downtimeHours,
           resolutionNotes: form.resolutionNotes,
-        } : b));
+        });
 
         // Update unit status based on breakdown status
         if (form.status === 'RESOLVED' || form.status === 'CANCELLED') {
@@ -249,6 +243,7 @@ export default function Breakdown() {
         partsUsed: [],
       };
       setBreakdowns([newItem, ...breakdowns]);
+      await saveRow('breakdowns', newItem);
 
       // Update unit status to BREAKDOWN
       const unit = units.find((u: any) => u.serialNumber === form.unitSerialNumber);
@@ -303,7 +298,7 @@ export default function Breakdown() {
     }
   };
 
-  const handleUpdateStatus = (id: string, newStatus: BreakdownStatus) => {
+  const handleUpdateStatus = async (id: string, newStatus: BreakdownStatus) => {
     const breakdown = breakdowns.find(b => b.id === id);
     if (breakdown) {
       const now = new Date().toISOString();
@@ -323,6 +318,7 @@ export default function Breakdown() {
       }
 
       setBreakdowns(breakdowns.map(b => b.id === id ? updatedBreakdown : b));
+      await saveRow('breakdowns', updatedBreakdown);
 
       // Update unit status
       const unit = units.find((u: any) => u.serialNumber === breakdown.unitSerialNumber);

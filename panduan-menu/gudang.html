@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Menu Gudang — FATHONI EQUIPMENT OS 3.0.5</title>
+<style>
+@page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.5; color: #16202b; margin: 0; }
+h1 { font-size: 16pt; color: #b00016; margin: 0 0 4mm; border-bottom: 2.4pt solid #b00016; padding-bottom: 2mm; }
+h2 { font-size: 12.4pt; color: #0f2a4a; margin: 6mm 0 2mm; border-left: 4pt solid #b00016; padding-left: 3mm; }
+h3 { font-size: 10.8pt; color: #123c66; margin: 4.5mm 0 1.5mm; }
+p { margin: 0 0 2.2mm; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+li { margin-bottom: 1.1mm; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 9.2pt; }
+th { background: #0f2a4a; color: #fff; text-align: left; padding: 1.6mm 2mm; font-weight: 600; }
+td { border: 0.5pt solid #b9c4d0; padding: 1.4mm 2mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f4f7fa; }
+code, .k { font-family: "Consolas", monospace; font-size: 9pt; background: #eef2f6; padding: 0.3mm 1mm; border-radius: 2pt; }
+.lbl { font-weight: 600; }
+.kotak { border: 0.7pt solid #b9c4d0; border-radius: 3pt; padding: 2.6mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.meta td:first-child { width: 34mm; font-weight: 600; background: #eef2f6; }
+.gambar { margin: 0 0 3.8mm; page-break-inside: avoid; }
+.gambar img { max-width: 100%; height: auto; border: 0.7pt solid #b9c4d0; border-radius: 3pt; display: block; }
+.gambar figcaption { font-size: 8.8pt; color: #47566a; margin-top: 1.3mm; }
+.gambar figcaption b { color: #0f2a4a; }
+.cacat { border-left: 4pt solid #b00016; background: #fdf0f1; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.cacat b.ct { color: #b00016; }
+.efek { border-left: 4pt solid #1a7f4b; background: #f0f8f3; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.efek b.ct { color: #1a7f4b; }
+.wa { color: #b00016; font-weight: 700; }
+.auto { color: #47566a; font-style: italic; }
+footer.catatan-kaki { font-size: 8.6pt; color: #66748a; border-top: 0.6pt solid #b9c4d0; padding-top: 2mm; margin-top: 6mm; }
+a { color: #0f2a4a; }
+header.konf { text-align: right; font-size: 8.4pt; color: #66748a; margin-bottom: 2mm; }
+</style>
+</head>
+<body>
+<header class="konf">FATHONI EQUIPMENT OS 3.0.5 · Panduan Menu · 13 Oktober 2026</header>
+<h1>Panduan Menu — Gudang</h1>
+<table class="meta"><tbody><tr><td>Kelompok sidebar</td><td>Operasional</td></tr><tr><td>Alamat</td><td><span class="k">#/warehouse</span> (klik menu <b>Gudang</b> di sidebar)</td></tr><tr><td>Peran yang melihat</td><td>Super Admin, Gudang, Teknisi</td></tr><tr><td>Mode bisnis</td><td>menu ini tampil bila salah satu profil bisnis aktif: Dealer / Distributor, Kontraktor, Bengkel / Workshop</td></tr><tr><td>Layar dipotret</td><td>1</td></tr><tr><td>Form dipotret</td><td><span class="k">Catat Mutasi Masuk / Keluar Gudang</span></td></tr></tbody></table>
+<h2>1. Kegunaan menu ini</h2>
+<p>Buku mutasi barang masuk/keluar beserta lokasi yard, dan kartu ringkasan per yard. Setiap baris punya bukti cetak.</p>
+<h2>2. Layar ketika dibuka</h2>
+<h3>Gudang ketika dibuka</h3>
+<figure class="gambar"><img src="gambar/gudang-layar.png" alt="Layar Gudang (layar) saat data contoh PG-* dimuat."><figcaption><b>gudang-layar.png</b> — 1184×967 piksel, 189 KB.</figcaption></figure>
+<div class="kotak">
+<p><span class="lbl">Judul di layar:</span> Gudang &amp; Lokasi Armada (Yard)</p>
+<p><span class="lbl">Subjudul:</span> Pencatatan mutasi barang masuk/keluar, transfer logistik, dan pengelolaan yard alat berat</p>
+</div>
+<p><span class="lbl">Kolom tabel</span> (1 baris terlihat pada potret):</p>
+<table><thead><tr><th style="width:12mm">No.</th><th>Nama kolom persis di layar</th></tr></thead><tbody><tr><td>1</td><td class="lbl">NO. BUKTI / TANGGAL</td></tr><tr><td>2</td><td class="lbl">TIPE MUTASI</td></tr><tr><td>3</td><td class="lbl">LOKASI GUDANG / YARD</td></tr><tr><td>4</td><td class="lbl">DESKRIPSI BARANG / UNIT</td></tr><tr><td>5</td><td class="lbl">JUMLAH</td></tr><tr><td>6</td><td class="lbl">DOKUMEN REFERENSI</td></tr><tr><td>7</td><td class="lbl">PETUGAS (PIC)</td></tr><tr><td>8</td><td class="lbl">AKSI</td></tr></tbody></table>
+<p><span class="lbl">Kolom yang ada di luar form</span> (pencarian/pendaftar):</p><ul>
+<li>teks — <span class="auto">Cari transaksi, barang, gudang...</span></li>
+</ul>
+<h2>3. Form satu per satu, kolom demi kolom</h2>
+<p>Urutan kolom, nama label, tanda wajib, dan isi bawaan di bawah ini dibaca dari layar yang dipotret, bukan dari kode sumber. Tanda <span class="wa">*</span> adalah kolom yang memang ditahan kosong oleh aplikasi.</p>
+<h3>Form “Catat Mutasi Masuk / Keluar Gudang”</h3>
+<p>Dibuka dengan menekan tombol <span class="k">Catat Mutasi Stok</span>.</p>
+<figure class="gambar"><img src="gambar/gudang-catat-mutasi.png" alt="Jendela Catat Mutasi Masuk / Keluar Gudang."><figcaption><b>gudang-catat-mutasi.png</b> — 1184×967 piksel, 144 KB.</figcaption></figure>
+<p>Lebar jendela 540 px. Seluruh kolom muat tanpa menggulir pada jendela tinggi 980 px; pada jendela yang lebih pendek bagian bawah tetap perlu digulir.</p>
+<table><thead><tr><th style="width:46mm">Label di layar</th><th style="width:38mm">Jenis kolom</th><th style="width:36mm">Isi saat jendela baru dibuka</th><th>Pilihan dropdown / teks bantu</th></tr></thead><tbody>
+<tr><td class="lbl">No. Bukti Mutasi <span class="wa">*</span></td><td>teks</td><td>TRX-2026-002</td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Jenis Mutasi</td><td>dropdown (3 pilihan)</td><td>INBOUND</td><td>Barang Masuk (Inbound / Penerimaan); Barang Keluar (Outbound / Pemakaian); Transfer Antar Yard / Gudang</td></tr>
+<tr><td class="lbl">Lokasi Gudang / Yard</td><td>dropdown (4 pilihan)</td><td>Yard Cikande Main Hub (Banten)</td><td>Yard Cikande Main Hub (Banten); Gudang Pusat Spare Parts (Jakarta); Pool &amp; Workshop Balikpapan (Kaltim); Depot Surabaya (Jawa Timur)</td></tr>
+<tr><td class="lbl">Nama Barang / Unit Alat Berat <span class="wa">*</span></td><td>teks</td><td><span class="auto">Contoh: 1 Unit Excavator SANY SY215C</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Kuantitas / Jumlah <span class="wa">*</span></td><td>angka</td><td>1</td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Satuan</td><td>teks</td><td>Unit</td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">No. Dokumen Referensi (PO/WO/SPK)</td><td>teks</td><td><span class="auto">PO-2026-001</span></td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Nama Petugas (PIC)</td><td>teks</td><td>Rudi Hermawan</td><td><span class="auto">-</span></td></tr>
+<tr><td class="lbl">Keterangan Tambahan</td><td>teks</td><td><span class="auto">Catatan kondisi fisik saat serah terima...</span></td><td><span class="auto">-</span></td></tr>
+</tbody></table>
+<div class="kotak"><p><span class="lbl">Wajib diisi</span>: <b>No. Bukti Mutasi</b>, <b>Nama Barang / Unit Alat Berat</b>, <b>Kuantitas / Jumlah</b></p><p><span class="lbl">Tombol di kaki jendela</span>: <span class="k">Batal</span> · <span class="k">Simpan Mutasi</span></p></div>
+<h2>4. Setelah disimpan — efek ke menu lain</h2>
+<div class="efek"><b class="ct">Yang terjadi di belakang layar</b><ul><li>Mutasi otomatis datang dari: penerimaan PO (BARANG MASUK), pemakaian suku cadang saat servis selesai (BARANG KELUAR), dan penyesuaian stok.</li><li>Mutasi yang Anda catat sendiri di menu ini hanya menulis buku mutasi. Stok di menu Suku Cadang TIDAK berubah — itulah sebabnya stok perlu disesuaikan di menu Suku Cadang.</li><li>&quot;Cetak Bukti&quot; membuka jendela cetak berisi formulir serah terima (jalur yang sama dengan Surat Jalan dan PO).</li></ul></div>
+<h2>5. Perlu diketahui (apa adanya)</h2>
+<div class="cacat"><b class="ct">Batasan dan cacat yang terverifikasi di 3.0.5</b><ul><li>Isi bawaan &quot;Lokasi Gudang / Yard&quot; adalah &quot;Yard Cikande Main Hub&quot;, sedangkan empat opsi dropdown semuanya berekor, misalnya &quot;Yard Cikande Main Hub (Banten)&quot;. Select tidak menolak nilai asing, jadi mutasi tersimpan dengan nama pendek sementara kartu yard di halaman yang sama menyebut nama lain (QA §4.20).</li><li>Satu penolakan memakai `alert`, bukan pesan inline.</li><li>Nomor bukti (TRX/GR/GI) diusulkan dari jumlah baris; tidak ada penolakan duplikat.</li></ul></div>
+<footer class="catatan-kaki"><p><b>Sumber dan cara potret.</b> Semua layar dan jendela di berkas ini diambil oleh <span class="k">scripts/panduan-menu.cjs</span> dari aplikasi berjalan pada jendela 1125×980 piksel CSS (1184×967 piksel perangkat), masuk sebagai akun uji di profil sementara, lalu dibaca DOM-nya ke <span class="k">panduan-menu/data.json</span> (2026-10-13T12:42:29.086Z). Berkas ini disusun <span class="k">scripts/panduan-menu-build.cjs</span>; tidak ada satu pun label yang diketik ulang dari kode sumber.</p><p><b>Angka pada gambar.</b> Profil potret diisi data contoh ber-id <span class="k">PG-*</span> (unit, pelanggan, transaksi) supaya dropdown tidak kosong dan tombol baris bisa dipotret. Nilai kartu, tabel, dan tanggal bawaan pada gambar adalah nilai data contoh itu, bukan nilai perusahaan Anda, dan bukan standar yang harus Anda capai.</p><p><b>Aksi yang sengaja tidak dijalankan.</b> Tidak ada tombol simpan, hapus, terima barang, backup, restore, muat data contoh, atau ekspor yang ditekan selama pembuatan panduan ini.</p><p><a href="00-indeks.html">Kembali ke indeks panduan menu</a> · <a href="../PANDUAN_PENGGUNA.html">Panduan pemakaian lengkap</a></p></footer>
+</body>
+</html>

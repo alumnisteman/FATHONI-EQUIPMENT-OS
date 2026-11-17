@@ -26,7 +26,7 @@ const STATUS_MAP: Record<TechnicianStatus, { label: string; badge: string }> = {
 const daftar = (nilai: any): any[] => (Array.isArray(nilai) ? nilai : []);
 
 export default function Technicians() {
-  const { technicians, setTechnicians, removeRow } = useDataStore();
+  const { technicians, setTechnicians, saveRow, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -70,7 +70,7 @@ export default function Technicians() {
   const onLeave = technicians.filter(t => t.status === 'ON_LEAVE').length;
   const suspended = technicians.filter(t => t.status === 'SUSPENDED').length;
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi nama
@@ -110,8 +110,10 @@ export default function Technicians() {
     }
 
     if (editingId) {
-      setTechnicians(technicians.map(t => t.id === editingId ? {
-        ...t,
+      const existing = technicians.find(t => t.id === editingId);
+      if (!existing) return;
+      await saveRow('technicians', {
+        ...existing,
         technicianNumber: form.technicianNumber,
         name: form.name,
         phone: form.phone,
@@ -124,7 +126,7 @@ export default function Technicians() {
         totalHours: form.totalHours,
         startDate: form.startDate,
         notes: form.notes,
-      } : t));
+      });
     } else {
       const newItem: Technician = {
         id: Date.now().toString(),
@@ -142,7 +144,7 @@ export default function Technicians() {
         skills: form.skills,
         notes: form.notes,
       };
-      setTechnicians([newItem, ...technicians]);
+      await saveRow('technicians', newItem);
     }
     setShowModal(false);
     setEditingId(null);
@@ -410,7 +412,7 @@ export default function Technicians() {
                 <td>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {daftar(item.specializations).slice(0, 2).map((spec, i) => (
-                      <span key={i} style={{ fontSize: 10, background: '#e0e0e0', padding: '2px 8px', borderRadius: 12 }}>
+                      <span key={spec} style={{ fontSize: 10, background: '#e0e0e0', padding: '2px 8px', borderRadius: 12 }}>
                         {spec}
                       </span>
                     ))}
@@ -532,7 +534,7 @@ export default function Technicians() {
                 <label>Spesialisasi</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
                   {form.specializations.map((spec, index) => (
-                    <span key={index} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#e0e0e0', padding: '4px 12px', borderRadius: 16, fontSize: 12 }}>
+                    <span key={spec} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#e0e0e0', padding: '4px 12px', borderRadius: 16, fontSize: 12 }}>
                       {spec}
                       <button type="button" onClick={() => handleRemoveSpecialization(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>×</button>
                     </span>
@@ -546,7 +548,7 @@ export default function Technicians() {
                 <label>Skills</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
                   {form.skills.map((skill, index) => (
-                    <span key={index} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#e0e0e0', padding: '4px 12px', borderRadius: 16, fontSize: 12 }}>
+                    <span key={skill} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#e0e0e0', padding: '4px 12px', borderRadius: 16, fontSize: 12 }}>
                       {skill}
                       <button type="button" onClick={() => handleRemoveSkill(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>×</button>
                     </span>

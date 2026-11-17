@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Menu Audit Log — FATHONI EQUIPMENT OS 3.0.5</title>
+<style>
+@page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.5; color: #16202b; margin: 0; }
+h1 { font-size: 16pt; color: #b00016; margin: 0 0 4mm; border-bottom: 2.4pt solid #b00016; padding-bottom: 2mm; }
+h2 { font-size: 12.4pt; color: #0f2a4a; margin: 6mm 0 2mm; border-left: 4pt solid #b00016; padding-left: 3mm; }
+h3 { font-size: 10.8pt; color: #123c66; margin: 4.5mm 0 1.5mm; }
+p { margin: 0 0 2.2mm; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+li { margin-bottom: 1.1mm; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 9.2pt; }
+th { background: #0f2a4a; color: #fff; text-align: left; padding: 1.6mm 2mm; font-weight: 600; }
+td { border: 0.5pt solid #b9c4d0; padding: 1.4mm 2mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f4f7fa; }
+code, .k { font-family: "Consolas", monospace; font-size: 9pt; background: #eef2f6; padding: 0.3mm 1mm; border-radius: 2pt; }
+.lbl { font-weight: 600; }
+.kotak { border: 0.7pt solid #b9c4d0; border-radius: 3pt; padding: 2.6mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.meta td:first-child { width: 34mm; font-weight: 600; background: #eef2f6; }
+.gambar { margin: 0 0 3.8mm; page-break-inside: avoid; }
+.gambar img { max-width: 100%; height: auto; border: 0.7pt solid #b9c4d0; border-radius: 3pt; display: block; }
+.gambar figcaption { font-size: 8.8pt; color: #47566a; margin-top: 1.3mm; }
+.gambar figcaption b { color: #0f2a4a; }
+.cacat { border-left: 4pt solid #b00016; background: #fdf0f1; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.cacat b.ct { color: #b00016; }
+.efek { border-left: 4pt solid #1a7f4b; background: #f0f8f3; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.efek b.ct { color: #1a7f4b; }
+.wa { color: #b00016; font-weight: 700; }
+.auto { color: #47566a; font-style: italic; }
+footer.catatan-kaki { font-size: 8.6pt; color: #66748a; border-top: 0.6pt solid #b9c4d0; padding-top: 2mm; margin-top: 6mm; }
+a { color: #0f2a4a; }
+header.konf { text-align: right; font-size: 8.4pt; color: #66748a; margin-bottom: 2mm; }
+</style>
+</head>
+<body>
+<header class="konf">FATHONI EQUIPMENT OS 3.0.5 · Panduan Menu · 13 Oktober 2026</header>
+<h1>Panduan Menu — Audit Log</h1>
+<table class="meta"><tbody><tr><td>Kelompok sidebar</td><td>Sistem</td></tr><tr><td>Alamat</td><td><span class="k">#/audit-log</span> (klik menu <b>Audit Log</b> di sidebar)</td></tr><tr><td>Peran yang melihat</td><td>Super Admin</td></tr><tr><td>Mode bisnis</td><td>tidak disaring mode — selalu tampil selama peran memenuhi</td></tr><tr><td>Layar dipotret</td><td>1</td></tr><tr><td>Form dipotret</td><td>tidak ada form di menu ini</td></tr></tbody></table>
+<h2>1. Kegunaan menu ini</h2>
+<p>Riwayat kejadian sistem dan tulis-data yang dicatat proses utama: waktu, jenis kejadian, akun, pelaku, dan detail.</p>
+<h2>2. Layar ketika dibuka</h2>
+<h3>Audit Log ketika dibuka</h3>
+<figure class="gambar"><img src="gambar/audit-log-layar.png" alt="Layar Audit Log (layar) saat data contoh PG-* dimuat."><figcaption><b>audit-log-layar.png</b> — 1184×967 piksel, 86 KB.</figcaption></figure>
+<p><span class="lbl">Kolom tabel</span> (2 baris terlihat pada potret):</p>
+<table><thead><tr><th style="width:12mm">No.</th><th>Nama kolom persis di layar</th></tr></thead><tbody><tr><td>1</td><td class="lbl">WAKTU</td></tr><tr><td>2</td><td class="lbl">KEJADIAN</td></tr><tr><td>3</td><td class="lbl">AKUN</td></tr><tr><td>4</td><td class="lbl">DILAKUKAN OLEH</td></tr><tr><td>5</td><td class="lbl">DETAIL</td></tr><tr><td>6</td><td class="lbl">AKSI</td></tr></tbody></table>
+<p><span class="lbl">Kolom yang ada di luar form</span> (pencarian/pendaftar):</p><ul>
+<li>teks — <span class="auto">Cari akun, kejadian, atau detail...</span></li>
+<li>dropdown (12 pilihan)</li>
+</ul>
+<h2>3. Setelah disimpan — efek ke menu lain</h2>
+<div class="efek"><b class="ct">Yang terjadi di belakang layar</b><ul><li>Isi log ditulis di proses utama setiap kali ada tulis, hapus, login, dan percobaan tulis yang ditolak peran — jadi percobaan Penjualan dari akun tanpa hak tulis pun tercatat di sini.</li><li>Menu ini baca-saja dan khusus Super Admin.</li></ul></div>
+<h2>4. Perlu diketahui (apa adanya)</h2>
+<div class="cacat"><b class="ct">Batasan dan cacat yang terverifikasi di 3.0.5</b><ul><li>Kolom &quot;Dilakukan Oleh&quot; menyimpan nama, sehingga ganti nama akun membuat jejak lama ikut terbaca sebagai nama baru.</li><li>&quot;Export CSV&quot; menghasilkan file di folder data, bukan unduhan peramban.</li><li>Judul halaman tidak memakai `.page-title`; kepala layar dibuat komponen sendiri.</li></ul></div>
+<footer class="catatan-kaki"><p><b>Sumber dan cara potret.</b> Semua layar dan jendela di berkas ini diambil oleh <span class="k">scripts/panduan-menu.cjs</span> dari aplikasi berjalan pada jendela 1125×980 piksel CSS (1184×967 piksel perangkat), masuk sebagai akun uji di profil sementara, lalu dibaca DOM-nya ke <span class="k">panduan-menu/data.json</span> (2026-10-13T12:42:29.086Z). Berkas ini disusun <span class="k">scripts/panduan-menu-build.cjs</span>; tidak ada satu pun label yang diketik ulang dari kode sumber.</p><p><b>Angka pada gambar.</b> Profil potret diisi data contoh ber-id <span class="k">PG-*</span> (unit, pelanggan, transaksi) supaya dropdown tidak kosong dan tombol baris bisa dipotret. Nilai kartu, tabel, dan tanggal bawaan pada gambar adalah nilai data contoh itu, bukan nilai perusahaan Anda, dan bukan standar yang harus Anda capai.</p><p><b>Aksi yang sengaja tidak dijalankan.</b> Tidak ada tombol simpan, hapus, terima barang, backup, restore, muat data contoh, atau ekspor yang ditekan selama pembuatan panduan ini.</p><p><a href="00-indeks.html">Kembali ke indeks panduan menu</a> · <a href="../PANDUAN_PENGGUNA.html">Panduan pemakaian lengkap</a></p></footer>
+</body>
+</html>

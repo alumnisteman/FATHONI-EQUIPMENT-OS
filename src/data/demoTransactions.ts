@@ -30,7 +30,8 @@ export interface RentalContract {
   monthlyRate: number;
   minimumHours: number;
   operatorIncluded: boolean;
-  status: 'ACTIVE' | 'PENDING' | 'COMPLETED' | 'EXTENDED';
+  status: 'ACTIVE' | 'PENDING' | 'COMPLETED' | 'EXTENDED' | 'CANCELLED';
+  notes?: string;
 }
 
 export interface WorkOrder {
@@ -39,13 +40,19 @@ export interface WorkOrder {
   unitModel: string;
   serialNumber: string;
   customerOrProject: string;
-  serviceType: 'PERIODIC_250H' | 'PERIODIC_500H' | 'PERIODIC_1000H' | 'BREAKDOWN' | 'OVERHAUL' | 'INSPECTION';
+  serviceType: 'PERIODIC_250H' | 'PERIODIC_500H' | 'PERIODIC_1000H' | 'CORRECTIVE' | 'BREAKDOWN' | 'OVERHAUL' | 'INSPECTION' | 'PREVENTIVE';
   mechanicName: string;
   hourMeter: number;
   openDate: string;
   estimatedCost: number;
-  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_PARTS' | 'COMPLETED';
+  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_PARTS' | 'COMPLETED' | 'CANCELLED';
   complaintNotes: string;
+  /**
+   * Jejak bila pembacaan meter di Work Order ini MUNDUR terhadap HM unit dan
+   * operator menyatakan itu koreksi: `[KOREKSI HM lama -> baru: alasan]`.
+   * Hanya ada di payload (tanpa kolom indeks), jadi tidak menyentuh skema.
+   */
+  hmKoreksi?: string;
 }
 
 export type TipeTransaksi = 'MASUK' | 'KELUAR';

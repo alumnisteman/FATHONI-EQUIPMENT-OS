@@ -1,35 +1,42 @@
 # Harness verifikasi Fase 2, 3 & 4
 
 Jalankan dari folder proyek, setelah `npm run build` dan `npm run build:electron`.
-Sepuluh harness bertenaga Electron dipanggil lewat biner Electron langsung, bukan
-`npx electron` — lihat catatan "cara mengakhiri proses" di bawah:
+Dua belas harness bertenaga Electron dipanggil lewat biner Electron langsung, bukan
+`npx electron` — dan satu lagi (`tahan-check`, lewat orkestratornya `tahan-run.cjs`)
+menjalankan biner yang sama, karena menguji pemutusan paksa dan buka-ulang. Lihat catatan
+"cara mengakhiri proses" di bawah:
 
 ```
 ELEKTRON=node_modules/electron/dist/electron.exe
 
 node tests/harness/migration-check.cjs
 node tests/harness/validation-check.cjs
+node tests/harness/automation-check.cjs
 "$ELEKTRON" tests/harness/auth-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-otorisasi "$ELEKTRON" tests/harness/otorisasi-check.cjs
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-gui     "$ELEKTRON" tests/harness/gui-check.cjs
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-flow    "$ELEKTRON" tests/harness/flow-check.cjs
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-handoff "$ELEKTRON" tests/harness/handoff-check.cjs
 HEMS_DATA_DIR=D:/SANY/tmp-harness/r-usable  "$ELEKTRON" tests/harness/usable-check.cjs
+HEMS_DATA_DIR=D:/SANY/tmp-harness/r-crud    "$ELEKTRON" tests/harness/crud-check.cjs
 "$ELEKTRON" tests/harness/cetak-check.cjs
 "$ELEKTRON" tests/harness/db-check.cjs
 "$ELEKTRON" tests/harness/integrity-check.cjs
 "$ELEKTRON" tests/harness/compat-check.cjs
 "$ELEKTRON" tests/harness/perf-check.cjs
 HEMS_PERF_KAPASITAS=1 "$ELEKTRON" tests/harness/perf-check.cjs   # bagian 11: 400.000 baris, ±2 menit
+node tests/harness/tahan-run.cjs
 node tests/harness/db-store-run.cjs
 node tests/harness/db-backup-run.cjs
 node tests/harness/smoke-paket-check.cjs
 ```
 
-Satu perintah untuk semuanya: `sh tests/harness/regressi.sh` — menjalankan kelima belas
-harness di atas plus `npm audit` secara BERURUTAN (mesin 3,8 GB RAM; dua harness Electron paralel membuat
-yang kedua macet di tengah layar), membersihkan folder `HEMS_DATA_DIR` milik gui/flow/
-handoff/usable lebih dulu, menyimpan log lengkap di `D:/SANY/tmp-harness/logs/<nama>.log`, dan
-mencetak satu baris ringkasan per harness (`exit`, jumlah `FAIL`, baris "N lulus, M gagal").
+Satu perintah untuk semuanya: `sh tests/harness/regressi.sh` — menjalankan sembilan belas
+harness di atas plus `npm audit` secara BERURUTAN (20 langkah; mesin 3,8 GB RAM; dua harness
+Electron paralel membuat yang kedua macet di tengah layar), membersihkan folder
+`HEMS_DATA_DIR` milik gui/flow/handoff/usable/otorisasi/crud lebih dulu, menyimpan log
+lengkap di `D:/SANY/tmp-harness/logs/<nama>.log`, dan mencetak satu baris ringkasan per
+harness (`exit`, jumlah `FAIL`, baris "N lulus, M gagal").
 Rantai keluar non-zero bila ada harness yang gagal. Rantai resolve
 `node_modules/electron/dist/electron.exe` sendiri dan berhenti dengan `RAMBU` + `exit 8`
 kalau berkas itu belum ada (belum `npm install`), alih-alih menjalankan separuh langkah
@@ -46,7 +53,8 @@ menebak: harness wajib keluar lewat `tests/harness/selesai.cjs` (menutup koneksi
 mencetak `SELESAI kode=N` sendiri), dan rantai menilai hasilnya dari baris penanda itu, bukan
 dari kode keluar. Setelah pemanggilan `electron.exe` langsung ditambahkan, 34 percobaan keluar
 proses (12 dengan koneksi ditutup, 12 dengan koneksi dibiarkan terbuka, 8 gui-check penuh)
-seluruhnya kode 0, dan rantai 16 langkah mencetak `proses keluar tidak bersih: tidak` —
+seluruhnya kode 0, dan rantai 16 langkah (jumlah langkah saat pengukuran itu dibuat; kini
+19) mencetak `proses keluar tidak bersih: tidak` —
 jadi baris `exit=` di log kini berarti sesuatu.
 
 Dua hal yang menahannya tetap benar (validation §15, diderivasi bukan ditulis tangan):
@@ -57,6 +65,10 @@ Dua hal yang menahannya tetap benar (validation §15, diderivasi bukan ditulis t
 - Satu pengecualian dinyatakan eksplisit: `profile-inspect.cjs` adalah perkakas baca profil
   untuk manusia, bukan langkah regresi, jadi ia boleh memakai `app.exit`.
   `regressi.sh` sendiri juga tidak boleh kembali mengandung `npx electron`.
+- Perkakas Electron yang bukan langkah rantai dan tidak tinggal di folder ini diletakkan di
+  `scripts/` (mis. `scripts/panduan-gambar.cjs`, penangkap tangkapan layar form untuk Bab 13
+  panduan). Ia dengan sendirinya berada di luar jangkauan penjaga di atas — dan di luar
+  `build.files`, jadi tidak pernah masuk `app.asar`.
 
 `selesai.cjs` dinilai dari kodenya setelah komentar dibuang — kepala berkasnya sendiri
 membahas `app.exit()`, dan teks penjelasan tidak boleh membuat penjaga mengira kodenya
@@ -68,6 +80,21 @@ mengandungi panggilan itu.
   sendiri lewat `fs.mkdtempSync(os.tmpdir())`. Hal yang sama berlaku untuk
   `compat-check.cjs` dan `perf-check.cjs` — keduanya mengisi folder barunya sendiri
   sebelum `dist-electron/main.js` dimuat, jadi tidak pernah menyentuh profil pengguna.
+- `otorisasi-check.cjs` — satu keputusan wewenang tulis diuji dari DUA sisi supaya tidak
+  bisa bergeser sendiri-sendiri: peta `WRITABLE_BY_ROLE` di `dist-electron/authorization.js`
+  (bagian 1: tepat lima peran, tidak ada collection yang tidak bisa ditulis siapa pun,
+  1.10 menuntut `requiredRoles` di `Layout.tsx` == hak tulis main process untuk SEMUA
+  collection) dan jalannya tulisan di aplikasi sungguhan (bagian 3–5: jendela tanpa sesi
+  ditolak dan tidak masuk file, sales menulis `customers` tapi ditolak saat menulis
+  `operators`, satu patch campuran ditolak SELURUHNYA sehingga tidak ada separuhnya yang
+  tersimpan, gudang/servis/keuangan masing-masing diuji pada collection miliknya dan
+  collection orang lain, angka rusak ditolak, kolom angka kosong BUKAN penolakan). Bagian
+  4b memakai katalog Merek & Model sebagai uji: sales boleh menulis `brands`/`models`,
+  keuangan ditolak di keduanya, merek yang masih punya model di bawahnya menahan hapus,
+  dan kode model yang belum menjadi unit tidak menahan hapusnya sendiri. Bagian 6
+  membuktikan setiap penolakan masuk jejak audit sebagai `DATA_DENY` yang menyebut
+  collection dan siapa yang ditolak (tanpa sesi: atas nama jendela), dan penghapusan sebagai
+  `DATA_DELETE` dengan jumlah baris.
 - `gui-check.cjs` — CSP, sandbox, dan penolakan IPC dari halaman asing. Bagian 11
   mengulang penolakan untuk SEMUA kanal database (load/patch/save/query/sum/group/
   stats/snapshot) dan membuktikan penolakannya tidak membocorkan path profil maupun
@@ -103,20 +130,48 @@ mengandungi panggilan itu.
   tombol hapus di menu Teknisi dan Operator untuk satu orang yang namanya masih
   tertulis di dokumen: yang diharapkan bukan hanya "gagal", tapi alert menyebut
   menunya (Work Order Servis / Surat Jalan) sementara barisnya dan dokumennya dua
-  duanya masih ada di file.
+  duanya masih ada di file. Bagian 6.8V1–6.8V4 adalah perbaikan catatan panduan 3.0.3:
+  empat tombol "View All" di QUICK ACTIONS Control Tower diklik dan `window.location.hash`
+  harus benar-benar berpindah — label yang berjanji perpindahan tidak boleh lagi hanya
+  terlihat seperti tombol.
+- `usable-check.cjs` — usability yang diukur, bukan dibaca dari CSS. Jendela sungguhan
+  dibuka dan setiap rute dilewati pada tiga lebar: 1200px (yang DIJANJIKAN aplikasi lewat
+  `minWidth`), 1366x768 (layar terkecil yang jadi target), dan 1024px (di bawah janji,
+  tempat satu-satunya yang boleh terjadi adalah GULIR, bukan potong). Karena
+  `.table-wrapper` memakai `overflow: hidden`, tabel yang lebih lebar dari jendelanya
+  TERPOTONG tanpa hilang — hanya terlihat dengan membuka jendelanya. Bagian 6 menuntut
+  konten yang lebih tinggi dari jendela punya jalur gulir, dan bagian 7 mengunci
+  kenampakan menu per peran (profil DEALER tidak menampilkan Sewa/Rental) serta
+  kesamaan daftar palet `Ctrl+K` dengan sidebar sebutir-butir.
+- `crud-check.cjs` — CRUD dan pencarian dari KURSI PENGGUNA: tombol tambah/edit/hapus dan
+  kotak cari yang sungguhan, bukan IPC (jalur IPC sudah diuji gui-check dan handoff §10).
+  Yang dituntut: semua field form terisi lewat LABELnya (jadi perubahan teks UI terlihat),
+  record baru tampil di daftar DAN daftar == isi file DAN nilai yang diketik sampai apa
+  adanya, dua klik cepat hanya mengirim SATU record (tanpa baris ganda di layar maupun id
+  ganda di file), hasil edit mengubah file bukan hanya layar, dan record yang masih disebut
+  menu lain tidak bisa dihapus lewat tombol. Bagian 5 menguji kotak cari HALAMAN (bukan
+  bilah atas) — kata kunci menemukan baris yang baru diedit, baris tak cocok tersaring
+  keluar, kata kunci asing menampilkan keadaan kosong tanpa error, dikosongkan maka daftar
+  kembali — dan bagian 8 mengulang penyaringan yang sama per collection, sesudah aplikasi
+  dibuka ulang supaya yang dibaca pasti isi file.
 - `cetak-check.cjs` — dokumen cetak dijalankan SUNGGUHAN, bukan hanya dijaga statis.
   Harness memasang telinga pada `app.on('web-contents-created')`: jendela aplikasi dicari
   dulu, lalu setiap `BrowserWindow` yang muncul sesudahnya adalah jendela cetak dan
   `webContents.print` milik jendela itu diganti dengan perekam (opsi + callback), sehingga
-  harness yang menutup jendela tanpa menunggu printer. Untuk 10 dokumen baris
+  dialog cetak sistem tidak pernah menahan mesin uji sementara opsi yang dikirim renderer
+  tetap tercatat. Untuk 11 dokumen baris
   (Penjualan, Pembelian, Rental, Invoice, Pengiriman, Servis, Breakdown, Operator, Teknisi,
-  Persetujuan) harness mengklik tombol cetak yang paling dekat dengan nomor dokumen —
+  Persetujuan, dan sejak C.9b Gudang/Bukti Mutasi) harness mengklik tombol cetak yang paling dekat dengan nomor dokumen —
   bukan sembarang tombol "Cetak" di toolbar — lalu menuntut: jendela cetak terisi, isinya
   DOKUMEN (nama perusahaan ada, `#root` aplikasi tidak, url `data:text/html`), `print()`
   dipanggil sekali dengan A4 + `printBackground`, jendela ditutup lagi, tidak ada alert
   "Gagal mencetak", dan tidak ada artefak template (`undefined`/`[object`). Baris rusak
   hasil suntingan tangan (kolom array berupa string, kolom array hilang) tetap harus bisa
-  dicetak — dari sinilah cacat `Technicians.tsx` ditemukan. Empat keadaan berbahaya ikut
+  dicetak — dari sinilah cacat `Technicians.tsx` ditemukan. Khusus Gudang (C.9b): yang
+  diklik adalah tombol yang dulu hanya membuka `alert()` — harness menuntut jendela cetaknya
+  berisi formulir "BUKTI SERAH TERIMA MUTASI BARANG" dengan tiga blok tanda tangan dan nomor
+  mutasi yang ditanam di profil (`MTS/CTK/0001`), jadi perbaikan itu tidak bisa hijau oleh
+  kotak dialog. Empat keadaan berbahaya ikut
   dikunci: XSS di nama/email/ catatan ditampilkan sebagai teks (0 `<script>`, 0 `<img>`,
   `window.__cetakBocor` tak pernah terdefinisi), jendela cetak membawa CSP
   `default-src 'none'` dan TIDAK punya `electronAPI` (tanpa preload), serta penjaga main
@@ -151,6 +206,20 @@ mengandungi panggilan itu.
   DIHAN, bukan diselundupkan sebagai simpanan penuh. Peta kebutuhan menu di
   `collectionNeeds.ts` ikut dibandingkan dengan daftar putih collection di SQLite,
   supaya rute baru tidak bisa meminta nama yang tidak ada.
+- `integrity-check.cjs` — atomisitas dan rujukan di lapisan main process, di folder data
+  buatannya sendiri (`mkdtemp`). Sisi tulis: satu patch yang membawa baris beracun harus
+  membatalkan SEMUA baris baik di transaksi itu juga (bukan collection pertama tertulis,
+  kedua gagal), `saveCollection`/`saveStore` lintas dua collection ikut dibatalkan,
+  file tetap sehat sesudah rollback dan tetap bisa dibuka ulang, `transact` meneruskan
+  kesalahan ke pemanggil, dan savepoint dari transaksi bersarang tidak ada yang tertinggal.
+  Sisi hapus: skema sengaja TANPA `FOREIGN KEY` (kunci antar menu adalah nomor bisnis,
+  bukan baris), jadi aturan rujukan diuji sebagai aturan aplikasi — unit yang masih punya
+  Work Order ditolak (`unit dirujuk: ditolak`), nama satu kata ("Joko") diketahui TIDAK
+  tertahan dan itu dilaporkan apa adanya, dan sejak 3.0.4 bagian 2d-katalog menguji
+  `rowReferences` pada katalog dengan cara rujukan yang sama: merek tertahan model yang
+  dibuat di bawahnya DAN unit yang mencatat namanya, merek tanpa unit tapi berpindah model
+  tetap tertahan, merek yang belum dipakai apa pun boleh dihapus, dan kode model tertahan
+  unit yang memakainya (yang menahan hapusnya adalah mereknya, bukan kode itu sendiri).
 - `compat-check.cjs` — dua keadaan yang membuat aplikasi gagal naik kelas. Skenario A
   memasang build baru di ATAS profil lama: sebagian kolom turunan sengaja di-
   `DROP COLUMN` dan `derived_revision` diturunkan lewat `better-sqlite3` mentah, lalu
@@ -175,6 +244,21 @@ mengandungi panggilan itu.
   dari kueri sebelumnya tidak dibaca sebagai jawaban — dua kueri berbeda bisa menghasilkan
   jumlah yang sama persis), jumlah record UI dibandingkan `COUNT(*)` SQLite, agregat KPI,
   tulis satu baris, kesehatan file dan memori. Angka nyatanya ada di QA_REPORT §3.1.
+- `tahan-run.cjs` + `tahan-check.cjs` — ketahanan dan sesi panjang, dijalankan TIGA KALI
+  berurutan di atas SATU profil oleh driver bertenaga node (`tahan-run.cjs` memanggil
+  `electron.exe` langsung, bukan `npx`), karena satu tahapnya harus benar-benar dibunuh:
+  `TAHAN_MODE=isi` membuka seluruh menu sidebar 4x berturut-turut sambil mengukur waktu buka
+  tiap menu (median < 2 s, tak satu pun > 8 s), napas CPU/RAM per putaran, lalu MEMATIKAN
+  kanal data (koneksi database ditutup) dan memulihkannya — edit masih bisa dilakukan,
+  kegagalan tampil sebagai banner bukan didiamkan, aplikasi tidak crash, banner hilang begitu
+  simpanan berhasil lagi, dan tulisan sesudah pemulihan benar-benar masuk file;
+  `=paksa` menaruh satu perubahan di tengah debounce 800 ms lalu diam, dan driver
+  menebas pohon prosesnya dengan `taskkill /F /T`; `=bukti` membuka profil yang sama dan
+  memeriksa file masih sehat serta apa yang sempat masuk file masih ada.
+  Yang dijamin BUKAN "tidak ada yang hilang saat dibunuh paksa", tapi (1) file tidak pernah
+  rusak dan (2) tutup WAJAR tidak membuang simpanan tertunda — dan itu yang diuji (tahap `isi`
+  menutup aplikasinya sendiri di tengah simpanan tertunda, lalu `bukti` menuntut barisnya ada).
+  PASS/FAIL tiap tahap dicetak apa adanya dan digabung driver menjadi satu ringkasan rantai.
 - `db-store-run.cjs` + `db-store-check.cjs` — integrasi end-to-end Fase 4 dalam tiga
   fase pada satu folder data sementara: tanam profil lama (seed) → boot pertama dengan
   SQLite (impor sekali + edit lewat UI + quit di tengah jendela debounce) → boot ulang
@@ -218,14 +302,44 @@ asli membekukan thread renderer, dan karena `executeJavaScript` hanya menolak ka
 error — bukan kalau tidak pernah selesai — harness diam seribu bahasa sampai batas
 waktu proses habis. Sekarang aksi yang macet dilaporkan dengan nama tindakannya.
 
-Hasil yang diharapkan (rantai 2026-10-11 `tmp-harness/logs/rantai-302i.log` terhadap
-**paket 3.0.2** — `dist`/`dist-electron` yang dibundel ke asar paket itu, dibuktikan
-byte-identik dengan hasil build):
-migration 49, unit/`validation-check` 302,
-auth 58, gui 73, flow 30, handoff 123, usable 37, cetak 67, db 136, integritas 68, compat 30,
-perf 40, store 47, backup 87, smoke-paket 28 — 16 langkah, 1.175 assertion, seluruhnya tanpa FAIL,
-`rusak: tidak`, `proses keluar tidak bersih: tidak`, dan `exit=0` di setiap langkah
+Hasil yang diharapkan (rantai 2026-10-13 19:29 `C:/tmp/rantai-305.log` terhadap
+**paket 3.0.5** — `dist-app/win-unpacked` hasil `make:installer`, dibuktikan dari isinya:
+`app.asar` 4.511.034 byte memuat string `mutasi gudang tidak menyimpan nomor sasis` dan tidak
+memuat `SPK-2025-012`; ringkasan per langkah di `tmp-harness/logs/<nama>.log` dengan `mtime`
+19:26–19:29):
+migration 49, unit/`validation-check` 391, otorisasi 49,
+auth 58, gui 73, flow 30, handoff 176, usable 42, crud 32, cetak 73, db 136, integritas 74,
+compat 31, perf 40, tahan 32, store 48, backup 88, smoke-paket 28 — 19 langkah,
+**1.450 assertion**, seluruhnya tanpa FAIL, `rusak: tidak`,
+`proses keluar tidak bersih: tidak`, dan `exit=0` di setiap langkah
 (ini baru bermakna sejak rantai memanggil `electron.exe` langsung, bukan `npx`).
+Naik 21 assertion dari 3.0.4 (1.429) karena `validation-check` §38 (11: gerbang anti-dobel
+kas di tiga jalur) dan §39 (10: tab riwayat kartu Unit data nyata + tombol navigasi).
+Perhatian: `perf` yang hijau di angka 40 adalah **jalur beban standar**; lintasan kapasitas
+400.000 baris (`HEMS_PERF_KAPASITAS=1`, 55 assertion) tidak ikut rantai dan harus dijalankan
+terpisah kalau akan dikutip.
+Riwayat: rantai 2026-10-12 19:55 `C:/tmp/rantai-3.0.4-final.log` adalah baseline 3.0.4
+(unit 370, total 1.429). Awas dua berkas log yang namanya mirip:
+`tmp-harness/logs/rantai-304.log` adalah rantai 3.0.4 **pertama** yang merah di `perf`
+(`39 lulus, 1 gagal`, `rusak: perf`) karena P.12b
+menuntut nol baris sementara dropdown katalog memang membaca 10 — lihat daftar periksa di
+bawah dan QA_REPORT §4.19. Angka hijau yang dikutip dokumen QA milik
+`C:/tmp/rantai-3.0.4-final.log`.
+Catatan 2026-11-17 — worktree 3.1.0 (**BELUM DIRILIS**): rantai yang sama dijalankan
+terhadap sumber yang dibangun saat itu (`npm run build` + `npm run build:electron`;
+`C:/tmp/regressi-aut-final.log`): migration 49, unit 395, **otomatisasi 33**,
+auth 58, otorisasi 62, gui 73, flow 30, handoff 176, usable 42, crud 32, cetak 73,
+db 136, integritas 74, compat 31, perf 40, tahan 32, store 48, backup 88,
+smoke-paket 28 — **1.500 assertion, 0 gagal**, `rusak: tidak`,
+`proses keluar tidak bersih: tidak`; `npm audit` 0 kerentanan. Kenaikan dari 1.450
+berasal dari unit +4 (idempotensi servis, biaya aktual, kunci kirim ganda, pembersihan
+banner), otorisasi +13 (nomor dokumen, satu-sumber-satu-invoice, sewa tumpang tindih
+lewat IPC), dan harness baru `automation-check` (33). Dua peringatan kejujuran:
+(1) langkah `smoke-paket` di rantai ini menjalankan `dist-app/win-unpacked` yang
+dibangun 24 Oktober, bukan paket dari worktree sekarang — ia membuktikan harness dan
+halaman paket, bukan sumber yang baru diubah; (2) folder `tmp-harness/logs/` juga
+memuat arsip mutasi 11–12 Oktober (`m10`, `m12b`, `mut-*`, `crud-a`, dll.) yang memang
+merah, dan angka di atas hanya diambil dari log yang ditulis rantai terakhir.
 Rantai penuh memakan ±15 menit dan **tidak boleh dijalankan dua-duanya sekaligus**:
 `rantai-302g` adalah contoh kegagalannya — dua rantai bertumpuk, dan hanya uji waktu yang
 jatuh (db 7.2: pencarian 50.000 baris 3.462 ms terhadap anggaran 1.000 ms) sementara
@@ -238,7 +352,7 @@ Langkah `smoke-paket` adalah yang membuktikan paket jadi ikut sekuat sumber, dan
 sebabnya installer lama (3.0.0 dan 3.0.1, keduanya dibangun sebelum perbaikan terbaru)
 tidak dipakai sebagai bukti rilis.
 Delapan jenis uji yang diminta terpetakan begitu: unit (validation-check, auth-check, db-check), fungsional
-(flow-check, handoff-check, cetak-check yang mengklik tombol cetak di 10 layar), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7,
+(flow-check, handoff-check, cetak-check yang mengklik tombol cetak di 11 layar), integrasi (db-store-run), kinerja (perf-check, db-check bagian 7,
 perf-check bagian 11 untuk kapasitas),
 keamanan (gui-check bagian 11 dan 13, db-check bagian 12, cetak-check 10–15 untuk jendela
 cetak: CSP `default-src 'none'`, tanpa `electronAPI`, XSS sebagai teks, penolakan dokumen
@@ -322,7 +436,9 @@ dengan jumlah record (5,73 MB IPC pada 25.000 baris). Sekarang:
   `rows`. Semuanya dibaca dari DALAM aplikasi lewat kanal `db-stats`, jadi harness
   membuktikan bentuk jalur, bukan hanya hasilnya: gui-check 15.1–15.5 (kontrak
   subset + penolakannya), perf-check P.3b (boot tidak memindahkan baris apa pun)
-  dan P.12b (membuka layar Unit di profil 12.000 unit menggeser NOL baris store),
+  dan P.12b (membuka layar Unit di profil 12.000 unit menggeser **tepat 10** baris
+  store — isi katalog `brands`+`models` — bukan armada), perf-check P.12c (membuka
+  Perawatan Sistem tetap nol),
   handoff-check 9.1–9.2 (membuka dua menu yang menghidrasi hanya meminta
   collection-nya sendiri, dan baris yang lewat IPC tetap sebagian kecil dari file).
   Di harness yang memakai `readStore()` (muat penuh) untuk membaca kondisi, angka
@@ -540,24 +656,30 @@ Mesin 3,8 GB RAM dengan hanya ±250 MB bebas; angka di bawah adalah median dari 
 
 | yang diukur | 12.000 unit | 50.000 unit |
 | --- | --- | --- |
-| layar login siap (wall clock harness) | 295 ms | — |
-| `domContentLoaded` renderer | 278 ms | — |
-| **baris store yang lewat IPC saat boot (profil 25.000 baris)** | **0** (P.3b) | — |
-| `dbLoad` seluruh store — jalur Backup/impor, BUKAN boot lagi | 417 ms (5,73 MB IPC) | — |
-| **baris store yang lewat IPC sejak login sampai layar Unit terbuka** | **0** (P.12b) | — |
+| layar login siap (wall clock harness) | 279 ms | — |
+| `domContentLoaded` renderer | 151 ms | — |
+| **baris store yang lewat IPC saat boot (profil 25.010 baris)** | **0** (P.3b) | — |
+| `dbLoad` seluruh store — jalur Backup/impor, BUKAN boot lagi | 215 ms (5,72 MB IPC) | — |
+| **baris store yang lewat IPC sejak login sampai layar Unit terbuka** | **10 = persis isi katalog `brands`+`models`** (P.12b) | — |
 | satu halaman Unit vs isi store yang lewat IPC | 0,1 % | DOM tetap 12 kartu |
-| pencarian di layar Unit (debounce 200 ms termasuk) | 227 ms | 281 ms |
-| `dbQuery` telanjang lewat IPC | 10 ms | 109 ms (offset 12.000) |
-| berganti halaman | 225 ms | — |
+| pencarian di layar Unit (debounce 200 ms termasuk) | 228 ms | 261 ms |
+| `dbQuery` telanjang lewat IPC | 9 ms | 87 ms |
+| berganti halaman | 234 ms | — |
 | `dbSum` kas 6.000 baris | 1 ms | — |
 | tulis satu baris lewat `db-patch` | 1 ms | — |
-| working set renderer / main | 172 / 167 MB | — |
+| `saveStore` 50.000 unit dari main process | — | 1.027 ms (event loop beku selama itu) |
+| working set renderer / main | 178 / 176 MB | — |
 | heap JS renderer | 10 MB | — |
-| file `fathoni.db` | — | 44,71 MB (63.000 baris) |
+| RAM bebas saat db-check bagian 50.000 berjalan | — | 424 MB dari 3.746 MB |
+| file `fathoni.db` | — | 44,75 MB (63.010 baris, 20 collection) |
 
-Boot tidak lagi membayar perpindahan store: pada profil 25.000 baris, `reads` tetap
-nol sampai layar login muncul (P.3b) dan membuka menu terbesar tetap nol (P.12b) —
-yang pindah hanya satu halaman hasil kueri. Biaya 5,73 MB itu sekarang hanya terjadi
+Boot tidak lagi membayar perpindahan store: pada profil 25.010 baris, `reads` tetap
+nol sampai layar login muncul (P.3b) dan membuka menu terbesar membawa nol baris
+(P.12c untuk Perawatan Sistem) — yang pindah hanya satu halaman hasil kueri, plus
+**tepat 10 baris katalog** saat layar Unit dibuka (P.12b: `brands` + `models` memang
+dibutuhkan dropdown merek/model, jadi angkanya bukan nol lagi, melainkan sama dengan isi
+katalog; melihatnya sebagai regresi adalah salah baca — lihat §4.19 QA_REPORT). Biaya
+5,72 MB itu sekarang hanya terjadi
 di layar Backup dan jalur impor, yang memang sengaja needing seluruh isi file.
 
 Yang masih sengaja dilaporkan apa adanya:
@@ -565,10 +687,19 @@ Yang masih sengaja dilaporkan apa adanya:
   jadi event loop membeku selama itu. Jalur UI (`db-patch` per baris, 1 ms) tidak
   mengalami ini; hanya impor massal dan simpanan penuh yang perlu dipecah.
 
-Kapasitas yang terukur (db-check bagian 7, mesin 3,8 GB RAM): 50.000 unit = simpan
-±1,2 detik, pencarian berindeks ±0,12 detik, simpan ulang dengan sedikit perubahan
-±0,3 detik, agregasi di SQL ±26 ms, file ±27 MB. Batas localStorage lama ±4 MB hilang
+Kapasitas yang terukur (db-check bagian 7, mesin 3,8 GB RAM, jalan 2026-10-12 dengan
+424 MB bebas): 50.000 unit = simpan 785 ms, pencarian 126 ms (dingin 121 ms, hangat
+119–133 ms pada 1.250 cocok), simpan ulang dengan 10 baris berubah 233 ms, agregasi di
+SQL 17 ms, file 26,8 MB. Batas localStorage lama ±4 MB hilang
 bersama SQLite.
+
+Lintasan kapasitas bagian 11 (`HEMS_PERF_KAPASITAS=1`, 55 assertion) diukur ulang terhadap
+paket 3.0.4 pada mesin dengan ±0,1 GB RAM bebas — jadi angka di bawah adalah yang paling
+buruk dari siklus ini: 400.010 baris / 233,17 MB, boot ulang 4.253 ms (ambang 20 s; pada
+jalan RAM longgar titik yang sama 966 ms), layar Armada 306 ms, pencarian pertama
+sesudah boot 126 ms, pencarian layar pada 100.000 unit 323–344 ms (median lintasan kedua
+324 ms), `dbQuery` telanjang 115 ms, `dbSum` kas 40 ms, tulis satu baris 1 ms, tulis
+400.000 baris 9.808 ms, heap renderer 10 MB, seluruh harness 37 detik.
 
 Assertion bagian 7 dulu menuntut "simpan ulang dengan sedikit perubahan LEBIH CEPAT
 sekali daripada simpan penuh" (`tDiff < tWrite / 2`). Klausa itu benar-benar pernah
@@ -601,7 +732,7 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Menghapus teknisi/operator yang namanya masih tertulis di dokumen lolos tanpa pesan: keduanya tidak punya aturan rujukan, dan namanya tidak disimpan sebagai kolom turunan di dokumen anak | integrity 2d (teknisi tertahan Work Order + Laporan Kerusakan, operator tertahan Surat Jalan; nama satu kata sengaja di bawah ambang token), handoff 10.18 (tombol hapus di menunya menolak dengan alasan yang menyebut dokumennya), validation 12 (aturan blob hanya boleh menyebut field yang ikut ditulis ke blob + teknisi/operator wajib berpemeriksaan) |
 | Satu layar yang melempar membuat SEMUA menu menampilkan "Terjadi Kesalahan" sampai aplikasi dimuat ulang (boundary hanya di akar) | handoff 10.14 (Pelanggan tetap terbuka dan terisi sesudah baris asing dibuka), validation 20 (boundary berkunci rute di `ProtectedRoute`) |
 | Collection yang BELUM pernah dibaca penuh ditulis sebagai collection penuh, sehingga baris yang tidak ikut terbaca hilang dari file | db-check 15.6–15.9 (matriks `rencanakanTulis`: upsert tetap jalan, simpanan penuh ditahan, `tertahan` tidak pernah berubah menjadi `full`), handoff 7.11 |
-| Boot menyalin seluruh store ke renderer — waktu buka aplikasi dan memori renderer tumbuh mengikuti jumlah record | perf P.3b (nol baris lewat IPC di profil 25.000 baris) dan P.12b (membuka layar Unit 12.000 unit menggeser nol baris), gui 15.4, handoff 9.1–9.2 |
+| Boot menyalin seluruh store ke renderer — waktu buka aplikasi dan memori renderer tumbuh mengikuti jumlah record | perf P.3b (nol baris lewat IPC di profil 25.010 baris), P.12b (layar Unit 12.000 unit menggeser tepat 10 baris = isi katalog, bukan armada) dan P.12c (Perawatan Sistem nol), gui 15.4, handoff 9.1–9.2 |
 | Nama collection asing atau argumen bukan daftar pada `db-load` diterima lalu dilewati diam-diam, sehingga halaman mengira collection itu kosong dan menimpanya dengan kosong | gui-check 15.1–15.3 dan 15.5, db-check 15.1–15.3 |
 | Handler layar Unit / Gudang membaca array store yang sejak #38 memang kosong: upload dan hapus foto tidak melakukan apa pun, nomor rangka ganda terasa unik, saran nomor mutasi selalu `-001` | handoff 9.6–9.9 |
 | Usulan nomor dokumen dihitung dari `array.length + 1` di 11 menu: nomor rangkap atau melompat, padahal nomor bisnis itulah kunci rujukan lintas menu (`electron/referential.ts`) | handoff 9.9 + 9.9b (bukti mutasi harus melewati nomor tanam `TRX-<tahun>-888` yang tidak ada di array halaman) dan 10.19a–d (SPK berlanjut dari 902 walau baris tertinggi sudah dihapus; usulan terbukti tidak ada di file), validation 23 (celah sesudah hapus, 60 nomor terisi → 61, `T-00010` tetap menghalangi 10, embel asing tidak menghalangi, mode browser) + penjaga statis: tidak ada `.length + n` pada baris bernomor di `src/pages`, ke-11 collection wajib dipanggil lewat `nomorBerikut`, dan pasangannya wajib kolom SQL sungguhan di `dbSchema` |
@@ -647,6 +778,12 @@ menolaknya kembali — kalau assertion itu diubah, baris ini harus ikut diubah.
 | Wait harness menguji `/record/` pada `#pager-info` sebagai "kueri selesai", padahal `Pager.tsx` juga menulis "Tidak ada record" selama `total` masih 0 — jadi teks loading pun cocok. Rantai-302f jatuh di handoff 8.1 (`sql=2, kartu=0`) karena ini, bukan karena aplikasinya | unit 28: setiap `waitFor` yang menyebut `#pager-info` wajib punya `!/memuat/` ATAU `/dari … record/`; kontrol positif menuntut ≥15 wait terdeteksi dan ≥3 di antaranya menguji `/record/` apa adanya (dimutasi dengan menghapus satu klausul `!/memuat/` di handoff-check — FAIL langsung, 296/1) |
 | Harness membuktikan dirinya lewat desktop manusia: `gui-check` bagian 8 membuka `window.open('https://example.com')`, handler menyerahkannya ke `shell.openExternal`, dan Chrome sungguhan terbuka setiap langkah `gui` dijalankan | unit 28: harness yang memanggil `window.open` wajib menambal `shell.openExternal` dengan perekam lebih dulu, dan hasil tambalan itu wajib dipakai sebagai assertion (gui 8.1b) — bukan dibuktikan dengan jendela yang muncul di layar pengguna |
 | Signing gagal di tempat yang salah: `HEMS_SIGN_PFX` diset tapi `signtool.exe`/pfx-nya tidak ada, atau timestamp tidak terjangkau, dan kegagalan itu baru muncul di langkah 5 dari 6 — ±15 menit build tertelan, meninggalkan exe TANPA tanda tangan. `verify /pa` untuk rantai tak dipercaya (sertifikat uji) juga keluar 1 | unit 29: periksa `signtool` + pfx wajib berada di baris sebelum `& npm run build`; baris sign wajib `/fd SHA256 /tr $signTs /td SHA256` dengan `$signTs` satu kali; `sign` dan `verify /pa` wajib diikuti `throw` saat kode keluar bukan nol; `Sign-Exe` wajib dipanggil untuk `appExe` DAN setup; pesan `LEWAT sign: paket ini TIDAK ditandatangani` tidak boleh hilang (dimutasi dengan melepas `/tr $signTs` — FAIL, 301/1; dipasang lagi — 302/0) |
+| Merek & Model hidup sebagai konstanta + state di dalam layar: tambah/ubah merek hilang saat pindah halaman, dropdown Unit tidak pernah melihat daftar itu, dan halaman yang terlihat benar bisa saja sedang menampilkan SEMUA unit karena kunci katalog dilewati diam-diam | validation 12b (katalog `brands`/`models` adalah collection sungguhan + `removeRow`, bukan state halaman; seed awal hanya lewat tombol `confirm` dan hanya diimpor `pages/Brands.tsx`), 12c (Unit mengambil merek/model dari katalog; fallback ke `VALID_BRANDS` harus eksplisit dan bersyarat), 12d (`dataRef.current` + `collectionSetters` wajib persis sama dengan `COLLECTION_KEYS` — satu nama yang hilang berarti collection itu tidak pernah autosave, tanpa pesan apa pun), db-check 15.11, perf P.12b (layar Unit menggeser tepat 10 baris = isi katalog, bukan armada), integrity 2d-katalog (merek yang masih dirujuk unit tidak bisa diganti nama), otorisasi 1.10 (`requiredRoles` Layout == hak proses utama untuk SEMUA collection) + 4b.1–4b.4 (tulis `brands`/`models` per peran), compat A.5b (dua tabel kosong di profil lama, baris lama tidak tersentuh) |
+| Empat tombol QUICK ACTIONS "View All" di Control Tower tidak punya `onClick`: labelnya berjanji perpindahan, kliknya tidak melakukan apa pun | handoff 6.8V1–6.8V4 (runtime: tombol diklik lalu `window.location.hash` benar-benar berpindah ke `/units`, `/service`, `/spareparts`, `/invoices`) |
+| "Cetak Bukti Gudang" hanya memanggil `alert()`: pengguna mengira bukti serah terima sudah tercetak | cetak C.9b (dokumen "BUKTI SERAH TERIMA MUTASI BARANG" + tiga blok tanda tangan sungguh melewati kanal cetak; sebelas dokumen, bukan sepuluh) |
+| Jenis dokumen `BPKB` tidak ada di satu-satunya daftar jenis, jadi tidak bisa dipilih maupun tervalidasi | validation 37 |
+| Ekspor CSV memotong pada 500 baris tanpa pesan — batas yang sama untuk SATU halaman kueri dipakai untuk seluruh ekspor | validation 36 (`BATAS_EKSPOR = 5000` hanya boleh dipakai lewat paginasi `limit: Math.min(500, sisa)` + `offset = rows.length`; nama itu tidak boleh muncul sebagai `limit:` kueri tunggal, tepat dua pemanggil berpaginasi, dan teks UI wajib membaca `{BATAS_EKSPOR}` alih-alih angka tetap) |
+| Alat ukur yang jatuh justru karena aplikasinya membaik: P.12b menuntut "nol baris bergeser saat layar Unit dibuka", padahal dropdown katalog memang membaca 10 baris | perf P.12b bentuk baru (`baris === 10`, `sebagian ≤ 2`, `koleksi ≤ 2`) — dikalibrasi dengan mutasi `units: ['brands','models','units']` yang menaikkan ketiganya dan menjatuhkan HANYA P.12b; lihat QA_REPORT §4.19 |
 
 ## PREFLIGHT lingkungan (`auto-fix.ps1` di root repo)
 

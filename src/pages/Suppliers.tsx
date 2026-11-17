@@ -14,11 +14,12 @@ const DEMO: Supplier[] = [
 ];
 
 export default function Suppliers() {
-  const { suppliers: data, setSuppliers: setData, removeRow } = useDataStore();
+  const { suppliers: data, setSuppliers: setData, saveRow, removeRow } = useDataStore();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState({ name:'', contact:'', phone:'', email:'', address:'', npwp:'', bankName:'', bankAccount:'' });
+  const [saving, setSaving] = useState(false);
 
   const filtered = data.filter(s =>
     matchesQuery([s.name, s.contact], search)
@@ -27,13 +28,15 @@ export default function Suppliers() {
   const openAdd = () => { setEditing(null); setForm({ name:'',contact:'',phone:'',email:'',address:'',npwp:'',bankName:'',bankAccount:'' }); setShowForm(true); };
   const openEdit = (s: Supplier) => { setEditing(s); setForm({ name:s.name, contact:s.contact||'', phone:s.phone||'', email:s.email||'', address:s.address||'', npwp:s.npwp||'', bankName:s.bankName||'', bankAccount:s.bankAccount||'' }); setShowForm(true); };
 
-  const save = () => {
-    if (!form.name.trim()) return;
-    if (editing) {
-      setData(d => d.map(s => s.id === editing.id ? { ...s, ...form, updatedAt: new Date().toISOString() } : s));
-    } else {
-      setData(d => [...d, { id: Date.now().toString(), ...form, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]);
-    }
+  const save = async () => {
+    if (!form.name.trim()) { alert('Nama pemasok wajib diisi.'); return; }
+    setSaving(true);
+    const row: Supplier = editing
+      ? { ...editing, ...form, updatedAt: new Date().toISOString() }
+      : { id: Date.now().toString(), ...form, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const ok = await saveRow('suppliers', row);
+    setSaving(false);
+    if (!ok) return;
     setShowForm(false);
   };
 
@@ -124,7 +127,7 @@ export default function Suppliers() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowForm(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={save}>Simpan</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
             </div>
           </div>
         </div>

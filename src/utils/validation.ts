@@ -174,6 +174,72 @@ export function validateHourMeter(hm: number): string | null {
 }
 
 /**
+ * Meter yang MUNDUR tidak boleh lewat tanpa jejak.
+ *
+ * `validateHourMeter` di atas hanya tahu satu angka; ia tidak bisa menolak "HM 440"
+ * untuk alat yang tercatat sudah 450, karena penolakan itu butuh pembanding. Itu
+ * bukan kasus hipotetis: satu kolom HM yang ditulis tangan dari lapangan pasti pernah
+ * salah baca, dan hari ini pembacaan yang lebih kecil diterima diam-diam lalu
+ * menyeret turun seluruh hitungan siklus servis dan biaya per jam.
+ *
+ * Aturan: lebih kecil dari `hmLama` hanya sah bila penanda `koreksi` dipasang DAN
+ * alasannya diisi. Alasannya tidak dibuang — pemanggil menulisnya ke `notes` record,
+ * supaya jejak koreksi tetap ada setelah angkanya ditimpa.
+ */
+export function validateHourMeterProgress(
+  hmBaru: unknown,
+  hmLama: unknown,
+  opts: { koreksi?: boolean; alasan?: string } = {}
+): string | null {
+  const baru = angka(hmBaru);
+  const lama = angka(hmLama);
+  if (baru === null || lama === null) return null;
+  if (baru >= lama) return null;
+
+  if (!opts.koreksi) {
+    return `Hour Meter mundur dari ${lama} ke ${baru} (${lama - baru} jam). `
+      + 'Bila ini pembacaan yang benar, centang "Ini koreksi pembacaan meter" dan isi alasannya; '
+      + 'bila bukan, perbaiki angkanya.';
+  }
+  if (!String(opts.alasan || '').trim()) {
+    return 'Koreksi pembacaan meter wajib disertai alasan (misalnya "HM sebelumnya salah baca 450, seharusnya 440").';
+  }
+  return null;
+}
+
+/** Jejak koreksi yang ditulis ke `notes` record supaya tidak hilang saat angka ditimpa. */
+export function catatanKoreksiHourMeter(hmLama: unknown, hmBaru: unknown, alasan: string): string {
+  return `[KOREKSI HM ${hmLama} -> ${hmBaru}: ${String(alasan || '').trim()}]`;
+}
+
+/**
+ * Satu pembayaran dokumen hanya boleh masuk ke kas satu kali. Kuncinya
+ * tipe + kategori + referensi: kombinasi itu yang menyebut dokumen mana yang
+ * dibayar, bukan jumlahnya (DP lalu pelunasan memang dua angka berbeda, tapi itu
+ * dua dokumen pembayaran dan harus punya nomor referensi sendiri). Aturan yang
+ * sama ditegakkan di main process (`kasKembarCacat` di electron/main.ts) supaya
+ * tulisan dari jalur lain tidak bisa menghindarinya.
+ */
+export function validateKasKembar(
+  row: { id?: unknown; tipe?: unknown; kategori?: unknown; referensi?: unknown },
+  existing: unknown
+): string | null {
+  const referensi = String(row?.referensi ?? '').trim();
+  if (referensi === '') return null;
+  const kunci = (r: any) => [
+    String(r?.tipe ?? '').trim().toUpperCase(),
+    String(r?.kategori ?? '').trim().toUpperCase(),
+    String(r?.referensi ?? '').trim().toLowerCase(),
+  ].join('|');
+  const pemakai = (Array.isArray(existing) ? existing : [])
+    .find((k: any) => String(k?.id ?? '') !== String(row?.id ?? '') && kunci(k) === kunci(row));
+  if (!pemakai) return null;
+  return `Transaksi ${String(row?.tipe ?? '')}/${String(row?.kategori ?? '')} dengan referensi `
+    + `"${referensi}" sudah tercatat di baris ${String(pemakai.id)}. Satu dokumen hanya boleh `
+    + 'dibayar sekali — bila ini memang pembayaran kedua (mis. DP lalu pelunasan), pakai nomor referensi yang berbeda.';
+}
+
+/**
  * Validasi tahun
  */
 export function validateYear(year: string): string | null {
@@ -301,11 +367,24 @@ export const VALID_BRANDS = [
   'Lainnya'
 ];
 
-export function validateBrand(brand: string): string | null {
+/**
+ * Validasi merek unit.
+ *
+ * `merekKatalog` adalah nama merek dari katalog Merek & Model (collection
+ * `brands`). Katalog adalah daftar yang bisa pengguna ubah, jadi daftar bawaan
+ * di atas bukan lagi pagar tertutup: merek baru yang sengaja ditambahkan ke
+ * katalog harus bisa dipakai pada unit. Tanpa parameter ini perilaku persis seperti
+ * sebelumnya (dipakai harness validation-check §7).
+ */
+export function validateBrand(brand: string, merekKatalog?: string[]): string | null {
   if (!brand) return null;
 
-  if (!VALID_BRANDS.includes(brand)) {
-    return `Merek tidak valid. Pilih dari: ${VALID_BRANDS.join(', ')}`;
+  const boleh = Array.isArray(merekKatalog) && merekKatalog.length > 0
+    ? [...VALID_BRANDS, ...merekKatalog]
+    : VALID_BRANDS;
+
+  if (!boleh.includes(brand)) {
+    return `Merek tidak valid. Pilih dari: ${boleh.join(', ')}`;
   }
 
   return null;
@@ -365,6 +444,7 @@ export function validateServiceType(type: string): string | null {
  * Validasi status pesanan (Sales/Rental)
  */
 export const VALID_ORDER_STATUSES = [
+  'DRAFT',
   'PENDING',
   'CONFIRMED',
   'IN_PROGRESS',
@@ -384,19 +464,39 @@ export function validateOrderStatus(status: string): string | null {
 
 /**
  * Validasi kategori pembelian (Purchase)
+ *
+ * Satu sumber kebenaran untuk daftar KATEGORI dan labelnya. Dropdown Pembelian dulu
+ * menulis `<option>` sendiri dan isinya berbeda dari daftar validasi ini: "Oli, Filter
+ * & Perlengkapan" (CONSUMABLE) ditawarkan di layar tapi ditolak `validatePurchaseCategory`,
+ * jadi PO dengan kategori itu tidak pernah bisa disimpan; sebaliknya FUEL/LUBRICANT
+ * sah di validasi tapi tidak bisa dipilih dari layar mana pun. Sekarang kedua sisi
+ * membaca peta yang sama, dan penjaga validation-check menuntut opsi layar == daftar ini.
  */
-export const VALID_PURCHASE_CATEGORIES = [
-  'UNIT',
-  'SPAREPART',
-  'FUEL',
-  'LUBRICANT',
-  'OTHER'
-];
+export const PURCHASE_CATEGORY_LABELS: Record<string, string> = {
+  UNIT: 'Unit Alat Berat Baru/Bekas',
+  SPAREPART: 'Spare Parts & Komponen',
+  FUEL: 'BBM (Solar)',
+  LUBRICANT: 'Oli, Filter & Pelumas',
+  OTHER: 'Lainnya',
+};
+
+/**
+ * Kategori yang sudah terlanjur tersimpan di berkas data. Tidak ditawarkan lagi,
+ * tapi diterima saat disimpan ulang: kalau tidak, membuka PO lama lalu menekan
+ * Simpan akan diam-diam mengganti kategorinya — dan harga/fakta yang sudah
+ * tercatat berubah tanpa siapa pun memintanya.
+ */
+export const PURCHASE_CATEGORY_LEGACY = ['CONSUMABLE'];
+export const PURCHASE_CATEGORY_LEGACY_LABELS: Record<string, string> = {
+  CONSUMABLE: 'Oli & Perlengkapan (kategori lama — pilih "Oli, Filter & Pelumas")',
+};
+
+export const VALID_PURCHASE_CATEGORIES = Object.keys(PURCHASE_CATEGORY_LABELS);
 
 export function validatePurchaseCategory(category: string): string | null {
   if (!category) return null;
 
-  if (!VALID_PURCHASE_CATEGORIES.includes(category)) {
+  if (!VALID_PURCHASE_CATEGORIES.includes(category) && !PURCHASE_CATEGORY_LEGACY.includes(category)) {
     return `Kategori tidak valid. Pilih dari: ${VALID_PURCHASE_CATEGORIES.join(', ')}`;
   }
 

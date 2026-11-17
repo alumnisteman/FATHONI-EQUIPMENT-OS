@@ -1,9 +1,9 @@
 // src/pages/Reports.tsx - Modul Laporan & Analitik FATHONI EQUIPMENT OS
 // Semua ANGKA pada halaman ini dihitung SQLite (sum/group lewat IPC), bukan dengan
 // menelusuri seluruh isi invoices dan units di renderer. Daftar panjang dibatasi
-// satu halaman untuk ditampilkan dan BATAS_EKSPOR baris untuk CSV/PDF — mengekspor
+// satu halaman untuk ditampilkan, BATAS_EKSPOR baris untuk CSV (ditelusuri per
+// halaman, bukan satu kueri) dan BATAS_CETAK baris untuk PDF — mengekspor
 // "semua" dari tabel yang sedang tumbuh adalah cara paling cepat membekukan jendela.
-
 import { useMemo, useState } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
@@ -23,8 +23,14 @@ const TIPE_PENDAPATAN = ['RENTAL', 'PENJUALAN', 'SERVICE'];
 const WHERE_PIUTANG = { status: { in: ['UNPAID', 'PARTIAL'] } };
 /** Satu halaman tampil; selebihnya tetap ada di SQLite sampai halamannya dibuka. */
 const PAGE_SIZE = 25;
-/** Batas aman satu kueri ekspor (MAX_PAGE_LIMIT di main process). */
-const BATAS_EKSPOR = 500;
+/** Batas satu kueri ke main process (MAX_PAGE_LIMIT); pagar ini dibiarkan berdiri. */
+const BATAS_KUERI = 500;
+/** Ekspor CSV menelusuri halaman sampai jumlah ini — bukan satu kueri raksasa. */
+const BATAS_EKSPOR = 5000;
+/** Jendela cetak membangun seluruh tabelnya di DOM: ribuan baris membekukannya. */
+const BATAS_CETAK = 500;
+/** Daftar piutang di layar: tabelnya hanya PAGE_SIZE baris, sisanya hanya dihitung. */
+const BATAS_TAMPIL = 500;
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState<TabLaporan>('pendapatan');
@@ -99,7 +105,7 @@ export default function Reports() {
 
   // Rata-rata umur piutang (DSO) adalah aritmetika tanggal per baris, jadi ia
   // dikerjakan atas daftar yang sama dengan yang ditampilkan tabel: maksimum
-  // BATAS_EKSPOR piutang terbaru. Kartu di bawah menyebut batas itu bila masih
+  // BATAS_TAMPIL piutang terbaru. Kartu di bawah menyebut batas itu bila masih
   // ada piutang di luar daftar — angka yang salah diam-diam lebih berbahaya
   // daripada angka yang mengakui dirinya sebagian.
   const piutangHal = useCollectionQuery<any>({
@@ -107,7 +113,7 @@ export default function Reports() {
     where: WHERE_PIUTANG,
     sort: 'issueDate',
     desc: true,
-    limit: BATAS_EKSPOR,
+    limit: BATAS_TAMPIL,
   }, invoices, savedTick.invoices);
   const unpaidInvoices = piutangHal.rows;
   const piutangTerpotong = piutangHal.total > unpaidInvoices.length;
@@ -138,14 +144,25 @@ export default function Reports() {
   const pagesPiutang = Math.max(1, Math.ceil(unpaidInvoices.length / PAGE_SIZE));
 
   /**
-   * Satu kueri untuk ekspor: apa yang diunduh adalah BATAS_EKSPOR baris pertama
-   * dari penyaringan yang sama, dengan catatan pemotongan di dalam file. Mode
-   * browser tidak punya SQLite, jadi array store yang dipakai.
+   * Ambil sampai `batas` baris dari penyaringan yang sama. Satu kueri tidak bisa
+   * meminta lebih dari BATAS_KUERI (ditegakkan di main process), jadi jumlah yang
+   * lebih besar dicapai dengan menelusuri halaman — dan itu meninggalkan pagarnya
+   * berdiri untuk semua jalur render. Penelusuran ini tidak mengulang atau
+   * melewatkan baris karena queryCollection mengurutkan dengan tiebreaker "pk".
+   * Mode browser tidak punya SQLite, jadi array store yang dipakai.
    */
-  const ambilUntukEkspor = async (req: DbQueryRequest, fallback: any[]) => {
-    const hasil = await dbQuery(req);
-    if (hasil) return hasil;
-    return { rows: fallback.slice(0, BATAS_EKSPOR), total: fallback.length };
+  const ambilUntukEkspor = async (req: DbQueryRequest, fallback: any[], batas: number) => {
+    const pertama = await dbQuery({ ...req, limit: Math.min(batas, BATAS_KUERI), offset: 0 });
+    if (!pertama) return { rows: fallback.slice(0, batas), total: fallback.length };
+    const rows = pertama.rows.slice();
+    while (rows.length < batas && rows.length < pertama.total) {
+      const lanjut = await dbQuery({
+        ...req, limit: Math.min(BATAS_KUERI, batas - rows.length), offset: rows.length,
+      });
+      if (!lanjut || lanjut.rows.length === 0) break;
+      rows.push(...lanjut.rows);
+    }
+    return { rows, total: pertama.total };
   };
 
   const catatanPotong = (total: number, rows: number) =>
@@ -176,7 +193,7 @@ export default function Reports() {
 
     if (activeTab === 'unit') {
       const { rows, total } = await ambilUntukEkspor(
-        { collection: 'units', sort: 'purchaseDate', desc: true, limit: BATAS_EKSPOR }, units);
+        { collection: 'units', sort: 'purchaseDate', desc: true }, units, BATAS_EKSPOR);
       const catatan = catatanPotong(total, rows.length);
       downloadCsv(`Laporan_Kinerja_Unit_FATHONI_${stamp}.csv`, buildCsv(
         ['Serial Number', 'Model', 'Status', 'Total HM', 'Harga Beli'],
@@ -189,8 +206,8 @@ export default function Reports() {
     }
 
     const { rows, total } = await ambilUntukEkspor({
-      collection: 'invoices', where: WHERE_PIUTANG, sort: 'issueDate', desc: true, limit: BATAS_EKSPOR,
-    }, unpaidInvoices);
+      collection: 'invoices', where: WHERE_PIUTANG, sort: 'issueDate', desc: true,
+    }, unpaidInvoices, BATAS_EKSPOR);
     const catatan = catatanPotong(total, rows.length);
     downloadCsv(`Laporan_Piutang_FATHONI_${stamp}.csv`, buildCsv(
       ['No Invoice', 'Pelanggan', 'Tanggal Terbit', 'Jatuh Tempo', 'Nominal', 'Terbayar', 'Sisa', 'Status'],
@@ -245,7 +262,7 @@ export default function Reports() {
     } else if (activeTab === 'unit') {
       title = 'LAPORAN KINERJA & ASET UNIT ALAT BERAT';
       const hal = await ambilUntukEkspor(
-        { collection: 'units', sort: 'purchaseDate', desc: true, limit: BATAS_EKSPOR }, units);
+        { collection: 'units', sort: 'purchaseDate', desc: true }, units, BATAS_CETAK);
       const catatan = catatanPotong(hal.total, hal.rows.length);
       tableHtml = `
         <table>
@@ -275,8 +292,8 @@ export default function Reports() {
     } else {
       title = 'LAPORAN PIUTANG BEREDAR (ACCOUNT RECEIVABLES)';
       const hal = await ambilUntukEkspor({
-        collection: 'invoices', where: WHERE_PIUTANG, sort: 'issueDate', desc: true, limit: BATAS_EKSPOR,
-      }, unpaidInvoices);
+        collection: 'invoices', where: WHERE_PIUTANG, sort: 'issueDate', desc: true,
+      }, unpaidInvoices, BATAS_CETAK);
       const catatan = catatanPotong(hal.total, hal.rows.length);
       tableHtml = `
         <div style="margin-bottom: 20px;">

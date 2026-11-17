@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><title>Indeks Panduan Menu — FATHONI EQUIPMENT OS 3.1.0</title>
+<style>
+@page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.5; color: #16202b; margin: 0; }
+h1 { font-size: 16pt; color: #b00016; margin: 0 0 4mm; border-bottom: 2.4pt solid #b00016; padding-bottom: 2mm; }
+h2 { font-size: 12.4pt; color: #0f2a4a; margin: 6mm 0 2mm; border-left: 4pt solid #b00016; padding-left: 3mm; }
+h3 { font-size: 10.8pt; color: #123c66; margin: 4.5mm 0 1.5mm; }
+p { margin: 0 0 2.2mm; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+li { margin-bottom: 1.1mm; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 9.2pt; }
+th { background: #0f2a4a; color: #fff; text-align: left; padding: 1.6mm 2mm; font-weight: 600; }
+td { border: 0.5pt solid #b9c4d0; padding: 1.4mm 2mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f4f7fa; }
+code, .k { font-family: "Consolas", monospace; font-size: 9pt; background: #eef2f6; padding: 0.3mm 1mm; border-radius: 2pt; }
+.lbl { font-weight: 600; }
+.kotak { border: 0.7pt solid #b9c4d0; border-radius: 3pt; padding: 2.6mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.meta td:first-child { width: 34mm; font-weight: 600; background: #eef2f6; }
+.gambar { margin: 0 0 3.8mm; page-break-inside: avoid; }
+.gambar img { max-width: 100%; height: auto; border: 0.7pt solid #b9c4d0; border-radius: 3pt; display: block; }
+.gambar figcaption { font-size: 8.8pt; color: #47566a; margin-top: 1.3mm; }
+.gambar figcaption b { color: #0f2a4a; }
+.cacat { border-left: 4pt solid #b00016; background: #fdf0f1; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.cacat b.ct { color: #b00016; }
+.efek { border-left: 4pt solid #1a7f4b; background: #f0f8f3; padding: 2.4mm 3mm; margin: 0 0 3mm; page-break-inside: avoid; }
+.efek b.ct { color: #1a7f4b; }
+.wa { color: #b00016; font-weight: 700; }
+.auto { color: #47566a; font-style: italic; }
+footer.catatan-kaki { font-size: 8.6pt; color: #66748a; border-top: 0.6pt solid #b9c4d0; padding-top: 2mm; margin-top: 6mm; }
+a { color: #0f2a4a; }
+header.konf { text-align: right; font-size: 8.4pt; color: #66748a; margin-bottom: 2mm; }
+h1 { margin-bottom: 3mm; }
+</style></head><body>
+<header class="konf">FATHONI EQUIPMENT OS 3.1.0 · Indeks Panduan Menu · 22 Oktober 2026</header>
+<h1>Indeks Panduan Menu — 26 Menu Sidebar</h1>
+<p>Satu berkas panduan untuk setiap menu di sidebar, hasil potret aplikasi berjalan. Setiap panduan berisi: kegunaan menu, layar ketika dibuka (dengan tangkapan layar), form satu per satu kolom demi kolom sesuai label yang tampil, efek ke menu lain setelah simpan, dan batasan/cacat yang terverifikasi.</p>
+<div class="kotak">
+<p><span class="lbl">Cara membaca.</span> Nama kolom, tombol, dan isi bawaan di semua berkas ini disalin dari DOM layar, jadi bisa Anda cocokkan langsung saat aplikasi terbuka. Tanda <span class="wa">*</span> berarti kolom ditahan kosong oleh aplikasi. Kolom "terisi otomatis" tidak dapat diketik.</p>
+<p><span class="lbl">Angka pada gambar.</span> Potret dibuat di profil sementara yang diisi data contoh ber-id <span class="k">PG-*</span> supaya dropdown dan tombol baris tidak kosong. Angka kartu dan tanggal bawaan pada gambar adalah angka data contoh itu — bukan nilai perusahaan Anda.</p>
+<p><span class="lbl">Yang tidak dijalankan.</span> Tidak ada tombol simpan, hapus, terima barang, backup, restore, muat data contoh, atau ekspor yang ditekan selama pembuatan.</p>
+</div>
+<h2>Daftar panduan</h2>
+<table><thead><tr><th>Menu (tautan ke PDF)</th><th>Alamat</th><th>Peran yang melihat</th><th>Layar</th><th>Form</th><th>Gambar</th></tr></thead>
+<tbody>
+<tr><td colspan="6" style="background:#0f2a4a;color:#fff;font-weight:700">Utama</td></tr><tr><td class="lbl"><a href="dasbor.pdf">Dasbor</a><br><span class="auto">dasbor.html · 6 KB</span></td><td><span class="k">#/dashboard</span></td><td>semua peran</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td class="lbl"><a href="control-tower.pdf">Control Tower</a><br><span class="auto">control-tower.html · 6 KB</span></td><td><span class="k">#/control-tower</span></td><td>semua peran</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td colspan="6" style="background:#0f2a4a;color:#fff;font-weight:700">Master Data</td></tr><tr><td class="lbl"><a href="merek-model.pdf">Merek &amp; Model</a><br><span class="auto">merek-model.html · 11 KB</span></td><td><span class="k">#/brands</span></td><td>Super Admin, Sales, Gudang, Teknisi</td><td>2</td><td>2</td><td>4</td></tr>
+<tr><td class="lbl"><a href="unit.pdf">Unit / Armada</a><br><span class="auto">unit.html · 10 KB</span></td><td><span class="k">#/units</span></td><td>Super Admin, Sales, Gudang, Teknisi</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="pelanggan.pdf">Pelanggan</a><br><span class="auto">pelanggan.html · 8 KB</span></td><td><span class="k">#/customers</span></td><td>Super Admin, Sales</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="pemasok.pdf">Pemasok</a><br><span class="auto">pemasok.html · 8 KB</span></td><td><span class="k">#/suppliers</span></td><td>Super Admin, Gudang</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="operator.pdf">Operator</a><br><span class="auto">operator.html · 10 KB</span></td><td><span class="k">#/operators</span></td><td>Super Admin</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="teknisi.pdf">Teknisi</a><br><span class="auto">teknisi.html · 9 KB</span></td><td><span class="k">#/technicians</span></td><td>Super Admin, Teknisi</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td colspan="6" style="background:#0f2a4a;color:#fff;font-weight:700">Transaksi</td></tr><tr><td class="lbl"><a href="pembelian.pdf">Pembelian</a><br><span class="auto">pembelian.html · 10 KB</span></td><td><span class="k">#/purchase</span></td><td>Super Admin, Gudang</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="penjualan.pdf">Penjualan</a><br><span class="auto">penjualan.html · 10 KB</span></td><td><span class="k">#/sales</span></td><td>Super Admin, Sales</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="sewa-rental.pdf">Sewa / Rental</a><br><span class="auto">sewa-rental.html · 9 KB</span></td><td><span class="k">#/rental</span></td><td>Super Admin, Sales</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="persetujuan.pdf">Persetujuan (Approval)</a><br><span class="auto">persetujuan.html · 9 KB</span></td><td><span class="k">#/approvals</span></td><td>Super Admin</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="faktur.pdf">Faktur / Invoice</a><br><span class="auto">faktur.html · 11 KB</span></td><td><span class="k">#/invoices</span></td><td>Super Admin, Sales, Teknisi, Keuangan</td><td>1</td><td>2</td><td>3</td></tr>
+<tr><td colspan="6" style="background:#0f2a4a;color:#fff;font-weight:700">Operasional</td></tr><tr><td class="lbl"><a href="gudang.pdf">Gudang</a><br><span class="auto">gudang.html · 9 KB</span></td><td><span class="k">#/warehouse</span></td><td>Super Admin, Gudang, Teknisi</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="suku-cadang.pdf">Suku Cadang</a><br><span class="auto">suku-cadang.html · 10 KB</span></td><td><span class="k">#/spareparts</span></td><td>Super Admin, Gudang, Teknisi</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="breakdown.pdf">Breakdown</a><br><span class="auto">breakdown.html · 10 KB</span></td><td><span class="k">#/breakdown</span></td><td>Super Admin, Teknisi</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="servis.pdf">Servis &amp; Work Order</a><br><span class="auto">servis.html · 10 KB</span></td><td><span class="k">#/service</span></td><td>Super Admin, Teknisi</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="pengiriman.pdf">Pengiriman</a><br><span class="auto">pengiriman.html · 10 KB</span></td><td><span class="k">#/delivery</span></td><td>Super Admin, Sales, Gudang</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td colspan="6" style="background:#0f2a4a;color:#fff;font-weight:700">Keuangan</td></tr><tr><td class="lbl"><a href="kas-bank.pdf">Kas &amp; Bank</a><br><span class="auto">kas-bank.html · 9 KB</span></td><td><span class="k">#/finance</span></td><td>Super Admin, Keuangan</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="laporan.pdf">Laporan</a><br><span class="auto">laporan.html · 7 KB</span></td><td><span class="k">#/reports</span></td><td>semua peran</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td colspan="6" style="background:#0f2a4a;color:#fff;font-weight:700">Sistem</td></tr><tr><td class="lbl"><a href="pengaturan.pdf">Pengaturan</a><br><span class="auto">pengaturan.html · 6 KB</span></td><td><span class="k">#/settings</span></td><td>semua peran</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td class="lbl"><a href="pengguna.pdf">Pengguna</a><br><span class="auto">pengguna.html · 9 KB</span></td><td><span class="k">#/users</span></td><td>Super Admin</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="dokumen-legal.pdf">Dokumen Legal</a><br><span class="auto">dokumen-legal.html · 9 KB</span></td><td><span class="k">#/documents</span></td><td>semua peran</td><td>1</td><td>1</td><td>2</td></tr>
+<tr><td class="lbl"><a href="backup.pdf">Backup &amp; Restore</a><br><span class="auto">backup.html · 6 KB</span></td><td><span class="k">#/backup</span></td><td>semua peran</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td class="lbl"><a href="pemeliharaan-sistem.pdf">Pemeliharaan Sistem</a><br><span class="auto">pemeliharaan-sistem.html · 6 KB</span></td><td><span class="k">#/maintenance</span></td><td>semua peran</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td class="lbl"><a href="audit-log.pdf">Audit Log</a><br><span class="auto">audit-log.html · 6 KB</span></td><td><span class="k">#/audit-log</span></td><td>Super Admin</td><td>1</td><td>0</td><td>1</td></tr>
+</tbody></table>
+<h2>Ringkasan terukur</h2>
+<ul>
+<li><b>26 menu</b> sidebar dipotret dan disusun panduannya, dalam enam kelompok: Utama, Master Data, Transaksi, Operasional, Keuangan, Sistem.</li>
+<li><b>27 layar</b> (termasuk dua tab Merek &amp; Model) dan <b>21 jendela form</b>.</li>
+<li><b>48 tangkapan layar</b> ditanam di berkas ini, semuanya 1184×967 piksel perangkat dari jendela 1125×980 piksel CSS.</li>
+<li>Semua jendela form muat tanpa menggulir pada tinggi 980 px: 21 dari 21 form. Pada jendela yang lebih pendek, bagian bawah tetap perlu digulir.</li>
+<li><b>0 menu gagal</b> dipotret (ranah <span class="k">data.json</span> dibuat 2026-10-13T12:42:29.086Z).</li>
+</ul>
+<h2>Urutan kerja yang disarankan untuk pengguna baru</h2>
+<ol>
+<li>Merek &amp; Model — isi katalog lebih dulu, karena dropdown Unit dan seluruh transaksi mengikutinya.</li>
+<li>Unit / Armada — daftarkan unit beserta nomor seri dan hour meter; nomor seri adalah kunci lintas menu.</li>
+<li>Pelanggan, Pemasok, Operator, Teknisi — master data pihak yang terlibat.</li>
+<li>Pengaturan (tab Rekening Bank) — rekening ini yang ditawarkan Kas &amp; Bank dan jendela “Bayar”.</li>
+<li>Pembelian &rarr; Gudang/Suku Cadang &rarr; Penjualan/Sewa &rarr; Faktur &rarr; Pengiriman &rarr; Kas &amp; Bank — alur transaksi harian.</li>
+<li>Servis &amp; Breakdown — pemeliharaan; work order selesai menaikkan hour meter dan menerbitkan invoice.</li>
+<li>Laporan, Control Tower, Audit Log — pemantauan. Backup &amp; Pemeliharaan Sistem — perawatan.</li>
+</ol>
+<footer class="catatan-kaki"><p>Berkas indeks ini adalah pelengkap <a href="../PANDUAN_PENGGUNA.html">Panduan Pemakaian</a>; Bab 13 panduan tersebut tetap memuat contoh isian tertulis sepuluh form utama, sedangkan berkas per menu memuat seluruh 26 layar dan 21 form beserta gambarnya.</p></footer>
+</body></html>

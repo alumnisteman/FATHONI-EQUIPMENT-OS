@@ -30,11 +30,28 @@ export const MONTH_SOURCE: Record<string, string> = {
   purchases: 'orderDate',
 };
 
+/**
+ * Siklus servis yang sama dipakai kolom turunan `serviceDueIn` di sisi SQLite
+ * (`electron/dbSchema.ts`, angkanya tertulis di sana karena `electron/` dibuild
+ * terpisah dan tidak boleh mengimpor `src/`) dan kartu "Servis Periodik
+ * Selanjutnya" di layar Unit. Bukan 250: kartu Unit dulu menulis `hourMeter + 250`
+ * sehingga dua menu melaporkan servis berikutnya berbeda untuk alat yang sama, dan
+ * salah satunya pasti salah di mata operator lapangan.
+ */
+export const SIKLUS_SERVIS_HM = 500;
+
 /** Sisa HM menuju servis 500 HM berikutnya, seperti kartu alert Dasbor. */
 export function serviceDueInOf(hourMeter: unknown): number | null {
   const hm = Number(hourMeter) || 0;
   if (!Number.isFinite(hm) || hm < 0) return null;
-  return 500 - (Math.trunc(hm) % 500);
+  return SIKLUS_SERVIS_HM - (Math.trunc(hm) % SIKLUS_SERVIS_HM);
+}
+
+/** HM tempat servis berkala berikutnya jatuh, atau null bila HM tidak terpakai. */
+export function hmServisBerikutnyaOf(hourMeter: unknown): number | null {
+  const sisa = serviceDueInOf(hourMeter);
+  if (sisa === null) return null;
+  return Math.trunc(Number(hourMeter) || 0) + sisa;
 }
 
 /** Selisih stok terhadap titik aman; nol atau negatif berarti perlu restock. */

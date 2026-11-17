@@ -6,7 +6,7 @@
 //
 // Jalankan:
 //   cp -r "$APPDATA/hems-heavy-equipment-system" D:/SANY/tmp-harness/livecopy
-//   HEMS_DATA_DIR=D:/SANY/tmp-harness/livecopy npx electron tests/harness/profile-inspect.cjs
+//   HEMS_DATA_DIR=D:/SANY/tmp-harness/livecopy node_modules/electron/dist/electron.exe tests/harness/profile-inspect.cjs
 
 const { app, BrowserWindow } = require('electron');
 const path = require('path');

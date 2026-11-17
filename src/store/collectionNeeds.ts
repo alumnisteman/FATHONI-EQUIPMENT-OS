@@ -30,15 +30,20 @@ const NEEDS: Record<string, string[]> = {
   'control-tower': [],
   reports: [],
   'equipment-passport': [],
-  units: [],
   warehouse: [],
   backup: [],
   users: [],
   setup: [],
   login: [],
-  brands: [],
 
   // ── Master data kecil: daftar penuh memang ditampilkan ──
+  // Katalog merek/model: halamannya merender kedua array dan menyimpannya sebagai
+  // collection penuh, jadi keduanya wajib terhidrasi sebelum layar boleh buka.
+  // Halaman Unit juga memakainya (daftar merek + saran kode model).
+  brands: ['brands', 'models'],
+  // Unit memilih merek dari katalog dan menyarankan kode model, jadi dua array
+  // katalog ikut dibaca. Angka unit sendiri tetap lahir dari query berpaginasi.
+  units: ['brands', 'models'],
   customers: ['customers'],
   suppliers: ['suppliers'],
   technicians: ['technicians'],

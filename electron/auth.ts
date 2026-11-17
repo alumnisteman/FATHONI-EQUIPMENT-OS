@@ -47,7 +47,8 @@ export interface PublicAccount {
 interface AuditEntry {
   at: string;
   event: 'LOGIN_OK' | 'LOGIN_FAIL' | 'LOGIN_LOCKED' | 'LOGOUT' | 'PASSWORD_CHANGED'
-       | 'USER_CREATED' | 'USER_UPDATED' | 'USER_DELETED' | 'PASSWORD_RESET';
+       | 'USER_CREATED' | 'USER_UPDATED' | 'USER_DELETED' | 'PASSWORD_RESET'
+       | 'DATA_DELETE' | 'DATA_DENY';
   username: string;
   actor?: string;
   detail?: string;
@@ -189,6 +190,26 @@ function record(entry: Omit<AuditEntry, 'at'>) {
   if (!cache) return;
   cache.audit.push({ at: new Date().toISOString(), ...entry });
   if (cache.audit.length > MAX_AUDIT) cache.audit.splice(0, cache.audit.length - MAX_AUDIT);
+}
+
+/**
+ * Jejak tulis dari main process (kanal `db-save`/`db-patch`).
+ *
+ * Yang dicatat hanya yang tidak bisa dibaca kembali dari datanya sendiri:
+ * DATA_DENY (percobaan tulis yang ditolak sesi/peran) dan DATA_DELETE (baris yang
+ * dihapus — kejadiannya justru hilang dari tabel kalau tidak dicatat). Tulisan
+ * biasa TIDAK dicatat: autosave renderer bisa terjadi tiap beberapa detik, dan
+ * mengisi 300 baris terakhir accounts.json dengan "units tersimpan" akan
+ * menyingkirkan peristiwa login gagal dari halaman Jejak Audit — log akses jadi
+ * tidak berguna tepat ketika log itu dibutuhkan. Berkarnya sendiri sudah menjadi
+ * bukti tulisan yang sah.
+ */
+export async function auditData(
+  username: string, event: 'DATA_DELETE' | 'DATA_DENY', detail: string
+): Promise<void> {
+  await loadFile();
+  record({ event, username, detail });
+  persist();
 }
 
 function publicOf(a: StoredAccount): PublicAccount {

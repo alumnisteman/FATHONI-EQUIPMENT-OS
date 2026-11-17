@@ -30,7 +30,7 @@ const TYPE_MAP: Record<ApprovalType, { label: string; icon: string }> = {
 };
 
 export default function Approvals() {
-  const { approvals, setApprovals, removeRow } = useDataStore();
+  const { approvals, setApprovals, saveRow, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -73,7 +73,7 @@ export default function Approvals() {
   const approvedApprovals = approvals.filter(a => a.status === 'APPROVED').length;
   const rejectedApprovals = approvals.filter(a => a.status === 'REJECTED').length;
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi judul
@@ -116,8 +116,10 @@ export default function Approvals() {
     }
 
     if (editingId) {
-      setApprovals(approvals.map(a => a.id === editingId ? {
-        ...a,
+      const existing = approvals.find(a => a.id === editingId);
+      if (!existing) return;
+      await saveRow('approvals', {
+        ...existing,
         requestNumber: form.requestNumber,
         type: form.type,
         title: form.title,
@@ -127,7 +129,7 @@ export default function Approvals() {
         approverLevel: form.approverLevel,
         currentApprover: form.currentApprover,
         notes: form.notes,
-      } : a));
+      });
     } else {
       const newItem: ApprovalRequest = {
         id: Date.now().toString(),
@@ -143,7 +145,7 @@ export default function Approvals() {
         currentApprover: form.currentApprover,
         notes: form.notes,
       };
-      setApprovals([newItem, ...approvals]);
+      await saveRow('approvals', newItem);
     }
     setShowModal(false);
     setEditingId(null);
@@ -174,31 +176,31 @@ export default function Approvals() {
     if (!hasil.ok) alert(hasil.alasan ?? 'Penghapusan dibatalkan.');
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     const approval = approvals.find(a => a.id === id);
     if (approval && approval.status === 'PENDING') {
       const reason = prompt('Masukkan catatan approval (opsional):');
-      setApprovals(approvals.map(a => a.id === id ? {
-        ...a,
+      await saveRow('approvals', {
+        ...approval,
         status: 'APPROVED',
         approvedBy: 'Current User',
         approvedAt: new Date().toISOString(),
-        notes: reason || a.notes,
-      } : a));
+        notes: reason || approval.notes,
+      });
     }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     const approval = approvals.find(a => a.id === id);
     if (approval && approval.status === 'PENDING') {
       const reason = prompt('Masukkan alasan penolakan (wajib):');
       if (reason && reason.trim()) {
-        setApprovals(approvals.map(a => a.id === id ? {
-          ...a,
+        await saveRow('approvals', {
+          ...approval,
           status: 'REJECTED',
           rejectionReason: reason.trim(),
           notes: reason,
-        } : a));
+        });
       } else {
         alert('Alasan penolakan wajib diisi');
       }

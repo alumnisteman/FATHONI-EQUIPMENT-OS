@@ -1,0 +1,4740 @@
+{
+ "dibuat": "2026-10-13T12:42:29.086Z",
+ "jendela": {
+  "lebar": 1125,
+  "tinggi": 980
+ },
+ "seed": [
+  "brands=2",
+  "models=2",
+  "units=2",
+  "customers=2",
+  "suppliers=2",
+  "spareParts=2",
+  "warehouse=2",
+  "sales=1",
+  "rentals=1",
+  "services=1",
+  "purchases=1",
+  "invoices=2",
+  "kas=2",
+  "deliveries=1",
+  "breakdowns=1",
+  "operators=1",
+  "technicians=1",
+  "approvals=1",
+  "documents=1",
+  "bankAccounts=2"
+ ],
+ "menu": [
+  {
+   "slug": "dasbor",
+   "label": "Dasbor",
+   "kelompok": "Utama",
+   "rute": "#/dashboard",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/dasbor-layar.png",
+      "byte": 243996,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "🔄 Ganti Mode Profil",
+       "💰 + Buat Order SPK",
+       "🏢\nDealer",
+       "💰\nTrader Bekas",
+       "🔧\nWorkshop",
+       "🏗️\nKontraktor",
+       "🚚\nRental",
+       "🏢 Modul Sales Order (SPK)",
+       "🏷️ Katalog Merek & Model",
+       "🚚 Surat Jalan & DO Unit"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  },
+  {
+   "slug": "control-tower",
+   "label": "Control Tower",
+   "kelompok": "Utama",
+   "rute": "#/control-tower",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/control-tower-layar.png",
+      "byte": 107350,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "🏰 FATHONI Control Tower",
+      "subjudul": "Dashboard operasional real-time untuk monitoring fleet dan alert",
+      "kartu": [],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "🚜 View All Units",
+       "🔧 View All Services",
+       "📦 View All Spareparts",
+       "💰 View All Invoices"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  },
+  {
+   "slug": "merek-model",
+   "label": "Merek & Model",
+   "kelompok": "Master Data",
+   "rute": "#/brands",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/merek-model-layar.png",
+      "byte": 84495,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Merek & Model Alat Berat",
+      "subjudul": "Katalog merek manufaktur, kategori unit, dan spesifikasi teknis model",
+      "kartu": [],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Tambah Merek",
+       "🏷️ Daftar Merek (2)",
+       "🚜 Spesifikasi Model Unit (2)",
+       "Edit",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari merek/model...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    },
+    {
+     "nama": "layar-model",
+     "gambar": {
+      "berkas": "gambar/merek-model-layar-model.png",
+      "byte": 94378,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Merek & Model Alat Berat",
+      "subjudul": "Katalog merek manufaktur, kategori unit, dan spesifikasi teknis model",
+      "kartu": [],
+      "tabel": [
+       {
+        "kepala": [
+         "KODE MODEL",
+         "MEREK",
+         "KATEGORI UNIT",
+         "KAPASITAS BUCKET / BLADE",
+         "DAYA MESIN",
+         "OPERATING WEIGHT",
+         "AKSI"
+        ],
+        "baris": 2
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Tambah Model Unit",
+       "🏷️ Daftar Merek (2)",
+       "🚜 Spesifikasi Model Unit (2)",
+       "Edit",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari merek/model...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-merek",
+     "pemicu": "^Tambah Merek$",
+     "gambar": {
+      "berkas": "gambar/merek-model-tambah-merek.png",
+      "byte": 131508,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Merek Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "Nama Merek / Manufaktur *",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: SANY, Komatsu, Caterpillar",
+        "bawaan": null
+       },
+       {
+        "label": "Negara Asal",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Tiongkok, Jepang, AS",
+        "bawaan": null
+       },
+       {
+        "label": "Kategori Peralatan Utama",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Excavator, Crane, Dump Truck",
+        "bawaan": null
+       },
+       {
+        "label": "Deskripsi / Keterangan",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Keterangan singkat spesialisasi pabrikan...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Merek"
+      ],
+      "gulir": {
+       "isi": 318,
+       "tampak": 318
+      },
+      "teks": "Nama Merek / Manufaktur * Negara Asal Kategori Peralatan Utama Deskripsi / Keterangan"
+     }
+    },
+    {
+     "nama": "tambah-model",
+     "pemicu": "^Tambah Model Unit$",
+     "gambar": {
+      "berkas": "gambar/merek-model-tambah-model.png",
+      "byte": 145129,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Model Unit Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "Merek *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Komatsu",
+        "opsi": [
+         "Komatsu",
+         "SANY"
+        ]
+       },
+       {
+        "label": "Kode / Nama Model *",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: SY215C, PC200-8",
+        "bawaan": null
+       },
+       {
+        "label": "Kategori Unit",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Excavator 20 Ton, Wheel Loader 3m³",
+        "bawaan": null
+       },
+       {
+        "label": "Kapasitas (Bucket/Blade/Payload)",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: 1.0 m³",
+        "bawaan": null
+       },
+       {
+        "label": "Daya Mesin (Engine Power)",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: 128 kW / 2000 rpm",
+        "bawaan": null
+       },
+       {
+        "label": "Berat Operasional (Operating Weight)",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: 21.900 kg",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Model Unit"
+      ],
+      "gulir": {
+       "isi": 350,
+       "tampak": 350
+      },
+      "teks": "Merek * Komatsu SANY Kode / Nama Model * Kategori Unit Kapasitas (Bucket/Blade/Payload) Daya Mesin (Engine Power) Berat Operasional (Operating Weight)"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "unit",
+   "label": "Unit / Armada",
+   "kelompok": "Master Data",
+   "rute": "#/units",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/unit-layar.png",
+      "byte": 253796,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Manajemen Armada & Unit Alat Berat",
+      "subjudul": "Kelola daftar unit, jam kerja (HM), dan status operasional armada",
+      "kartu": [],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Tambah Unit",
+       "📷",
+       "📱 Passport",
+       "Edit",
+       "Hapus",
+       "Awal",
+       "Sebelumnya",
+       "Berikutnya",
+       "Terakhir"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari merek, model, serial, lokasi...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-unit",
+     "pemicu": "^Tambah Unit$",
+     "gambar": {
+      "berkas": "gambar/unit-tambah-unit.png",
+      "byte": 179351,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Unit Alat Berat Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "Nomor Seri / PIN *",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: SY-SY215C-099",
+        "bawaan": null
+       },
+       {
+        "label": "Merek *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Komatsu",
+        "opsi": [
+         "Komatsu",
+         "SANY"
+        ]
+       },
+       {
+        "label": "Kode Model *",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: SY215C, PC200-8",
+        "bawaan": null
+       },
+       {
+        "label": "Kategori Unit",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Excavator, Dozer, Crane",
+        "bawaan": "Excavator"
+       },
+       {
+        "label": "Status Operasional",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "AVAILABLE",
+        "opsi": [
+         "Tersedia (Ready)",
+         "Dipesan (Booking)",
+         "Terjual",
+         "Dirental",
+         "Di Proyek",
+         "Dalam Pengiriman",
+         "Maintenance",
+         "Breakdown / Rusak",
+         "Tidak Aktif",
+         "Afkir / Disposed"
+        ]
+       },
+       {
+        "label": "Hour Meter saat ini (HM)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "0"
+       },
+       {
+        "label": "Lokasi Saat Ini",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Jobsite Morowali, Gudang",
+        "bawaan": "Gudang Utama"
+       },
+       {
+        "label": "Tahun Pembuatan",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2024"
+       },
+       {
+        "label": "Foto Unit",
+        "jenis": "input",
+        "tipe": "file",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Unit"
+      ],
+      "gulir": {
+       "isi": 587,
+       "tampak": 587
+      },
+      "teks": "Nomor Seri / PIN * Merek * Komatsu SANY Kode Model * Kategori Unit Status Operasional Tersedia (Ready) Dipesan (Booking) Terjual Dirental Di Proyek Dalam Pengiriman Maintenance Breakdown / Rusak Tidak Aktif Afkir / Disposed Hour Meter saat ini (HM) Lokasi Saat Ini Tahun Pembuatan Foto Unit 📷 Klik untuk upload foto Foto dikompres otomatis (maks. sisi terpanjang 1400px) dan disimpan sebagai berkas di folder data, buka"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "pelanggan",
+   "label": "Pelanggan",
+   "kelompok": "Master Data",
+   "rute": "#/customers",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pelanggan-layar.png",
+      "byte": 88153,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Pelanggan",
+      "subjudul": "Kelola data pelanggan dan riwayat transaksi",
+      "kartu": [],
+      "tabel": [
+       {
+        "kepala": [
+         "NAMA PELANGGAN",
+         "PIC",
+         "TELEPON",
+         "EMAIL",
+         "KOTA",
+         "AKSI"
+        ],
+        "baris": 2
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Tambah Pelanggan",
+       "Edit",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari pelanggan...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-pelanggan",
+     "pemicu": "^Tambah Pelanggan$",
+     "gambar": {
+      "berkas": "gambar/pelanggan-tambah-pelanggan.png",
+      "byte": 88153,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Pelanggan Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "Nama Perusahaan *",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "PT. ...",
+        "bawaan": null
+       },
+       {
+        "label": "PIC",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama kontak",
+        "bawaan": null
+       },
+       {
+        "label": "Telepon",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "021-...",
+        "bawaan": null
+       },
+       {
+        "label": "Email",
+        "jenis": "input",
+        "tipe": "email",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "email@...",
+        "bawaan": null
+       },
+       {
+        "label": "Alamat",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Kota / Provinsi",
+        "bawaan": null
+       },
+       {
+        "label": "NPWP",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "12.345.678.9-...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan"
+      ],
+      "gulir": {
+       "isi": 348,
+       "tampak": 348
+      },
+      "teks": "Nama Perusahaan * PIC Telepon Email Alamat NPWP"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "pemasok",
+   "label": "Pemasok",
+   "kelompok": "Master Data",
+   "rute": "#/suppliers",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pemasok-layar.png",
+      "byte": 86988,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Pemasok",
+      "subjudul": "Kelola data pemasok dan informasi rekening",
+      "kartu": [],
+      "tabel": [
+       {
+        "kepala": [
+         "NAMA PEMASOK",
+         "KONTAK",
+         "TELEPON / EMAIL",
+         "REKENING BANK",
+         "AKSI"
+        ],
+        "baris": 2
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Tambah Pemasok",
+       "Edit",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari pemasok...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-pemasok",
+     "pemicu": "^Tambah Pemasok$",
+     "gambar": {
+      "berkas": "gambar/pemasok-tambah-pemasok.png",
+      "byte": 86988,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Pemasok",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "Nama Perusahaan *",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Kontak / PIC",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Telepon",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Email",
+        "jenis": "input",
+        "tipe": "email",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Alamat",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "NPWP",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Nama Bank",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "BCA, Mandiri, ...",
+        "bawaan": null
+       },
+       {
+        "label": "No. Rekening",
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan"
+      ],
+      "gulir": {
+       "isi": 423,
+       "tampak": 423
+      },
+      "teks": "Nama Perusahaan * Kontak / PIC Telepon Email Alamat NPWP Nama Bank No. Rekening"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "operator",
+   "label": "Operator",
+   "kelompok": "Master Data",
+   "rute": "#/operators",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/operator-layar.png",
+      "byte": 116121,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. OPERATOR",
+         "NAMA",
+         "TELEPON",
+         "UNIT TERASSIGN",
+         "PROJECT",
+         "TOTAL JAM",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "+ Tambah Operator",
+       "✏️",
+       "🖨️",
+       "🗑️"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari operator...",
+        "bawaan": null
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Status",
+         "Aktif",
+         "Non-Aktif",
+         "Cuti",
+         "Suspensi"
+        ]
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-operator",
+     "pemicu": "\\+ Tambah Operator",
+     "gambar": {
+      "berkas": "gambar/operator-tambah-operator.png",
+      "byte": 115920,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Operator Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "No. Operator",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "OP-2026-002"
+       },
+       {
+        "label": "Nama Lengkap *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama lengkap operator",
+        "bawaan": null
+       },
+       {
+        "label": "Telepon *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "08xxxxxxxxxx",
+        "bawaan": null
+       },
+       {
+        "label": "Email",
+        "jenis": "input",
+        "tipe": "email",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "email@example.com",
+        "bawaan": null
+       },
+       {
+        "label": "NIK",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "16 digit NIK",
+        "bawaan": null
+       },
+       {
+        "label": "Status *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ACTIVE",
+        "opsi": [
+         "Aktif",
+         "Non-Aktif",
+         "Cuti",
+         "Suspensi"
+        ]
+       },
+       {
+        "label": "Tanggal Mulai *",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Unit Terassign",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "Tidak ada",
+         "PG-PC200-002 - PC200-8",
+         "PG-SY215-001 - SY215C"
+        ]
+       },
+       {
+        "label": "Project Terassign",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama project",
+        "bawaan": null
+       },
+       {
+        "label": "Total Jam Kerja",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": "0"
+       },
+       {
+        "label": "No. Lisensi",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nomor lisensi operator",
+        "bawaan": null
+       },
+       {
+        "label": "Masa Berlaku Lisensi",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Catatan",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Catatan tambahan...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Tambah Operator"
+      ],
+      "gulir": {
+       "isi": 597,
+       "tampak": 597
+      },
+      "teks": "No. Operator Nama Lengkap * Telepon * Email NIK Status * Aktif Non-Aktif Cuti Suspensi Tanggal Mulai * Unit Terassign Tidak ada PG-PC200-002 - PC200-8 PG-SY215-001 - SY215C Project Terassign Total Jam Kerja No. Lisensi Masa Berlaku Lisensi Catatan Batal Tambah Operator"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "teknisi",
+   "label": "Teknisi",
+   "kelompok": "Master Data",
+   "rute": "#/technicians",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/teknisi-layar.png",
+      "byte": 85652,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. TEKNISI",
+         "NAMA",
+         "TELEPON",
+         "SPESIALISASI",
+         "TOTAL WO",
+         "TOTAL JAM",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "+ Tambah Teknisi",
+       "✏️",
+       "🖨️",
+       "🗑️"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari teknisi...",
+        "bawaan": null
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Status",
+         "Aktif",
+         "Non-Aktif",
+         "Cuti",
+         "Suspensi"
+        ]
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-teknisi",
+     "pemicu": "\\+ Tambah Teknisi",
+     "gambar": {
+      "berkas": "gambar/teknisi-tambah-teknisi.png",
+      "byte": 85652,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Teknisi Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "No. Teknisi",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "TECH-2026-002"
+       },
+       {
+        "label": "Nama Lengkap *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama lengkap teknisi",
+        "bawaan": null
+       },
+       {
+        "label": "Telepon *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "08xxxxxxxxxx",
+        "bawaan": null
+       },
+       {
+        "label": "Email",
+        "jenis": "input",
+        "tipe": "email",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "email@example.com",
+        "bawaan": null
+       },
+       {
+        "label": "NIK",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "16 digit NIK",
+        "bawaan": null
+       },
+       {
+        "label": "Status *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ACTIVE",
+        "opsi": [
+         "Aktif",
+         "Non-Aktif",
+         "Cuti",
+         "Suspensi"
+        ]
+       },
+       {
+        "label": "Tanggal Mulai *",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Spesialisasi"
+       },
+       {
+        "label": "Skills"
+       },
+       {
+        "label": "Total Work Orders",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": "0"
+       },
+       {
+        "label": "Total Jam Kerja",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": "0"
+       },
+       {
+        "label": "Catatan",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Catatan tambahan...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Tambah Teknisi"
+      ],
+      "gulir": {
+       "isi": 632,
+       "tampak": 632
+      },
+      "teks": "No. Teknisi Nama Lengkap * Telepon * Email NIK Status * Aktif Non-Aktif Cuti Suspensi Tanggal Mulai * Spesialisasi + Tambah Spesialisasi Skills + Tambah Skill Total Work Orders Total Jam Kerja Catatan Batal Tambah Teknisi"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "pembelian",
+   "label": "Pembelian",
+   "kelompok": "Transaksi",
+   "rute": "#/purchase",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pembelian-layar.png",
+      "byte": 121044,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Pembelian & Pengadaan (PO)",
+      "subjudul": "Penerbitan Purchase Order (PO) alat berat, spare parts, dan perlengkapan operasional",
+      "kartu": [
+       {
+        "judul": "TOTAL BELANJA DITERIMA",
+        "nilai": "Rp 0",
+        "sub": "Barang/Unit Sudah Masuk Gudang"
+       },
+       {
+        "judul": "PO DALAM PENGIRIMAN",
+        "nilai": "Rp 570.000",
+        "sub": "Menunggu Kedatangan Barang"
+       },
+       {
+        "judul": "TOTAL PO DITERBITKAN",
+        "nilai": "1 Pesanan",
+        "sub": "Keseluruhan Transaksi Pembelian"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. PO / TANGGAL",
+         "PEMASOK (SUPPLIER)",
+         "BARANG / DESKRIPSI",
+         "KATEGORI",
+         "ESTIMASI TIBA",
+         "NILAI PO",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Buat PO Baru",
+       "Semua",
+       "Dipesan ke Supplier",
+       "Diterima di Gudang",
+       "Dibatalkan",
+       "Terima Barang",
+       "Edit",
+       "🖨 Cetak PO",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari PO, supplier, barang...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buat-po",
+     "pemicu": "^Buat PO Baru$",
+     "gambar": {
+      "berkas": "gambar/pembelian-buat-po.png",
+      "byte": 121044,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Buat Purchase Order (PO) Baru",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Nomor PO",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "PO-2026-002"
+       },
+       {
+        "label": "Kategori Pembelian",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "SPAREPART",
+        "opsi": [
+         "Unit Alat Berat Baru/Bekas",
+         "Spare Parts & Komponen",
+         "BBM (Solar)",
+         "Oli, Filter & Pelumas",
+         "Lainnya"
+        ]
+       },
+       {
+        "label": "Nama Pemasok / Supplier",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: PT United Tractors Tbk",
+        "bawaan": null
+       },
+       {
+        "label": "Nama Barang / Spesifikasi Pesanan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: 1 Set Final Drive Komatsu PC200",
+        "bawaan": null
+       },
+       {
+        "label": "Tanggal Order",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-13"
+       },
+       {
+        "label": "Estimasi Tanggal Pengiriman",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-27"
+       },
+       {
+        "label": "Total Nilai Pembelian (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": null
+       },
+       {
+        "label": "Catatan / Syarat Pengiriman",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Franco workshop, garansi resmi 12 bulan",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Terbitkan PO"
+      ],
+      "gulir": {
+       "isi": 617,
+       "tampak": 617
+      },
+      "teks": "Nomor PO Kategori Pembelian Unit Alat Berat Baru/Bekas Spare Parts & Komponen BBM (Solar) Oli, Filter & Pelumas Lainnya Nama Pemasok / Supplier Nama Barang / Spesifikasi Pesanan Tanggal Order Estimasi Tanggal Pengiriman Total Nilai Pembelian (IDR) Catatan / Syarat Pengiriman"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "penjualan",
+   "label": "Penjualan",
+   "kelompok": "Transaksi",
+   "rute": "#/sales",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/penjualan-layar.png",
+      "byte": 116273,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Penjualan & SPK",
+      "subjudul": "Pencatatan Surat Pesanan Kendaraan (SPK), penjualan unit, dan proses serah terima",
+      "kartu": [
+       {
+        "judul": "TOTAL NILAI PENJUALAN",
+        "nilai": "Rp 1.750.000.000",
+        "sub": "Akumulasi Penjualan Alat Berat"
+       },
+       {
+        "judul": "ORDER AKTIF / DIPROSES",
+        "nilai": "1 Unit",
+        "sub": "Menunggu Pengiriman / Leasing"
+       },
+       {
+        "judul": "PENJUALAN SELESAI",
+        "nilai": "0 Unit",
+        "sub": "Unit Sudah Diserahterimakan"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. SPK / TANGGAL",
+         "PELANGGAN",
+         "UNIT & SERIAL NUMBER",
+         "SKEMA BAYAR",
+         "HARGA UNIT",
+         "SALES",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Buat SPK Baru",
+       "Semua",
+       "SPK Dikonfirmasi",
+       "Proses Unit",
+       "Unit Terkirim",
+       "Dibatalkan",
+       "Proses",
+       "Edit",
+       "🖨 Cetak SPK",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari SPK, pelanggan, unit...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buat-spk",
+     "pemicu": "^Buat SPK Baru$",
+     "gambar": {
+      "berkas": "gambar/penjualan-buat-spk.png",
+      "byte": 116273,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Buat SPK Penjualan Baru",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Nomor SPK",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "SO-2026-002"
+       },
+       {
+        "label": "Tanggal Order",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-13"
+       },
+       {
+        "label": "Nama Pembeli (Pilih dari Data Pelanggan)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih Pelanggan --",
+         "CV Tambang Abadi",
+         "PT Konstruksi Maju"
+        ]
+       },
+       {
+        "label": "Pilih Unit (AVAILABLE)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih Unit --",
+         "SANY SY215C - PG-SY215-001"
+        ]
+       },
+       {
+        "label": "Model Terpilih",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "SANY SY215C Excavator"
+       },
+       {
+        "label": "Total Harga Unit (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Uang Muka / DP (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Skema Pembayaran",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "CASH",
+        "opsi": [
+         "Hard Cash (Tunai)",
+         "Leasing Financing",
+         "Cicilan Internal (Bertahap)"
+        ]
+       },
+       {
+        "label": "Sales Representative",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Budi Santoso"
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan SPK"
+      ],
+      "gulir": {
+       "isi": 487,
+       "tampak": 487
+      },
+      "teks": "Nomor SPK Tanggal Order Nama Pembeli (Pilih dari Data Pelanggan) -- Pilih Pelanggan -- CV Tambang Abadi PT Konstruksi Maju Pilih Unit (AVAILABLE) -- Pilih Unit -- SANY SY215C - PG-SY215-001 Model Terpilih Total Harga Unit (IDR) Uang Muka / DP (IDR) Skema Pembayaran Hard Cash (Tunai) Leasing Financing Cicilan Internal (Bertahap) Sales Representative"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "sewa-rental",
+   "label": "Sewa / Rental",
+   "kelompok": "Transaksi",
+   "rute": "#/rental",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/sewa-rental-layar.png",
+      "byte": 111177,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Manajemen Rental & Sewa",
+      "subjudul": "Pencatatan kontrak sewa alat berat, penempatan jobsite, dan jam operasi armada",
+      "kartu": [
+       {
+        "judul": "ARMADA AKTIF DISEWA",
+        "nilai": "1 Unit",
+        "sub": "Beroperasi di Proyek / Tambang"
+       },
+       {
+        "judul": "BILLING RENTAL BULANAN",
+        "nilai": "Rp 45.000.000",
+        "sub": "Pendapatan Rutin Per Bulan"
+       },
+       {
+        "judul": "TOTAL KONTRAK SEWA",
+        "nilai": "1 Kontrak",
+        "sub": "Histori Sewa Pelanggan"
+       }
+      ],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Buat Kontrak Sewa",
+       "Semua",
+       "Sedang Berjalan",
+       "Menunggu Mobilisasi",
+       "Selesai / Demobilisasi",
+       "📈 Timeline",
+       "📊 Tabel"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari kontrak, penyewa, lokasi...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buat-kontrak",
+     "pemicu": "^Buat Kontrak Sewa$",
+     "gambar": {
+      "berkas": "gambar/sewa-rental-buat-kontrak.png",
+      "byte": 111177,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Buat Kontrak Sewa Alat Baru",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Nomor Kontrak",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "RNT-2026-002"
+       },
+       {
+        "label": "Nama Penyewa (Pilih dari Master)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih Pelanggan --",
+         "CV Tambang Abadi",
+         "PT Konstruksi Maju"
+        ]
+       },
+       {
+        "label": "Pilih Unit (AVAILABLE)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih Unit --",
+         "SANY SY215C - SN: PG-SY215-001"
+        ]
+       },
+       {
+        "label": "Model Terpilih",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Komatsu PC200-8 Excavator"
+       },
+       {
+        "label": "Lokasi Penempatan / Jobsite",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Morowali, Sulawesi Tengah",
+        "bawaan": null
+       },
+       {
+        "label": "Tanggal Mulai",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-13"
+       },
+       {
+        "label": "Tanggal Berakhir",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2027-01-11"
+       },
+       {
+        "label": "Tarif Bulanan (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "90000000"
+       },
+       {
+        "label": "Minimal Jam Operasi (HM)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "200"
+       },
+       {
+        "label": "Termasuk Tenaga Operator (Include Operator)",
+        "jenis": "input",
+        "tipe": "checkbox",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "on"
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Kontrak"
+      ],
+      "gulir": {
+       "isi": 560,
+       "tampak": 560
+      },
+      "teks": "Nomor Kontrak Nama Penyewa (Pilih dari Master) -- Pilih Pelanggan -- CV Tambang Abadi PT Konstruksi Maju Pilih Unit (AVAILABLE) -- Pilih Unit -- SANY SY215C - SN: PG-SY215-001 Model Terpilih Lokasi Penempatan / Jobsite Tanggal Mulai Tanggal Berakhir Tarif Bulanan (IDR) Minimal Jam Operasi (HM) Termasuk Tenaga Operator (Include Operator)"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "persetujuan",
+   "label": "Persetujuan (Approval)",
+   "kelompok": "Transaksi",
+   "rute": "#/approvals",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/persetujuan-layar.png",
+      "byte": 156707,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. REQUEST",
+         "TIPE",
+         "JUDUL",
+         "REQUESTER",
+         "AMOUNT",
+         "TANGGAL",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "+ Buat Request",
+       "✏️",
+       "🖨️",
+       "✓",
+       "✗",
+       "🗑️"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari request...",
+        "bawaan": null
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Tipe",
+         "Purchase Request",
+         "Maintenance Request",
+         "Rental Contract",
+         "Discount",
+         "Payment",
+         "Expense"
+        ]
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Status",
+         "Pending",
+         "Disetujui",
+         "Ditolak",
+         "Dibatalkan"
+        ]
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buat-request",
+     "pemicu": "\\+ Buat Request",
+     "gambar": {
+      "berkas": "gambar/persetujuan-buat-request.png",
+      "byte": 156707,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Buat Request Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "No. Request",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "APR-2026-002"
+       },
+       {
+        "label": "Tipe Request *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "PURCHASE_REQUEST",
+        "opsi": [
+         "Purchase Request",
+         "Maintenance Request",
+         "Rental Contract",
+         "Discount",
+         "Payment",
+         "Expense"
+        ]
+       },
+       {
+        "label": "Judul *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Judul request",
+        "bawaan": null
+       },
+       {
+        "label": "Deskripsi *",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Jelaskan detail request...",
+        "bawaan": null
+       },
+       {
+        "label": "Requested By *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama requester",
+        "bawaan": null
+       },
+       {
+        "label": "Amount",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": "0"
+       },
+       {
+        "label": "Approver Level",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "1",
+        "opsi": [
+         "Level 1",
+         "Level 2",
+         "Level 3"
+        ]
+       },
+       {
+        "label": "Current Approver",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama approver saat ini",
+        "bawaan": null
+       },
+       {
+        "label": "Catatan",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Catatan tambahan...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Buat Request"
+      ],
+      "gulir": {
+       "isi": 523,
+       "tampak": 523
+      },
+      "teks": "No. Request Tipe Request * Purchase Request Maintenance Request Rental Contract Discount Payment Expense Judul * Deskripsi * Requested By * Amount Approver Level Level 1 Level 2 Level 3 Current Approver Catatan Batal Buat Request"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "faktur",
+   "label": "Faktur / Invoice",
+   "kelompok": "Transaksi",
+   "rute": "#/invoices",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/faktur-layar.png",
+      "byte": 112840,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Invoice & Tagihan",
+      "subjudul": "Penerbitan tagihan pelanggan, pemantauan pembayaran, dan status piutang",
+      "kartu": [
+       {
+        "judul": "TOTAL DITAGIHKAN",
+        "nilai": "Rp 1.445.000.000",
+        "sub": "2 Transaksi Terbit"
+       },
+       {
+        "judul": "SUDAH DIBAYAR",
+        "nilai": "Rp 10.000.000",
+        "sub": "Penerimaan Kas Masuk"
+       },
+       {
+        "judul": "SISA PIUTANG (AR)",
+        "nilai": "Rp 1.435.000.000",
+        "sub": "Menunggu Pelunasan"
+       },
+       {
+        "judul": "JATUH TEMPO",
+        "nilai": "1 Invoice",
+        "sub": "Perlu Follow-up Tagihan"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. INVOICE",
+         "PELANGGAN & KETERANGAN",
+         "TIPE",
+         "JATUH TEMPO",
+         "TOTAL TAGIHAN",
+         "SISA TAGIHAN",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Ekspor CSV",
+       "Buat Invoice Baru",
+       "Semua",
+       "Belum Bayar",
+       "Sebagian (Cicil)",
+       "Lunas",
+       "Jatuh Tempo",
+       "Awal",
+       "Sebelumnya",
+       "Berikutnya",
+       "Terakhir"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari no. invoice, pelanggan...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buat-invoice",
+     "pemicu": "^Buat Invoice Baru$",
+     "gambar": {
+      "berkas": "gambar/faktur-buat-invoice.png",
+      "byte": 111401,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Terbitkan Invoice Baru",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Nomor Invoice",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "INV-2026-003"
+       },
+       {
+        "label": "Tipe Transaksi",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "RENTAL",
+        "opsi": [
+         "Rental Alat Berat",
+         "Penjualan Unit",
+         "Jasa Service & Perbaikan",
+         "Spare Parts & Komponen"
+        ]
+       },
+       {
+        "label": "Nama Pelanggan / Perusahaan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: PT Sumber Alam Mandiri",
+        "bawaan": null
+       },
+       {
+        "label": "Deskripsi Pekerjaan / Unit Terkait",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Sewa Excavator Komatsu PC200 Jobsite Morowali",
+        "bawaan": null
+       },
+       {
+        "label": "Tanggal Terbit",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-13"
+       },
+       {
+        "label": "Jatuh Tempo",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-11-12"
+       },
+       {
+        "label": "Total Nominal Tagihan (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Terbitkan Invoice"
+      ],
+      "gulir": {
+       "isi": 483,
+       "tampak": 483
+      },
+      "teks": "Nomor Invoice Tipe Transaksi Rental Alat Berat Penjualan Unit Jasa Service & Perbaikan Spare Parts & Komponen Nama Pelanggan / Perusahaan Deskripsi Pekerjaan / Unit Terkait Tanggal Terbit Jatuh Tempo Total Nominal Tagihan (IDR)"
+     }
+    },
+    {
+     "nama": "catat-pembayaran",
+     "pemicu": "^Bayar$",
+     "gambar": {
+      "berkas": "gambar/faktur-catat-pembayaran.png",
+      "byte": 180435,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Catat Penerimaan Pembayaran",
+      "lebar": 440,
+      "kolom": [
+       {
+        "label": "Jumlah Pembayaran Diterima (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "1400000000"
+       },
+       {
+        "label": "Diterima di Rekening",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "BCA - 1234567890",
+        "opsi": [
+         "BCA - 1234567890",
+         "Mandiri - 0987654321"
+        ]
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Pembayaran"
+      ],
+      "gulir": {
+       "isi": 338,
+       "tampak": 338
+      },
+      "teks": "Nomor Invoice: INV-PG-001 — PT Konstruksi Maju Total Tagihan: Rp 1.400.000.000 Sisa Belum Bayar: Rp 1.400.000.000 Jumlah Pembayaran Diterima (IDR) Diterima di Rekening BCA - 1234567890 Mandiri - 0987654321"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "gudang",
+   "label": "Gudang",
+   "kelompok": "Operasional",
+   "rute": "#/warehouse",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/gudang-layar.png",
+      "byte": 193206,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Gudang & Lokasi Armada (Yard)",
+      "subjudul": "Pencatatan mutasi barang masuk/keluar, transfer logistik, dan pengelolaan yard alat berat",
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. BUKTI / TANGGAL",
+         "TIPE MUTASI",
+         "LOKASI GUDANG / YARD",
+         "DESKRIPSI BARANG / UNIT",
+         "JUMLAH",
+         "DOKUMEN REFERENSI",
+         "PETUGAS (PIC)",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Catat Mutasi Stok",
+       "Semua",
+       "Barang Masuk",
+       "Barang Keluar",
+       "Mutasi Antar Gudang",
+       "Awal",
+       "Sebelumnya",
+       "Berikutnya",
+       "Terakhir"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari transaksi, barang, gudang...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "catat-mutasi",
+     "pemicu": "^Catat Mutasi Stok$",
+     "gambar": {
+      "berkas": "gambar/gudang-catat-mutasi.png",
+      "byte": 147272,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Catat Mutasi Masuk / Keluar Gudang",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "No. Bukti Mutasi",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "TRX-2026-002"
+       },
+       {
+        "label": "Jenis Mutasi",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "INBOUND",
+        "opsi": [
+         "Barang Masuk (Inbound / Penerimaan)",
+         "Barang Keluar (Outbound / Pemakaian)",
+         "Transfer Antar Yard / Gudang"
+        ]
+       },
+       {
+        "label": "Lokasi Gudang / Yard",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Yard Cikande Main Hub (Banten)",
+        "opsi": [
+         "Yard Cikande Main Hub (Banten)",
+         "Gudang Pusat Spare Parts (Jakarta)",
+         "Pool & Workshop Balikpapan (Kaltim)",
+         "Depot Surabaya (Jawa Timur)"
+        ]
+       },
+       {
+        "label": "Nama Barang / Unit Alat Berat",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: 1 Unit Excavator SANY SY215C",
+        "bawaan": null
+       },
+       {
+        "label": "Kuantitas / Jumlah",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "1"
+       },
+       {
+        "label": "Satuan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Unit"
+       },
+       {
+        "label": "No. Dokumen Referensi (PO/WO/SPK)",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "PO-2026-001",
+        "bawaan": null
+       },
+       {
+        "label": "Nama Petugas (PIC)",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Rudi Hermawan"
+       },
+       {
+        "label": "Keterangan Tambahan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Catatan kondisi fisik saat serah terima...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Mutasi"
+      ],
+      "gulir": {
+       "isi": 572,
+       "tampak": 572
+      },
+      "teks": "No. Bukti Mutasi Jenis Mutasi Barang Masuk (Inbound / Penerimaan) Barang Keluar (Outbound / Pemakaian) Transfer Antar Yard / Gudang Lokasi Gudang / Yard Yard Cikande Main Hub (Banten) Gudang Pusat Spare Parts (Jakarta) Pool & Workshop Balikpapan (Kaltim) Depot Surabaya (Jawa Timur) Nama Barang / Unit Alat Berat Kuantitas / Jumlah Satuan No. Dokumen Referensi (PO/WO/SPK) Nama Petugas (PIC) Keterangan Tambahan"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "suku-cadang",
+   "label": "Suku Cadang",
+   "kelompok": "Operasional",
+   "rute": "#/spareparts",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/suku-cadang-layar.png",
+      "byte": 123080,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Suku Cadang & Spare Parts",
+      "subjudul": "Katalog suku cadang alat berat multi-brand, stok opname, lokasi rak gudang, dan peringatan restock",
+      "kartu": [
+       {
+        "judul": "TOTAL NILAI PERSEDIAAN",
+        "nilai": "Rp 54.840.000",
+        "sub": "Modal Fisik Spare Parts di Gudang"
+       },
+       {
+        "judul": "STOK RENDAH (RESTOCK ALERT)",
+        "nilai": "1 Part",
+        "sub": "Stok Kurang dari Batas Minimum"
+       },
+       {
+        "judul": "KATALOG SUKU CADANG",
+        "nilai": "2 SKU",
+        "sub": "Item Terdaftar di Sistem"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "PART NUMBER",
+         "NAMA KOMPONEN / KOMPATIBILITAS",
+         "KATEGORI",
+         "LOKASI RAK",
+         "STOK GUDANG",
+         "HARGA BELI",
+         "HARGA JUAL",
+         "AKSI / SESUAIKAN"
+        ],
+        "baris": 2
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Tambah Spare Part",
+       "Semua",
+       "FILTER",
+       "UNDERCARRIAGE",
+       "HYDRAULIC",
+       "ENGINE",
+       "ELECTRICAL",
+       "+1",
+       "-1",
+       "Edit",
+       "Hapus",
+       "Awal",
+       "Sebelumnya",
+       "Berikutnya",
+       "Terakhir"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari part number, nama part, rak...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-spare-part",
+     "pemicu": "^Tambah Spare Part$",
+     "gambar": {
+      "berkas": "gambar/suku-cadang-tambah-spare-part.png",
+      "byte": 166672,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Data Suku Cadang",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Part Number",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: 6736-51-5142",
+        "bawaan": null
+       },
+       {
+        "label": "Kategori Komponen",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "Belum dikategorikan",
+         "Filter & Saringan",
+         "Undercarriage (Track/Roller)",
+         "Hydraulic Component",
+         "Engine & Transmission",
+         "Electrical & Starter",
+         "Bucket, Teeth & Breaker"
+        ]
+       },
+       {
+        "label": "Nama Suku Cadang",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Fuel Filter Cartridge",
+        "bawaan": null
+       },
+       {
+        "label": "Model Kompatibel / Brand",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Komatsu PC200-8, SANY SY215C",
+        "bawaan": null
+       },
+       {
+        "label": "Stok Awal",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "0"
+       },
+       {
+        "label": "Batas Min. Stok",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "5"
+       },
+       {
+        "label": "Satuan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Pcs"
+       },
+       {
+        "label": "Harga Beli Modal (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Harga Jual (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Lokasi Rak / Bin Gudang",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: A1-02-04",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Spare Part"
+      ],
+      "gulir": {
+       "isi": 570,
+       "tampak": 570
+      },
+      "teks": "Part Number Kategori Komponen Belum dikategorikan Filter & Saringan Undercarriage (Track/Roller) Hydraulic Component Engine & Transmission Electrical & Starter Bucket, Teeth & Breaker Nama Suku Cadang Model Kompatibel / Brand Stok Awal Batas Min. Stok Satuan Harga Beli Modal (IDR) Harga Jual (IDR) Lokasi Rak / Bin Gudang"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "breakdown",
+   "label": "Breakdown",
+   "kelompok": "Operasional",
+   "rute": "#/breakdown",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/breakdown-layar.png",
+      "byte": 96635,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. BREAKDOWN",
+         "UNIT",
+         "LOKASI",
+         "SEVERITY",
+         "STATUS",
+         "TANGGAL",
+         "DOWNTIME",
+         "BIAYA",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "+ Lapor Breakdown",
+       "✏️",
+       "🖨️",
+       "✅",
+       "🗑️"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari breakdown...",
+        "bawaan": null
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Severity",
+         "Critical",
+         "Major",
+         "Minor"
+        ]
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Status",
+         "Dilaporkan",
+         "Inspeksi",
+         "Diagnosis",
+         "Perbaikan",
+         "Testing",
+         "Selesai",
+         "Dibatalkan"
+        ]
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "lapor-breakdown",
+     "pemicu": "\\+ Lapor Breakdown",
+     "gambar": {
+      "berkas": "gambar/breakdown-lapor-breakdown.png",
+      "byte": 96635,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Lapor Breakdown Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "No. Breakdown",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "BD-2026-002"
+       },
+       {
+        "label": "Serial Number Unit *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: KMT-PC200-001",
+        "bawaan": null
+       },
+       {
+        "label": "Model Unit *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Komatsu PC200-8",
+        "bawaan": null
+       },
+       {
+        "label": "Lokasi *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Jobsite Morowali",
+        "bawaan": null
+       },
+       {
+        "label": "Dilaporkan Oleh *",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama pelapor",
+        "bawaan": null
+       },
+       {
+        "label": "Severity *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "MAJOR",
+        "opsi": [
+         "Critical - Unit tidak bisa bergerak sama sekali",
+         "Major - Fungsi utama terganggu",
+         "Minor - Masalah kecil, masih bisa operasi"
+        ]
+       },
+       {
+        "label": "Status *",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "REPORTED",
+        "opsi": [
+         "Dilaporkan",
+         "Inspeksi",
+         "Diagnosis",
+         "Perbaikan",
+         "Testing",
+         "Selesai",
+         "Dibatalkan"
+        ]
+       },
+       {
+        "label": "Deskripsi Masalah *",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Jelaskan masalah yang terjadi secara detail...",
+        "bawaan": null
+       },
+       {
+        "label": "Diagnosis",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Hasil diagnosis teknisi...",
+        "bawaan": null
+       },
+       {
+        "label": "Teknisi yang Ditugaskan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama teknisi",
+        "bawaan": null
+       },
+       {
+        "label": "Estimasi Biaya Perbaikan",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": "0"
+       },
+       {
+        "label": "Biaya Aktual",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": "0"
+       },
+       {
+        "label": "Waktu Mulai",
+        "jenis": "input",
+        "tipe": "datetime-local",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Waktu Selesai",
+        "jenis": "input",
+        "tipe": "datetime-local",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Catatan Penyelesaian",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Catatan setelah perbaikan selesai...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Lapor Breakdown"
+      ],
+      "gulir": {
+       "isi": 777,
+       "tampak": 777
+      },
+      "teks": "No. Breakdown Serial Number Unit * Model Unit * Lokasi * Dilaporkan Oleh * Severity * Critical - Unit tidak bisa bergerak sama sekali Major - Fungsi utama terganggu Minor - Masalah kecil, masih bisa operasi Status * Dilaporkan Inspeksi Diagnosis Perbaikan Testing Selesai Dibatalkan Deskripsi Masalah * Diagnosis Teknisi yang Ditugaskan Estimasi Biaya Perbaikan Biaya Aktual Waktu Mulai Waktu Selesai Catatan Penyelesaia"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "servis",
+   "label": "Servis & Work Order",
+   "kelompok": "Operasional",
+   "rute": "#/service",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/servis-layar.png",
+      "byte": 121303,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Work Order & Servis Alat Berat",
+      "subjudul": "Pencatatan servis berkala, perbaikan breakdown, pemeliharaan preventif, dan monitoring mekanik",
+      "kartu": [
+       {
+        "judul": "PEKERJAAN AKTIF BERJALAN",
+        "nilai": "1 Unit",
+        "sub": "Dalam Penanganan Mekanik"
+       },
+       {
+        "judul": "MENUNGGU SPAREPART",
+        "nilai": "0 Unit",
+        "sub": "Unit Tertahan Part Indent"
+       },
+       {
+        "judul": "SERVIS SELESAI BULAN INI",
+        "nilai": "0 Unit",
+        "sub": "Armada Siap Operasi Kembali"
+       }
+      ],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Buka Work Order Servis",
+       "Semua",
+       "Menunggu",
+       "Sedang",
+       "Servis",
+       "📋 Kanban",
+       "📊 Tabel",
+       "✅",
+       "✏️",
+       "🖨️"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari WO, model unit, mekanik...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buka-work-order",
+     "pemicu": "^Buka Work Order Servis$",
+     "gambar": {
+      "berkas": "gambar/servis-buka-work-order.png",
+      "byte": 121303,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Buka Work Order Servis Baru",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Nomor Work Order",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "WO-2026-002"
+       },
+       {
+        "label": "Tipe Servis",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "PERIODIC_250H",
+        "opsi": [
+         "Servis Berkala 250 Jam (Oli & Filter)",
+         "Servis Berkala 500 Jam (Filter Komplit)",
+         "Servis Berkala 1000 Jam (Major Check)",
+         "Breakdown Repair (Kerusakan Lapangan)",
+         "Overhaul Komponen",
+         "Inspeksi Pra-Kirim (PDI)"
+        ]
+       },
+       {
+        "label": "Pilih Unit (AVAILABLE/ON_PROJECT)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih Unit --",
+         "Komatsu PC200-8 - SN: PG-PC200-002",
+         "SANY SY215C - SN: PG-SY215-001"
+        ]
+       },
+       {
+        "label": "Model Terpilih",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": true,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "Komatsu PC200-8"
+       },
+       {
+        "label": "Pelanggan (Pilih dari Master)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih Pelanggan/Proyek --",
+         "Internal Yard / Gudang Utama",
+         "CV Tambang Abadi",
+         "PT Konstruksi Maju"
+        ]
+       },
+       {
+        "label": "Hour Meter (HM)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": null
+       },
+       {
+        "label": "Teknisi / Mekanik",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama teknisi",
+        "bawaan": "Agus Sutrisno"
+       },
+       {
+        "label": "Estimasi Biaya (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "5000000"
+       },
+       {
+        "label": "Keluhan / Catatan Pekerjaan Mekanik",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Rincian kerusakan atau daftar part yang perlu diganti...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Terbitkan Work Order"
+      ],
+      "gulir": {
+       "isi": 530,
+       "tampak": 530
+      },
+      "teks": "Nomor Work Order Tipe Servis Servis Berkala 250 Jam (Oli & Filter) Servis Berkala 500 Jam (Filter Komplit) Servis Berkala 1000 Jam (Major Check) Breakdown Repair (Kerusakan Lapangan) Overhaul Komponen Inspeksi Pra-Kirim (PDI) Pilih Unit (AVAILABLE/ON_PROJECT) -- Pilih Unit -- Komatsu PC200-8 - SN: PG-PC200-002 SANY SY215C - SN: PG-SY215-001 Model Terpilih Pelanggan (Pilih dari Master) -- Pilih Pelanggan/Proyek -- Int"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "pengiriman",
+   "label": "Pengiriman",
+   "kelompok": "Operasional",
+   "rute": "#/delivery",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pengiriman-layar.png",
+      "byte": 176893,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Pengiriman & Mobilisasi Unit",
+      "subjudul": "Kelola jadwal pengiriman, serah terima unit kepada pelanggan, dan mobilisasi armada ke jobsite",
+      "kartu": [
+       {
+        "judul": "PENGIRIMAN SELESAI",
+        "nilai": "0 Unit",
+        "sub": "Sudah Diterima Pelanggan"
+       },
+       {
+        "judul": "DALAM PERJALANAN",
+        "nilai": "1 Unit",
+        "sub": "Armada Sedang Dimobilisasi"
+       },
+       {
+        "judul": "MENUNGGU JADWAL",
+        "nilai": "0 Unit",
+        "sub": "Perlu Konfirmasi Customer"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NO. SURAT JALAN",
+         "PELANGGAN & TUJUAN",
+         "UNIT & SERIAL NUMBER",
+         "TANGGAL KIRIM",
+         "DRIVER / KENDARAAN",
+         "REFERENSI DOK.",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Buat Surat Jalan",
+       "Semua",
+       "Menunggu",
+       "Dalam",
+       "Tiba",
+       "Serah",
+       "Serah Terima",
+       "Edit",
+       "🖨 Cetak SJ",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari surat jalan, customer, tujuan...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "buat-surat-jalan",
+     "pemicu": "^Buat Surat Jalan$",
+     "gambar": {
+      "berkas": "gambar/pengiriman-buat-surat-jalan.png",
+      "byte": 161752,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Buat Surat Jalan Pengiriman",
+      "lebar": 540,
+      "kolom": [
+       {
+        "label": "Nomor Surat Jalan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "DO-2026-002"
+       },
+       {
+        "label": "Referensi SPK (Belum Dikirim)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null,
+        "opsi": [
+         "-- Pilih SPK --",
+         "SPK-PG-001 - PT Konstruksi Maju"
+        ]
+       },
+       {
+        "label": "Nama Pelanggan / Penerima",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "PT. ...",
+        "bawaan": null
+       },
+       {
+        "label": "Model Unit",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Komatsu PC200-8",
+        "bawaan": null
+       },
+       {
+        "label": "Serial Number",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "KMT-XXX-XXXX",
+        "bawaan": null
+       },
+       {
+        "label": "Tujuan Pengiriman / Jobsite",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Morowali, Sulawesi Tengah",
+        "bawaan": null
+       },
+       {
+        "label": "Tanggal Kirim",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-13"
+       },
+       {
+        "label": "Nama Driver",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Plat Kendaraan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "B 1234 XX",
+        "bawaan": null
+       },
+       {
+        "label": "Catatan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Catatan pengiriman...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Terbitkan Surat Jalan"
+      ],
+      "gulir": {
+       "isi": 572,
+       "tampak": 572
+      },
+      "teks": "Nomor Surat Jalan Referensi SPK (Belum Dikirim) -- Pilih SPK -- SPK-PG-001 - PT Konstruksi Maju Nama Pelanggan / Penerima Model Unit Serial Number Tujuan Pengiriman / Jobsite Tanggal Kirim Nama Driver Plat Kendaraan Catatan"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "kas-bank",
+   "label": "Kas & Bank",
+   "kelompok": "Keuangan",
+   "rute": "#/finance",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/kas-bank-layar.png",
+      "byte": 161752,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Kas & Bank",
+      "subjudul": "Pencatatan arus kas masuk/keluar, mutasi rekening, dan saldo keuangan perusahaan",
+      "kartu": [
+       {
+        "judul": "TOTAL KAS MASUK",
+        "nilai": "Rp 350.000.000",
+        "sub": "Penerimaan Bulan Ini"
+       },
+       {
+        "judul": "TOTAL KAS KELUAR",
+        "nilai": "Rp 570.000",
+        "sub": "Pengeluaran Bulan Ini"
+       },
+       {
+        "judul": "SALDO BERSIH",
+        "nilai": "Rp 349.430.000",
+        "sub": "Selisih Masuk vs Keluar"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "TANGGAL",
+         "KETERANGAN",
+         "KATEGORI",
+         "REKENING",
+         "REFERENSI",
+         "KAS MASUK",
+         "KAS KELUAR",
+         "AKSI"
+        ],
+        "baris": 2
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Catat Transaksi",
+       "Semua",
+       "⬆ Kas Masuk",
+       "⬇ Kas Keluar",
+       "Edit",
+       "Hapus",
+       "Awal",
+       "Sebelumnya",
+       "Berikutnya",
+       "Terakhir"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari keterangan, referensi, rekening...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "catat-transaksi",
+     "pemicu": "^Catat Transaksi$",
+     "gambar": {
+      "berkas": "gambar/kas-bank-catat-transaksi.png",
+      "byte": 121378,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Catat Transaksi Kas",
+      "lebar": 520,
+      "kolom": [
+       {
+        "label": "Tipe Transaksi",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "MASUK",
+        "opsi": [
+         "⬆ Kas Masuk (Penerimaan)",
+         "⬇ Kas Keluar (Pengeluaran)"
+        ]
+       },
+       {
+        "label": "Tanggal Transaksi",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "2026-10-13"
+       },
+       {
+        "label": "Keterangan",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: Penerimaan rental PC200 bulan Maret",
+        "bawaan": null
+       },
+       {
+        "label": "Kategori",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "LAINNYA",
+        "opsi": [
+         "Penjualan Unit",
+         "Rental Alat",
+         "Jasa Service",
+         "Pembelian / PO",
+         "Biaya Operasional",
+         "Gaji & Tunjangan",
+         "Lainnya"
+        ]
+       },
+       {
+        "label": "Rekening / Kas",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "BCA - 1234567890",
+        "opsi": [
+         "BCA - 1234567890",
+         "Mandiri - 0987654321"
+        ]
+       },
+       {
+        "label": "Jumlah (IDR)",
+        "jenis": "input",
+        "tipe": "number",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "0",
+        "bawaan": null
+       },
+       {
+        "label": "Nomor Referensi (SPK/PO/INV)",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "INV-2026-XXX",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Simpan Transaksi"
+      ],
+      "gulir": {
+       "isi": 394,
+       "tampak": 394
+      },
+      "teks": "Tipe Transaksi ⬆ Kas Masuk (Penerimaan) ⬇ Kas Keluar (Pengeluaran) Tanggal Transaksi Keterangan Kategori Penjualan Unit Rental Alat Jasa Service Pembelian / PO Biaya Operasional Gaji & Tunjangan Lainnya Rekening / Kas BCA - 1234567890 Mandiri - 0987654321 Jumlah (IDR) Nomor Referensi (SPK/PO/INV)"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "laporan",
+   "label": "Laporan",
+   "kelompok": "Keuangan",
+   "rute": "#/reports",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/laporan-layar.png",
+      "byte": 167768,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Laporan & Analitik",
+      "subjudul": "Laporan pendapatan, kinerja unit, piutang, dan rekap operasional bisnis alat berat",
+      "kartu": [
+       {
+        "judul": "TOTAL PENDAPATAN RENTAL",
+        "nilai": "Rp 45.000.000",
+        "sub": "Sepanjang masa"
+       },
+       {
+        "judul": "TOTAL PENJUALAN UNIT",
+        "nilai": "Rp 1.400.000.000",
+        "sub": "Sepanjang masa"
+       },
+       {
+        "judul": "PENDAPATAN JASA SERVICE",
+        "nilai": "Rp 0",
+        "sub": "Sepanjang masa"
+       },
+       {
+        "judul": "TOTAL PENDAPATAN",
+        "nilai": "Rp 1.445.000.000",
+        "sub": "Gabungan 3 jenis, sepanjang masa"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "BULAN (MEI 26–OKT 26)",
+         "PENDAPATAN RENTAL",
+         "PENDAPATAN PENJUALAN",
+         "PENDAPATAN SERVICE",
+         "TOTAL"
+        ],
+        "baris": 7
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Ekspor CSV",
+       "Cetak PDF",
+       "💰 Laporan Pendapatan",
+       "🚜 Laporan Kinerja Unit",
+       "📋 Laporan Piutang (AR)"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  },
+  {
+   "slug": "pengaturan",
+   "label": "Pengaturan",
+   "kelompok": "Sistem",
+   "rute": "#/settings",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pengaturan-layar.png",
+      "byte": 122591,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Pengaturan",
+      "subjudul": "Konfigurasi sistem, profil bisnis, dan kustomisasi menu navigasi",
+      "kartu": [],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Simpan Pengaturan",
+       "Perusahaan",
+       "Modul & Menu",
+       "Sistem",
+       "Rekening Bank",
+       "Cetak",
+       "Tentang"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "CV. MUGHNY NAMASKARABUMI KURNIA"
+       },
+       {
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "12.345.678.9-021.000"
+       },
+       {
+        "jenis": "input",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "021-5555-1234"
+       },
+       {
+        "jenis": "input",
+        "tipe": "email",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "info@namaskarabumi.co.id"
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  },
+  {
+   "slug": "pengguna",
+   "label": "Pengguna",
+   "kelompok": "Sistem",
+   "rute": "#/users",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pengguna-layar.png",
+      "byte": 87704,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Pengguna & Hak Akses",
+      "subjudul": "Akun, peran (role), dan hak akses tersimpan di aplikasi desktop dengan password ter-hash. Halaman ini tidak dapat menampilkan maupun mengirim password.",
+      "kartu": [
+       {
+        "judul": "TOTAL PENGGUNA",
+        "nilai": "5 Akun",
+        "sub": "Terdaftar di Sistem"
+       },
+       {
+        "judul": "PENGGUNA AKTIF",
+        "nilai": "5 Akun",
+        "sub": "Dapat Login Saat Ini"
+       },
+       {
+        "judul": "TIDAK AKTIF",
+        "nilai": "0 Akun",
+        "sub": "Akses Diblokir"
+       },
+       {
+        "judul": "WAJIB GANTI PASSWORD",
+        "nilai": "4 Akun",
+        "sub": "Masih Pakai Bawaan Instalasi"
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "NAMA PENGGUNA",
+         "USERNAME",
+         "EMAIL",
+         "PERAN (ROLE)",
+         "TERAKHIR LOGIN",
+         "STATUS",
+         "AKSI"
+        ],
+        "baris": 5
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Muat ulang",
+       "Tambah Pengguna",
+       "Ubah",
+       "Nonaktifkan",
+       "Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari nama, username, email, peran...",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "tambah-pengguna",
+     "pemicu": "^Tambah Pengguna$",
+     "gambar": {
+      "berkas": "gambar/pengguna-tambah-pengguna.png",
+      "byte": 197234,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Tambah Pengguna Baru",
+      "lebar": 460,
+      "kolom": [
+       {
+        "label": "Username",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "mis. mekanik1",
+        "bawaan": null
+       },
+       {
+        "label": "Nama Lengkap",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Nama pengguna",
+        "bawaan": null
+       },
+       {
+        "label": "Email",
+        "jenis": "input",
+        "tipe": "email",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "nama@perusahaan.co.id",
+        "bawaan": null
+       },
+       {
+        "label": "Peran (Role)",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "SALES",
+        "opsi": [
+         "Super Admin",
+         "Staff Penjualan",
+         "Petugas Gudang",
+         "Teknisi / Mekanik",
+         "Staf Keuangan"
+        ]
+       },
+       {
+        "label": "Password awal",
+        "jenis": "input",
+        "tipe": "password",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Minimal 8 karakter",
+        "bawaan": null
+       },
+       {
+        "label": "Akun Aktif (dapat login)",
+        "jenis": "input",
+        "tipe": "checkbox",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "on"
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Buat Akun"
+      ],
+      "gulir": {
+       "isi": 751,
+       "tampak": 751
+      },
+      "teks": "Username 3-32 karakter: huruf kecil, angka, titik, garis bawah, tanda hubung. Tidak dapat diubah setelah dibuat. Nama Lengkap Email Peran (Role) Super Admin Staff Penjualan Petugas Gudang Teknisi / Mekanik Staf Keuangan Hak akses peran ini: ✓ Pelanggan ✓ Penjualan & SPK ✓ Invoice ✓ Laporan Penjualan Password awal Password langsung di-hash di aplikasi dan tidak dapat dibaca kembali. Akun Aktif (dapat login)"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "dokumen-legal",
+   "label": "Dokumen Legal",
+   "kelompok": "Sistem",
+   "rute": "#/documents",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/dokumen-legal-layar.png",
+      "byte": 197234,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Dokumen Legal & Administratif",
+      "subjudul": "Kelola dokumen legal, perizinan, dan sertifikat perusahaan",
+      "kartu": [],
+      "tabel": [
+       {
+        "kepala": [
+         "JENIS DOKUMEN",
+         "NOMOR DOKUMEN",
+         "MASA BERLAKU",
+         "STATUS LEGALITAS",
+         "KETERANGAN",
+         "AKSI"
+        ],
+        "baris": 1
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "+ Upload Dokumen",
+       "📥 Unduh PDF",
+       "✏️ Edit",
+       "🗑️ Hapus"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari dokumen...",
+        "bawaan": null
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Status",
+         "Aktif",
+         "Kadaluarsa",
+         "Dicabut",
+         "Menunggu"
+        ]
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": [
+    {
+     "nama": "upload-dokumen",
+     "pemicu": "\\+ Upload Dokumen",
+     "gambar": {
+      "berkas": "gambar/dokumen-legal-upload-dokumen.png",
+      "byte": 130111,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "kepala": "Upload Dokumen Baru",
+      "lebar": 500,
+      "kolom": [
+       {
+        "label": "Jenis Dokumen",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "SIA (Surat Izin Alat)",
+        "opsi": [
+         "SIA (Surat Izin Alat)",
+         "SIUP (Surat Izin Usaha Perdagangan)",
+         "NIB (Nomor Induk Berusaha)",
+         "NPWP (Nomor Pokok Wajib Pajak)",
+         "Sertifikat Kepemilikan Unit",
+         "STNK (Surat Tanda Nomor Kendaraan)",
+         "BPKB (Bukti Kepemilikan Kendaraan)",
+         "Asuransi Unit",
+         "Perjanjian Sewa",
+         "Kontrak Kerjasama",
+         "Lainnya"
+        ]
+       },
+       {
+        "label": "Nomor Dokumen",
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Contoh: SIA-2024-8891-JKT",
+        "bawaan": null
+       },
+       {
+        "label": "Masa Berlaku (Expiry Date)",
+        "jenis": "input",
+        "tipe": "date",
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Status Legalitas",
+        "jenis": "select",
+        "tipe": null,
+        "wajib": true,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "AKTIF",
+        "opsi": [
+         "Aktif",
+         "Kadaluarsa",
+         "Dicabut",
+         "Menunggu"
+        ]
+       },
+       {
+        "label": "Upload File PDF",
+        "jenis": "input",
+        "tipe": "file",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": null
+       },
+       {
+        "label": "Keterangan",
+        "jenis": "textarea",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Keterangan tambahan...",
+        "bawaan": null
+       }
+      ],
+      "tombol": [
+       "Batal",
+       "Upload Dokumen"
+      ],
+      "gulir": {
+       "isi": 612,
+       "tampak": 612
+      },
+      "teks": "Jenis Dokumen SIA (Surat Izin Alat) SIUP (Surat Izin Usaha Perdagangan) NIB (Nomor Induk Berusaha) NPWP (Nomor Pokok Wajib Pajak) Sertifikat Kepemilikan Unit STNK (Surat Tanda Nomor Kendaraan) BPKB (Bukti Kepemilikan Kendaraan) Asuransi Unit Perjanjian Sewa Kontrak Kerjasama Lainnya Nomor Dokumen Masa Berlaku (Expiry Date) Status Legalitas Aktif Kadaluarsa Dicabut Menunggu Upload File PDF Keterangan"
+     }
+    }
+   ]
+  },
+  {
+   "slug": "backup",
+   "label": "Backup & Restore",
+   "kelompok": "Sistem",
+   "rute": "#/backup",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/backup-layar.png",
+      "byte": 119490,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": "Backup & Restore",
+      "subjudul": "Cadangkan dan pulihkan seluruh data database FATHONI EQUIPMENT OS",
+      "kartu": [],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "Backup Sekarang",
+       "Pilih File Backup...",
+       "Buat Snapshot",
+       "Bersihkan"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       }
+      ],
+      "kosong": true,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  },
+  {
+   "slug": "pemeliharaan-sistem",
+   "label": "Pemeliharaan Sistem",
+   "kelompok": "Sistem",
+   "rute": "#/maintenance",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/pemeliharaan-sistem-layar.png",
+      "byte": 110723,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [],
+      "tabel": [],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "🔄 Run Health Check",
+       "📦 Muat Data Contoh",
+       "💾 Create Backup",
+       "🔧 Repair Data",
+       "🗑️ Clear Backups",
+       "📥 Export",
+       "🗑️ Clear",
+       "📊 Export Health Report"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  },
+  {
+   "slug": "audit-log",
+   "label": "Audit Log",
+   "kelompok": "Sistem",
+   "rute": "#/audit-log",
+   "tampilan": [
+    {
+     "nama": "layar",
+     "gambar": {
+      "berkas": "gambar/audit-log-layar.png",
+      "byte": 87795,
+      "lebar": 1184,
+      "tinggi": 967
+     },
+     "dump": {
+      "judul": null,
+      "subjudul": null,
+      "kartu": [
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       },
+       {
+        "judul": null,
+        "nilai": null,
+        "sub": null
+       }
+      ],
+      "tabel": [
+       {
+        "kepala": [
+         "WAKTU",
+         "KEJADIAN",
+         "AKUN",
+         "DILAKUKAN OLEH",
+         "DETAIL",
+         "AKSI"
+        ],
+        "baris": 2
+       }
+      ],
+      "tombol": [
+       "🏢\nProfil: 5 Profil Aktif\n✏️ Ubah",
+       "A\nAdministrator\nSuper Admin",
+       "📥 Export CSV",
+       "🖨️"
+      ],
+      "tab": [],
+      "isian": [
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari menu... (ketik 2 huruf)",
+        "bawaan": null
+       },
+       {
+        "jenis": "input",
+        "tipe": "text",
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": "Cari akun, kejadian, atau detail...",
+        "bawaan": null
+       },
+       {
+        "jenis": "select",
+        "tipe": null,
+        "wajib": false,
+        "terkunci": false,
+        "hanyaBaca": false,
+        "contoh": null,
+        "bawaan": "ALL",
+        "opsi": [
+         "Semua Kejadian",
+         "Login berhasil",
+         "Login gagal",
+         "Akun terkunci",
+         "Keluar",
+         "Password diganti",
+         "Password direset",
+         "Akun dibuat",
+         "Akun diubah",
+         "Akun dihapus",
+         "Baris dihapus",
+         "Tulis data ditolak"
+        ]
+       }
+      ],
+      "kosong": null,
+      "teks": "F FATHONI EQUIPMENT OS 🏢 5 PROFIL AKTIF UTAMA Dasbor Control Tower MASTER DATA Merek & Model Unit / Armada Pelanggan Pemasok Operator Teknisi TRANSAKSI Pembelian Penjualan Sewa / Rental Persetujuan (Approval) Faktur / Invoice OPERASIONAL Gudang Suku Cadang Br"
+     }
+    }
+   ],
+   "form": []
+  }
+ ]
+}

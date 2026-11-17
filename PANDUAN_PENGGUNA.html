@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Pemakaian — FATHONI EQUIPMENT OS 3.1.0</title>
+<style>
+@page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.5; color: #16202b; margin: 0; }
+h1 { font-size: 17pt; color: #b00016; margin: 0 0 4mm; border-bottom: 2.4pt solid #b00016; padding-bottom: 2mm; }
+h2 { font-size: 13pt; color: #0f2a4a; margin: 7mm 0 2mm; border-left: 4pt solid #b00016; padding-left: 3mm; }
+h3 { font-size: 11pt; color: #123c66; margin: 5mm 0 1.5mm; }
+h4 { font-size: 10.2pt; margin: 3.5mm 0 1mm; color: #16202b; }
+p { margin: 0 0 2.2mm; }
+ul, ol { margin: 0 0 2.4mm; padding-left: 6mm; }
+li { margin-bottom: 0.9mm; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 9.2pt; }
+th { background: #0f2a4a; color: #fff; text-align: left; padding: 1.6mm 2mm; font-weight: 600; }
+td { border: 0.5pt solid #b9c4d0; padding: 1.4mm 2mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f4f7fa; }
+code, .k { font-family: "Consolas", monospace; font-size: 9pt; background: #eef2f6; padding: 0.3mm 1mm; border-radius: 2pt; }
+.lbl { font-weight: 600; }
+.contoh { border-left: 4pt solid #1a7f4b; background: #f0f8f3; padding: 2.4mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.contoh b.ct { color: #1a7f4b; }
+.catatan { border-left: 4pt solid #b7791f; background: #fdf7ec; padding: 2.4mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.catatan b.ct { color: #965f0d; }
+.bahaya { border-left: 4pt solid #b00016; background: #fdf0f1; padding: 2.4mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.bahaya b.ct { color: #b00016; }
+.brk { page-break-before: always; }
+.sampul { text-align: center; padding-top: 55mm; }
+.sampul .logo { font-size: 40pt; font-weight: 800; color: #b00016; letter-spacing: 2pt; }
+.sampul .sub { font-size: 13pt; color: #0f2a4a; margin-top: 3mm; }
+.sampul .meta { font-size: 10.5pt; color: #47566a; margin-top: 26mm; line-height: 1.9; }
+.toc { columns: 2; column-gap: 9mm; font-size: 9.6pt; }
+.toc div { margin-bottom: 1.1mm; break-inside: avoid; }
+.toc .b { font-weight: 700; color: #0f2a4a; }
+.kotak { border: 0.7pt solid #b9c4d0; border-radius: 3pt; padding: 2.6mm 3mm; margin: 0 0 3.5mm; page-break-inside: avoid; }
+.gambar { margin: 0 0 3.8mm; page-break-inside: avoid; }
+.gambar img { max-width: 100%; height: auto; border: 0.7pt solid #b9c4d0; border-radius: 3pt; display: block; }
+.gambar figcaption { font-size: 8.8pt; color: #47566a; margin-top: 1.3mm; }
+.gambar figcaption b { color: #0f2a4a; }
+.gambar.dua { display: flex; gap: 4mm; align-items: flex-start; }
+.gambar.dua figure { flex: 1 1 0; margin: 0; }
+.gambar.dua > figure > img { width: 100%; }
+footer.catatan-kaki { font-size: 8.6pt; color: #66748a; border-top: 0.6pt solid #b9c4d0; padding-top: 2mm; margin-top: 6mm; }
+</style>
+</head>
+<body>
+
+<div class="sampul">
+  <div class="logo">FATHONI</div>
+  <div class="sub"><b>EQUIPMENT OS</b></div>
+  <div class="sub" style="margin-top:12mm"><b>PANDUAN PEMAKAIAN &amp; PENGOPERASIAN</b></div>
+  <div class="sub" style="font-size:11pt">Sistem Operasional Alat Berat Terintegrasi — dilengkapi contoh pengisian</div>
+  <div class="meta">
+    Versi aplikasi: <b>3.1.0</b> &nbsp;·&nbsp; Tanggal: 22 Oktober 2026<br>
+    Untuk: operator harian, petugas gudang, tim servis, sales, staf keuangan, Super Admin<br>
+    Platform: Windows 10/11 64-bit (instalasi lokal, tanpa internet)
+  </div>
+</div>
+
+<div class="brk"></div>
+<h1>Cara Membaca Panduan Ini</h1>
+<p>Panduan ini mengikuti urutan yang sama dengan urutan menu di aplikasi: <b>Utama → Master Data → Transaksi → Operasional → Keuangan → Sistem</b>. Urutan itu bukan hiasan — ia adalah alur kerja satu proyek alat berat dari awal sampai selesai.</p>
+<ul>
+  <li><b>Bagian hijau (Contoh)</b>: isian nyata yang bisa Anda tiru. Angka dan namanya contoh, bukan data bawaan aplikasi.</li>
+  <li><b>Bagian kuning (Catatan)</b>: perilaku yang mengejutkan pemakai baru, atau batasan yang perlu diketahui sebelum salah menuduh aplikasi rusak.</li>
+  <li><b>Bagian merah</b>: tindakan yang bisa merusak/menghapus data. Baca sebelum mengerjakan.</li>
+  <li>Setiap label tombol dan kolom ditulis <span class="lbl">seperti yang tampil di layar</span>, jadi Anda bisa mencocokkan tanpa menebak.</li>
+</ul>
+<div class="catatan"><b class="ct">Catatan.</b> Panduan ini disusun dari isi aplikasi versi 3.0.5 yang terpasang, bukan dari rencana fitur. Empat hal yang baru terasa di 3.0.5: kartu <b>Detail unit</b> tidak lagi menampilkan angka hiasan — tab PERAWATAN dan SEWA membaca Work Order serta kontrak sewa <b>unit ini</b> dari database lewat nomor sasis, dan tiga tab yang belum bisa ditaut mengucapkan alasannya apa adanya (§5.4); tombol-tombol di kartu itu sekarang benar-benar mengantar ke menu tujuannya, bukan memunculkan kotak peringatan (§5.4); <b>pembacaan hour meter yang mundur ditolak oleh aplikasi itu sendiri</b>, bukan hanya oleh formulirnya (§5.4); dan <b>satu pembayaran tidak bisa masuk Kas dua kali</b> (§5.20). Lima hal yang di 3.0.3 tertulis “belum berfungsi” dan kini benar-benar bekerja, ditandai di bagian masing-masing: halaman <b>Merek &amp; Model</b> sudah tersimpan ke database dan menjadi sumber daftar merek di Unit (§5.3), empat tombol <b>View All</b> di <b>Control Tower</b> membuka menunya (§5.2), <span class="lbl">Cetak Bukti</span> di Gudang mencetak formulir serah terima (§5.16), jenis dokumen <b>BPKB</b> tersedia sendiri di Dokumen Legal (§5.24), dan ekspor CSV Laporan menelusuri sampai 5.000 baris (§5.21). Batasan yang masih berlaku tetap ditulis apa adanya di Bab 12.</div>
+
+<h2>Daftar Isi</h2>
+<div class="toc">
+  <div class="b">1. Instalasi dan mulai pakai</div>
+  <div>&nbsp; 1.1 Kebutuhan · 1.2 Instal · 1.3 Lokasi berkas · 1.4 Upgrade/uninstall · 1.5 Run pertama</div>
+  <div class="b">2. Login, profil bisnis, hak akses</div>
+  <div>&nbsp; 2.1 Login · 2.2 Ganti password · 2.3 Profil bisnis · 2.4 Menu tak muncul · 2.5 Tabel peran · 2.6 Sesi</div>
+  <div class="b">3. Navigasi harian</div>
+  <div class="b">4. Alur kerja lengkap — contoh satu proyek</div>
+  <div class="b">5. Panduan per menu</div>
+  <div>&nbsp; + versi bergambar tiap menu: <i>panduan-menu/00-indeks.pdf</i> (26 berkas)</div>
+  <div>&nbsp; 5.1 Dasbor · 5.2 Control Tower · 5.3 Merek &amp; Model · 5.4 Unit/Armada · 5.5 Passport</div>
+  <div>&nbsp; 5.6 Pelanggan · 5.7 Pemasok · 5.8 Operator · 5.9 Teknisi</div>
+  <div>&nbsp; 5.10 Pembelian · 5.11 Penjualan · 5.12 Sewa/Rental · 5.13 Persetujuan · 5.14 Faktur · 5.15 Pengiriman</div>
+  <div>&nbsp; 5.16 Gudang · 5.17 Suku Cadang · 5.18 Servis &amp; WO · 5.19 Breakdown</div>
+  <div>&nbsp; 5.20 Kas &amp; Bank · 5.21 Laporan</div>
+  <div>&nbsp; 5.22 Pengaturan · 5.23 Pengguna · 5.24 Dokumen Legal · 5.25 Backup &amp; Restore · 5.26 Pemeliharaan Sistem · 5.27 Audit Log</div>
+  <div class="b">6. Aturan angka dan pesan validasi</div>
+  <div class="b">7. Penomoran dokumen otomatis</div>
+  <div class="b">8. Mencetak dokumen</div>
+  <div class="b">9. Ekspor CSV</div>
+  <div class="b">10. Rutinitas harian/mingguan</div>
+  <div class="b">11. Troubleshooting</div>
+  <div class="b">12. Kapasitas dan batas yang diketahui</div>
+  <div class="b">13. Cara membuat record — form demi form</div>
+  <div>&nbsp; 13.1 Urutan membuat · 13.2 Unit · 13.3 PO · 13.4 Operator &amp; Teknisi · 13.5 Pelanggan &amp; Pemasok</div>
+  <div>&nbsp; 13.6 Membuat akun pengguna · 13.7 Merek &amp; Model · 13.8 Suku cadang &amp; mutasi gudang</div>
+  <div>&nbsp; 13.9 Dokumen lain ( efeknya ke menu lain ) · 13.10 Kalau form menolak</div>
+  <div class="b">Lampiran A. Glosarium status</div>
+  <div class="b">Lampiran B. Checklist hari pertama</div>
+  <div class="b">Lampiran C. Daftar menu dan alamannya</div>
+</div>
+
+<div class="brk"></div>
+<h1>Bab 1 — Instalasi dan Mulai Pakai</h1>
+
+<h2>1.1 Kebutuhan sistem</h2>
+<table>
+  <tr><th style="width:32%">Item</th><th>Keterangan</th></tr>
+  <tr><td>Sistem operasi</td><td>Windows 10 atau 11, 64-bit. (macOS/Linux belum diuji.)</td></tr>
+  <tr><td>Hak administrator</td><td><b>Tidak diperlukan.</b> Aplikasi instal ke folder user Anda sendiri.</td></tr>
+  <tr><td>Visual C++ Redistributable</td><td>Tidak diperlukan — sudah menyatu dalam paket.</td></tr>
+  <tr><td>Koneksi internet</td><td>Tidak diperlukan saat memakai aplikasi. Aplikasi ini lokal, bukan berbasis cloud.</td></tr>
+  <tr><td>Memori</td><td> Jalan nyaman pada RAM 4 GB ke atas. Pada mesin 3,8 GB (RAM bebas ±424 MB saat diukur) aplikasi tetap boot di bawah 2 detik — terukur ±1 detik pada profil 25.000 baris; lihat Bab 12 untuk angka di 400.000 baris.</td></tr>
+  <tr><td>Penyimpanan</td><td>± 260 MB untuk aplikasi + folder data yang tumbuh sesuai jumlah record.</td></tr>
+</table>
+
+<h2>1.2 Instalasi — langkah demi langkah</h2>
+<ol>
+  <li>Jalankan <code>FATHONI-Setup-3.1.0.exe</code> (hasil unduhan/berbagian dari tim Anda). Ukuran berkas ± 83,2 MB.</li>
+  <li>Windows SmartScreen mungkin muncul karena paket ini <b>belum ditandatangani secara digital</b>. Pilih <span class="lbl">More info → Run anyway</span>. Bila ini terjadi di banyak komputer, minta tim IT menyimpan paket di folder yang sudah diizinkan antivirus.</li>
+  <li>Wizard instalasi: <span class="lbl">Next</span> → biarkan tujuan folder default → <span class="lbl">Install</span>. Tidak ada jendela minta hak administrator (UAC).</li>
+  <li>Di halaman <span class="lbl">Finish</span>, kotak <b>“Jalankan FATHONI EQUIPMENT OS” sudah tidak tercentang</b>. Tutup wizard dengan <span class="lbl">Finish</span>. Aplikasi tidak akan terbuka sendiri — buka dari shortcut Start Menu/Desktop ketika Anda siap.</li>
+</ol>
+<div class="catatan"><b class="ct">Catatan.</b> Bila Anda memasang ulang di atas versi 3.0.2 atau lebih lama, instalasi menimpa berkas program saja. <b>Data Anda tidak disentuh</b>. Anda tidak perlu mengekspor apa pun sebelum upgrade versi 3.0.x.</div>
+
+<h2>1.3 Lokasi berkas — penting untuk backup</h2>
+<table>
+  <tr><th style="width:24%">Apa</th><th>Di mana</th></tr>
+  <tr><td>Program (boleh dihapus)</td><td><code>%LOCALAPPDATA%\Programs\FATHONI</code></td></tr>
+  <tr><td><b>Data Anda (jangan dihapus)</b></td><td><code>%APPDATA%\hems-heavy-equipment-system</code></td></tr>
+  <tr><td>Database utama</td><td><code>%APPDATA%\hems-heavy-equipment-system\fathoni.db</code></td></tr>
+  <tr><td>Daftar akun (tanpa password)</td><td><code>accounts.json</code> di folder yang sama</td></tr>
+  <tr><td>Snapshot otomatis/manual</td><td>subfolder <code>snapshots\</code> di folder data</td></tr>
+</table>
+<div class="bahaya"><b class="ct">Bahaya.</b> Menyalin <code>fathoni.db</code> saat aplikasi berjalan bisa menghasilkan salinan setengah jadi. Untuk mencadangkan, gunakan menu <b>Backup &amp; Restore</b> (Bab 5.25) — aplikasi yang menyiapkan berkasnya, dan setiap restore membuat cadangan keadaan sebelum restore.</div>
+
+<h2>1.4 Uninstall</h2>
+<p>Hapus lewat <span class="lbl">Control Panel → Programs and Features</span> atau <span class="lbl">Settings → Apps</span>, pilih <b>FATHONI EQUIPMENT OS</b>. Program terhapus bersih; folder data <code>%APPDATA%\hems-heavy-equipment-system</code> <b>bertahan</b> supaya instalasi berikutnya langsung menemukan data lama. Untuk menghapus data permanen, hapus folder itu dengan sadar dan setelah backup.</p>
+
+<h2>1.5 Run pertama kali</h2>
+<ol>
+  <li>Aplikasi terbuka di halaman <span class="lbl">Login</span>.</li>
+  <li>Ada <b>lima akun bawaan</b> yang dibuat otomatis: <code>admin</code>, <code>sales</code>, <code>gudang</code>, <code>service</code>, <code>finance</code>. Password bawaan diberikan oleh tim yang menyerahkan aplikasi kepada Anda — aplikasi tidak pernah menampilkannya.</li>
+  <li>Setelah login pertama, layar <span class="lbl">Ganti password sebelum melanjutkan</span> muncul <b>mengunci seluruh aplikasi</b>. Isi <span class="lbl">Password saat ini</span>, <span class="lbl">Password baru</span>, <span class="lbl">Ulangi password baru</span>, lalu <span class="lbl">Simpan password baru</span>. Tanpa langkah ini Anda tidak bisa membuka menu mana pun.</li>
+  <li>Halaman <span class="lbl">Selamat Datang di FATHONI EQUIPMENT OS</span> meminta profil bisnis dipilih (Bab 2.3). Minimal satu; tanpa pilihan tombol simpan tidak aktif.</li>
+  <li>Buka <b>Pengaturan → Perusahaan</b> dan isi nama perusahaan, NPWP, alamat, telepon, email. Nama ini yang akan tercetak di header semua dokumen.</li>
+  <li>Buka <b>Pengaturan → Rekening Bank</b> dan daftarkan rekening kas. Daftar ini yang muncul di kolom <span class="lbl">Rekening / Kas</span> pada Kas &amp; Bank dan jendela bayar di Faktur.</li>
+</ol>
+<div class="contoh"><b class="ct">Contoh.</b> PT Maju Beton Baru menyerahkan aplikasi ke tiga pemakai. Hari pertama: <code>admin</code> dipakai Bapak Hendra (Super Admin) dan ia langsung mengganti password; akun <code>sales</code>, <code>gudang</code>, <code>service</code>, <code>finance</code> masing-masing diserahkan ke petugasnya dan <b>harus diganti password oleh penerimanya</b> saat login pertama. Password bawaan ditolak bila dipakai lagi — aplikasi menolak dengan pesan <i>“Password masih memakai bawaan instalasi. Tentukan password sendiri.”</i></div>
+
+<div class="brk"></div>
+<h1>Bab 2 — Login, Profil Bisnis, dan Hak Akses</h1>
+
+<h2>2.1 Login</h2>
+<p>Isi <span class="lbl">Username</span> dan <span class="lbl">Password</span>, tombol <span class="lbl">Masuk ke FATHONI EQUIPMENT OS</span>. Versi aplikasi tampil sebagai badge di bawah judul.</p>
+<div class="catatan"><b class="ct">Catatan.</b> Lima kali password salah = <b>akun terkunci 5 menit</b>, pesan: <i>“Akun dikunci sementara. Coba lagi dalam N menit.”</i> Aplikasi sengaja tidak membedakan “username tidak ada” dan “password salah”, jadi pihak luar tidak bisa menebak daftar username. Lupa password tidak bisa dipulihkan sendiri — minta <b>Super Admin</b> mereset di menu Pengguna.</div>
+
+<h2>2.2 Aturan password</h2>
+<table>
+  <tr><th style="width:45%">Aturan</th><th>Pesan yang muncul bila dilanggar</th></tr>
+  <tr><td>Minimal 8 karakter</td><td><i>Password minimal 8 karakter.</i></td></tr>
+  <tr><td>Maksimal 128 karakter</td><td><i>Password maksimal 128 karakter.</i></td></tr>
+  <tr><td>Tidak boleh diawali/diakhiri spasi</td><td><i>Password tidak boleh diawali atau diakhiri spasi.</i></td></tr>
+  <tr><td>Tidak boleh sama dengan username</td><td><i>Password tidak boleh sama dengan username.</i></td></tr>
+  <tr><td>Konfirmasi harus sama</td><td><i>Konfirmasi password tidak sama dengan password baru.</i></td></tr>
+  <tr><td>Bukan password bawaan instalasi</td><td><i>Password masih memakai bawaan instalasi. Tentukan password sendiri.</i></td></tr>
+</table>
+<p>Mengganti password <b>menutup sesi lain pada akun yang sama</b>. Bila Anda login di kantor dan di rumah, setelah ganti password salah satunya harus login ulang. Password disimpan sebagai hash (scrypt, salt acak per akun); tidak ada layar atau berkas yang memuat password asli.</p>
+
+<h2>2.3 Profil bisnis — mengapa menu saya berbeda?</h2>
+<p>Satu instalasi bisa memakai beberapa profil sekaligus. Profil menentukan modul apa yang ditawarkan aplikasi.</p>
+<table>
+  <tr><th style="width:18%">Ikon</th><th style="width:26%">Profil</th><th>Fokus</th></tr>
+  <tr><td>🚜</td><td>Pemilik Alat (Perorangan)</td><td>1–5 unit milik sendiri, HM, dan pendapatan operasional</td></tr>
+  <tr><td>🏢</td><td>Dealer / Distributor</td><td>Penjualan unit baru, penawaran, komisi dealer</td></tr>
+  <tr><td>🏗️</td><td>Kontraktor Project</td><td>Utilisasi armada tambang/proyek, BBM, maintenance</td></tr>
+  <tr><td>🚚</td><td>Perusahaan Sewa (Rental)</td><td>Kontrak sewa bulanan, jobsite, billing piutang</td></tr>
+  <tr><td>🔧</td><td>Bengkel / Workshop</td><td>Work Order, teknisi mekanik, stok suku cadang</td></tr>
+  <tr><td>💰</td><td>Pedagang Alat Bekas</td><td>Stok jual-beli alat bekas dan marjin</td></tr>
+</table>
+<p>Mengganti profil: klik badge <span class="lbl">Profil: …</span> di topbar (atau menu pengguna → <span class="lbl">Ganti Profil Bisnis</span>), aplikasi meminta konfirmasi lalu membuka halaman setup. Pilihan lama tetap tersimpan sampai disimpan ulang.</p>
+<div class="contoh"><b class="ct">Contoh.</b> Bengkel yang juga menyewakan unit: pilih <b>Bengkel / Workshop</b> + <b>Perusahaan Sewa (Rental)</b>. Badge akan berbunyi <i>“2 Profil Aktif”</i> dan menu Sewa/Rental muncul berdampingan dengan Servis &amp; Work Order.</div>
+
+<h2>2.4 Menu tidak muncul? Tiga gerbang</h2>
+<ol>
+  <li><b>Peran akun Anda</b> — menu tulis tidak ditawarkan ke peran yang tidak berwenang menulis collection-nya.</li>
+  <li><b>Profil bisnis aktif</b> — menu yang tidak relevan dengan profil disembunyikan.</li>
+  <li><b>Sakelar modul</b> di Pengaturan → Modul &amp; Menu — modul bisa dimatikan; <span class="lbl">⚡ Aktifkan Semua Modul</span> mengembalikannya.</li>
+</ol>
+<div class="catatan"><b class="ct">Catatan.</b> Menyembunyikan menu <b>bukan</b> pagar keamanan. Penegakan sebenarnya ada di proses inti aplikasi: permintaan tulis dari menu yang bukan wewenang peran Anda akan <b>ditolak dan dicatat</b>, walaupun dikirim lewat jalan lain. Karena itu daftar menu dan daftar hak tulis selalu dibuat sama — kalau berbeda, tim pengembang menganggapnya cacat.</div>
+
+<h2>2.5 Tabel peran dan hak tulis</h2>
+<table>
+  <tr><th style="width:17%">Peran</th><th style="width:31%">Ditampilkan di layar sebagai</th><th>Boleh menulis pada</th></tr>
+  <tr><td><code>SUPERADMIN</code></td><td>Super Admin</td><td><b>Semua</b> collection, termasuk Pengguna, Persetujuan, dan Audit Log</td></tr>
+  <tr><td><code>SALES</code></td><td>Staff Penjualan / Sales</td><td>Pelanggan, Penjualan (SPK), Sewa/Rental, Pengiriman, Faktur, Dokumen Legal, Unit, Katalog Merek &amp; Model</td></tr>
+  <tr><td><code>WAREHOUSE</code></td><td>Petugas Gudang</td><td>Pembelian (PO), Pemasok, Suku Cadang, Gudang, Pengiriman, Dokumen Legal, Unit, Katalog Merek &amp; Model</td></tr>
+  <tr><td><code>SERVICE</code></td><td>Teknisi / Mekanik</td><td>Servis &amp; Work Order, Breakdown, Suku Cadang, Gudang, Faktur, Teknisi, Dokumen Legal, Unit, Katalog Merek &amp; Model</td></tr>
+  <tr><td><code>FINANCE</code></td><td>Staf Keuangan</td><td>Kas &amp; Bank, Faktur, Rekening Bank, Dokumen Legal</td></tr>
+</table>
+<div class="kotak">
+<p><b>Kenapa “Unit” ikut boleh ditulis Sales/Gudang/Teknisi?</b> Karena tiga menu itu mengubah status unit sebagai <i>efek samping</i> aksi yang sah: penjualan menandai unit <span class="lbl">Terjual</span>, gudang menerima PO unit, servis menyelesaikan Work Order (status + Hour Meter + hari servis terakhir). Tanpa itu, aksi yang benar justru ditolak.</p>
+<p><b>Kenapa Kas hanya Keuangan?</b> Karena pemisahan tugas: pembayaran yang tercatat dari halaman Faktur dicatat oleh bagian keuangan.</p>
+<p><b>Kenapa Persetujuan hanya Super Admin?</b> Memberi wewenang bukan pekerjaan harian menu.</p>
+</div>
+<div class="contoh"><b class="ct">Contoh penolakan.</b> Akun <code>finance</code> mencoba menyimpan transaksi gudang. Layar menampilkan:<br><i>“Akun dengan peran FINANCE tidak berwenang menulis ke &quot;warehouse&quot;. Catatannya harus dibuat oleh peran yang memegang menu itu, atau Super Admin.”</i><br>Kejadian itu tercatat di Audit Log sebagai <b>Tulis data ditolak</b> — jadi penolakan bisa diaudit, bukan hilang.</div>
+
+<h2>2.6 Sesi dan keluar</h2>
+<p>Sesi berlaku <b>12 jam tanpa aktivitas</b>, dan paling lama <b>24 jam</b> walaupun Anda terus memakai aplikasi. Setelah itu: <i>“Sesi tidak valid atau kedaluwarsa.”</i> — login ulang. Keluar dari menu pengguna → <span class="lbl">Keluar</span> (ada konfirmasi). Mengubah peran/menonaktifkan akun langsung mematikan sesi pengguna tersebut.</p>
+
+<div class="brk"></div>
+<h1>Bab 3 — Navigasi Harian</h1>
+<ul>
+  <li><b>Sidebar kiri</b>: enam kelompok menu (Utama, Master Data, Transaksi, Operasional, Keuangan, Sistem). Tombol di dasar sidebar menciutkan sidebar jadi ikon saja.</li>
+  <li><b>Cari menu</b> di topbar: ketik <b>2 huruf</b>, hasil muncul langsung (termasuk kata kunci, mis. “onderdil” → Suku Cadang, “surat jalan” → Pengiriman). Hanya menu yang benar-benar terbuka untuk peran + profil Anda yang muncul.</li>
+  <li><b>Ctrl+K</b>: palet perintah — daftar yang sama, cara berbeda.</li>
+  <li><b>Title bar</b> menampilkan nama menu aktif, badge profil, dan — bila perlu — tanda <span class="lbl">● Belum tersimpan</span>.</li>
+  <li><b>Banner merah/kuning di atas layar</b>: ada masalah pembacaan/penyimpanan data. Sertakan teksnya saat melapor; jangan menekan tombol simpan berkali-kali.</li>
+  <li><b>Pager</b> di daftar panjang: <i>“Menampilkan 1–25 dari 214 record”</i> dengan tombol <span class="lbl">Awal / Sebelumnya / Berikutnya / Terakhir</span> dan posisi <i>“Halaman 3 / 9”</i>. Ukuran halaman: <b>25 baris</b> (Faktur, Gudang, Suku Cadang, Kas, Laporan, Dokumen, Audit) dan <b>12 kartu</b> (Unit).</li>
+  <li><b>Halaman detail unit</b> (Passport) dibuka dari kartu unit; kembali selalu tersedia lewat <span class="lbl">← Kembali ke Daftar Fleet</span>.</li>
+</ul>
+<div class="catatan"><b class="ct">Catatan.</b> Saat sebuah halaman baru dibuka, beberapa daftar sempat menampilkan <i>“Tidak ada record · memuat...”</i>. Itu artinya data masih dibaca dari database, bukan kosong. Tunggu hingga pager menampilkan jumlah record.</div>
+
+<div class="brk"></div>
+<h1>Bab 4 — Alur Kerja Lengkap: Contoh Satu Proyek</h1>
+<p>Skenario: <b>PT Cahaya Konstruksi</b> menyewakan 1 unit excavator SANY SY215C ke <b>PT Grand Jaya</b> selama 3 bulan di jobsite Morowali, termasuk 2 kali servis berkala dan 1 breakdown. Peran yang dipakai bergantian: Super Admin menyiapkan data, petugas gudang membelanjakan BBM, teknisi mengerjakan servis, sales menagih, keuangan mencatat penerimaan.</p>
+<table>
+  <tr><th style="width:5%">#</th><th style="width:17%">Menu</th><th style="width:30%">Aksi user</th><th>Yang terjadi otomatis (verifikasi tempat lain)</th></tr>
+  <tr><td>1</td><td>Pemasok</td><td>Tambah <i>PT Sumber Solar Nusantara</i></td><td>Master tersedia untuk dropdown PO.</td></tr>
+  <tr><td>2</td><td>Unit / Armada</td><td><span class="lbl">Tambah Unit</span>: serial <code>SY-SY215C-099</code>, merek SANY, model SY215C, HM awal <b>4.520</b>, lokasi <i>Yard Cikande Main Hub</i>, status <i>Tersedia (Ready)</i> — lihat §13.2</td><td>Unit masuk daftar dengan nilai perolehan bawaan aplikasi <b>Rp 1.750.000.000</b> (form tidak menanyakannya, §13.2); kolom turunan menghitung <b>sisa HM menuju servis 500-an berikutnya</b> = 480.</td></tr>
+  <tr><td>3</td><td>Pembelian</td><td><span class="lbl">Buat PO Baru</span>: kategori <b>BBM (Solar)</b>, pemasok dari langkah 1, 3.200 liter, nilai Rp 21.120.000</td><td>Nomor <code>PO-2026-004</code> diusulkan otomatis; status awal <i>Dipesan ke Supplier</i>.</td></tr>
+  <tr><td>4</td><td>Pembelian</td><td>Klik <span class="lbl">Terima Barang</span> → konfirmasi <i>“Konfirmasi penerimaan barang/unit ini ke gudang?”</i></td><td>PO → <i>Diterima di Gudang</i>; <b>Gudang</b> menerima mutasi masuk <code>GR-PO-2026-004</code>; <b>Kas</b> mencatat pengeluaran kategori <i>Pembelian / PO</i>.</td></tr>
+  <tr><td>5</td><td>Pelanggan</td><td>Tambah <i>PT Grand Jaya</i> + PIC + NPWP</td><td>Master tersedia untuk dropdown kontrak sewa dan SPK.</td></tr>
+  <tr><td>6</td><td>Sewa / Rental</td><td><span class="lbl">Buat Kontrak Sewa</span>: penyewa <i>PT Grand Jaya</i>, unit <code>SY-SY215C-099</code>, jobsite Morowali, 1 Mar – 30 Jun 2026, tarif Rp 90.000.000/bulan, minimal HM 200/bulan, centang <i>Include Operator</i></td><td>Kontrak <code>RNT-2026-002</code>; unit berubah ke <i>Dirental</i>; <b>Faktur</b> otomatis <code>INV/RENT/RNT-2026-002</code> jatuh tempo +14 hari.</td></tr>
+  <tr><td>7</td><td>Operator</td><td><span class="lbl">+ Tambah Operator</span> Pak Darto, tugaskan ke unit <code>SY-SY215C-099</code></td><td>Nomor <code>OP-2026-001</code> otomatis; profil bisa dicetak.</td></tr>
+  <tr><td>8</td><td>Suku Cadang</td><td>Daftarkan <i>Fuel Filter Cartridge</i> part <code>6736-51-5142</code>, stok 12, batas min 5, modal Rp 480.000</td><td>Part siap dipakai WO; stok rendah memicu alert Dasbor/Control Tower bila &lt; 5.</td></tr>
+  <tr><td>9</td><td>Servis &amp; WO</td><td><span class="lbl">Buka Work Order Servis</span>: tipe <i>Servis Berkala 500 Jam (Filter Komplit)</i>, unit, pelanggan <i>PT Grand Jaya</i>, HM <b>5.000</b>, teknisi Agus Sutrisno, estimasi Rp 5.000.000</td><td>WO <code>WO-2026-007</code>; saat <span class="lbl">Mulai Kerja</span> unit → <i>Maintenance</i>.</td></tr>
+  <tr><td>10</td><td>Servis &amp; WO</td><td>Di kartu WO klik <span class="lbl">Selesai</span>: tambah part 1× Fuel Filter, klik <i>Isi dengan total part</i>, biaya aktual Rp 5.480.000 → <span class="lbl">Tandai Selesai &amp; Terbitkan Invoice</span></td><td>Stok part −1; mutasi <b>Gudang</b> keluar “Pemakaian suku cadang Work Order” ref <code>WO-2026-007</code>; <b>HM unit naik ke 5.000</b> dan hari servis terakhir tercatat; unit → <i>Tersedia</i>; <b>Faktur</b> <code>INV/SVC/WO-2026-007</code> terbit.</td></tr>
+  <tr><td>11</td><td>Breakdown</td><td><span class="lbl">+ Lapor Breakdown</span> di hari ke-40: severity <i>Mayor</i>, deskripsi, teknisi ditugaskan</td><td><code>BD-2026-003</code>; unit → <i>Breakdown / Rusak</i>; jam berhenti dihitung saat status <i>Selesai</i>.</td></tr>
+  <tr><td>12</td><td>Faktur / Invoice</td><td>Buka invoice rental &amp; servis → <span class="lbl">Bayar</span>: jumlah Rp 90.000.000, rekening <i>BCA - 1234567890</i></td><td>Invoice → <i>Lunas</i>/<i>Sebagian (Cicil)</i>; <b>Kas</b> mencatat penerimaan <i>Penerimaan Rental Alat (INV-…)</i>. Pembayaran ganda dengan referensi sama ditolak.</td></tr>
+  <tr><td>13</td><td>Kas &amp; Bank</td><td>Cek saldo dan mutasi</td><td>Semua langkah di atas sudah menulis kas otomatis — user hanya menambah pengeluaran manual (gaji, operasional).</td></tr>
+  <tr><td>14</td><td>Laporan</td><td>Tab <i>Laporan Piutang (AR)</i> dan <i>Laporan Pendapatan</i>; <span class="lbl">Ekspor CSV</span> / <span class="lbl">Cetak PDF</span></td><td>Angka bersumber dari database (bukan catatan halaman), termasuk DSO dan piutang jatuh tempo.</td></tr>
+  <tr><td>15</td><td>Sewa / Rental</td><td>Klik <span class="lbl">Selesai Sewa</span> di akhir kontrak</td><td>Kontrak → <i>Selesai / Demobilisasi</i>; unit kembali <i>Tersedia</i> dan bisa dikontrak lagi.</td></tr>
+</table>
+<div class="bahaya"><b class="ct">Prinsip penting.</b> Di aplikasi ini <b>satu fakta ditulis satu kali</b>. Jangan mengetik ulang nilai yang sudah dihasilkan otomatis (mis. menambah transaksi Kas “salinan” pembayaran invoice yang sudah tercatat) — Anda akan melihat pendapatan ganda di Laporan. Cek dulu apakah peristiwanya sudah tercatat oleh aksi di menu asalnya.</div>
+
+<div class="brk"></div>
+<h1>Bab 5 — Panduan per Menu</h1>
+<div class="catatan"><b class="ct">Satu berkas panduan untuk setiap menu.</b> Sub-bab di bawah ini tetap penjelasan fungsi yang ringkas. Selain itu, ke-26 menu sidebar kini punya panduannya masing-masing di folder <code>panduan-menu/</code>: satu berkas HTML dan PDF per menu, berisi tangkapan layar saat menu dibuka, tabel kolom tiap jendela form persis label di layar, apa yang berubah di menu lain sesudah simpan, dan batasan yang terverifikasi. Buka <code>panduan-menu/00-indeks.html</code> (atau <code>00-indeks.pdf</code>) untuk daftar dan ringkasannya; berkas itu dibuat dari aplikasi yang benar-benar dijalankan, bukan disalin dari kode sumber.</div>
+
+<h2>5.1 Dasbor <code>/dashboard</code></h2>
+<p>Ringkasan harian sesuai profil aktif: kartu armada, total jam kerja (HM), SPK aktif, WO aktif, piutang sewa; <span class="lbl">ALERT CENTER</span> (Critical/Due/Info, tampil 5 terbawah + “+N more alerts”); grafik tren pendapatan 6 bulan, status armada, Equipment Health Score, dan Cost per Hour Analysis. Tombol pintasan berbeda per profil, mis. <span class="lbl">🔧 + Terbitkan WO</span> atau <span class="lbl">🧾 Terbitkan Invoice Rental</span>; <span class="lbl">🔄 Ganti Mode Profil</span> membuka halaman setup.</p>
+<div class="catatan"><b class="ct">Catatan.</b> Cost per Hour dihitung dari data (biaya servis + BBM + parts yang nyata tercatat), bukan angka tetap. Bila armadanya baru dan belum ada biaya, kartu akan menunjukkan angka nol — itu benar, belum ada data.</div>
+
+<h2>5.2 Control Tower <code>/control-tower</code></h2>
+<p>Papan pantau <b>read-only</b>: FLEET / OPERATING / IDLE / MAINTENANCE / BREAKDOWN, LIVE OPERATION (maks 8 unit), ALERTS (Breakdown, Service Due, Sparepart Low, Invoice Overdue), QUICK ACTIONS.</p>
+<div class="catatan"><b class="ct">Sejak 3.0.4 tombolnya membawa Anda ke menu.</b> <span class="lbl">🚜 View All Units</span> membuka <b>Unit / Armada</b>, <span class="lbl">🔧 View All Services</span> membuka <b>Servis &amp; WO</b>, <span class="lbl">📦 View All Spareparts</span> membuka <b>Suku Cadang</b>, <span class="lbl">💰 View All Invoices</span> membuka <b>Faktur / Invoice</b>. Di 3.0.3 keempatnya tidak merespons dan panduan ini menyuruh memakai sidebar — tidak perlu lagi. Papan itu sendiri tetap <i>read-only</i>: ia meringkas, dokumen dibuka dari menu tujuannya.</div>
+
+<h2>5.3 Merek &amp; Model <code>/brands</code></h2>
+<p>Dua tab: <span class="lbl">🏷️ Daftar Merek</span> dan <span class="lbl">🚜 Spesifikasi Model Unit</span>; kolom <span class="lbl">Nama Merek / Manufaktur *</span>, <span class="lbl">Negara Asal</span>, <span class="lbl">Kategori Peralatan Utama</span>, <span class="lbl">Deskripsi</span>; model: <span class="lbl">Merek *</span>, <span class="lbl">Kode / Nama Model *</span>, <span class="lbl">Kategori Unit</span>, <span class="lbl">Kapasitas</span>, <span class="lbl">Daya Mesin</span>, <span class="lbl">Berat Operasional</span>. Tombol <span class="lbl">Tambah Merek</span> / <span class="lbl">Tambah Model Unit</span>, baris <span class="lbl">Edit</span> / <span class="lbl">Hapus</span>.</p>
+<div class="kotak"><b class="ct">Sejak 3.0.4 halaman ini adalah katalog sungguhan.</b>
+<p><b>Perubahan yang terasa.</b> Di 3.0.3 isi halaman ini adalah daftar bawaan di dalam layar: apa yang Anda tambah hilang saat pindah menu, dan formulir Unit sama sekali tidak membacanya. Sejak 3.0.4 kedua daftar (merek dan model) disimpan ke database — bertahan saat pindah menu, saat aplikasi ditutup, dan ikut terbawa cadangan/backup.</p>
+<p><b>Daftar merek di Unit sekarang berasal dari sini.</b> Kolom <span class="lbl">Merek *</span> pada formulir Unit diisi isi katalog ini, dan kolom <span class="lbl">Kode Model *</span> memberi saran kode model milik merek yang dipilih (tetap boleh mengetik kode sendiri). Katalog masih kosong? Formulir Unit memakai daftar tetap bawaan (SANY, Komatsu, Caterpillar, Kobelco, Hitachi, Volvo — validasi juga menerima JCB, XCMG, Lainnya), dan unit lama yang mereknya tidak ada di katalog tetap terbaca dengan tanda <i>(di luar katalog)</i> serta tidak berubah saat unitnya disimpan ulang.</p>
+<p><b>Isi awal tidak dituang otomatis.</b> Katalog pabrikan hanya masuk kalau Anda menekan <span class="lbl">Muat Katalog Awal</span> dan mengonfirmasi <i>“Muat katalog awal (merek pabrikan dan beberapa model umum)? Isinya bisa diedit atau dihapus setelahnya.”</i> Tombol itu menolak bila katalog sudah berisi data (<i>“Katalog sudah berisi data. Tambahkan atau perbarui entri satu per satu…”</i>) sehingga tidak pernah menimpa katalog yang sedang dipakai.</p>
+<p><b>Aturan yang menahan kesalahan.</b> Nama merek dan kode model tidak boleh ganda (penolakan menyebut entri yang sudah ada); model hanya bisa dibuat di bawah merek yang sudah ada (<i>“Pilih merek yang sudah ada di katalog…”</i>); mengganti nama merek ditolak selama masih ada unit yang memakainya (<i>“Nama merek tidak bisa diubah: masih ada N unit yang tercatat dengan merek …”</i>); dan menghapus merek/model yang masih dirujuk ikut ditolak dengan daftar penahannya — sama seperti record lain di aplikasi ini.</p>
+<p><b>Yang boleh menulis.</b> Super Admin, Sales, Gudang, dan Teknisi memegang menu ini dan hak tulis collection-nya; peran lain menolak dan mencatatnya di Audit Log.</p></div>
+
+<h2>5.4 Unit / Armada <code>/units</code></h2>
+<h4>Daftar</h4>
+<p>Cari <i>“Cari merek, model, serial, lokasi...”</i> — pencarian mencakup beberapa kolom sekaligus, jadi <code>SANY SY215C</code> cukup diketik satu kali. 12 kartu per halaman. Tiap kartu punya <span class="lbl">📷</span> (foto), <span class="lbl">📱 Passport</span>, <span class="lbl">Edit</span>, <span class="lbl">Hapus</span>.</p>
+<h4>Formulir unit</h4>
+<table>
+  <tr><th style="width:34%">Kolom</th><th>Isian</th></tr>
+  <tr><td><span class="lbl">Nomor Seri / PIN *</span></td><td>Unik, minimal 3 karakter. Contoh: <code>SY-SY215C-099</code>. Bila sudah dipakai unit lain: <i>“Serial Number … sudah terdaftar pada unit lain.”</i></td></tr>
+  <tr><td><span class="lbl">Merek *</span> / <span class="lbl">Kode Model *</span></td><td>Merek adalah dropdown dari katalog <b>Merek &amp; Model</b> (§5.3); selama katalog belum diisi, dropdown memakai daftar tetap bawaan. Kode model mengetik bebas dengan saran dari katalog merek terpilih; contoh SANY / SY215C. Unit yang mereknya tidak ada di katalog tetap tersimpan dan tampil dengan tanda <i>(di luar katalog)</i>.</td></tr>
+  <tr><td><span class="lbl">Kategori Unit</span></td><td>Excavator, Dozer, Wheel Loader, Motor Grader, Compactor, Crane, Dump Truck, Truck Mixer, Forklift, Lainnya.</td></tr>
+  <tr><td><span class="lbl">Status Operasional</span></td><td>Lihat Lampiran A (10 nilai).</td></tr>
+  <tr><td><span class="lbl">Hour Meter saat ini (HM)</span></td><td>Maksimal 100.000 HM. Ini <b>meter total</b>, bukan jam kerja hari ini.</td></tr>
+  <tr><td><span class="lbl">Lokasi Saat Ini</span></td><td>Wajib diisi; contoh <i>Yard Cikande Main Hub</i> atau <i>Jobsite Morowali</i>.</td></tr>
+  <tr><td><span class="lbl">Tahun Pembuatan</span></td><td>Minimal 1990.</td></tr>
+  <tr><td>Nilai perolehan (kolom yang tidak ada di form)</td><td>Aturan <b>Rp 1.000.000 s.d. Rp 10.000.000.000</b> tetap dijalankan atas nilai yang tersimpan, padahal <span class="lbl">Tambah Unit</span> tidak menanyakannya — unit baru selalu Rp 1.750.000.000 (§13.2). Akibatnya range ini praktis tidak pernah menahan isian Anda, tetapi bisa menolak tombol <span class="lbl">Simpan</span> pada unit lama yang nilainya di luar range tanpa ada kolom yang bisa diperbaiki. Masuk daftar perbaikan 3.0.6 (Bab 12).</td></tr>
+  <tr><td><span class="lbl">Foto Unit</span></td><td>JPG/PNG/WEBP; dikompres otomatis; tersimpan <b>di luar database</b> (lihat Bab 5.25 soal foto).</td></tr>
+</table>
+<h4>Koreksi pembacaan meter (wajib dipahami operator)</h4>
+<p>HM tidak boleh mundur. Bila meter fisik benar-benar pernah salah dicatat lebih tinggi, aplikasi tidak mengizinkan Anda mengetik angka yang lebih kecil begitu saja — muncul pesan:</p>
+<div class="kotak"><i>“Hour Meter mundur dari 5.120 ke 5.020 (100 jam). Bila ini pembacaan yang benar, centang ‘Ini koreksi pembacaan meter’ dan isi alasannya; bila bukan, perbaiki angkanya.”</i></div>
+<ol>
+  <li>Centang <span class="lbl">Ini koreksi pembacaan meter</span>.</li>
+  <li>Isi <span class="lbl">Alasan koreksi</span>, contoh: <i>“HM sebelumnya salah baca 450, seharusnya 440”</i>. Tanpa alasan ditolak: <i>“Koreksi pembacaan meter wajib disertai alasan.”</i></li>
+  <li>Simpan. Koreksi tercatat (bukan diam-diam), dan siklus servis dihitung ulang dari meter yang benar.</li>
+</ol>
+<div class="catatan"><b class="ct">Sejak 3.0.5 penjaganya ada di dalam mesin, bukan hanya di form.</b> Angka yang dikirim ke database diperiksa ulang oleh proses utama aplikasi: pembacaan yang mundur tanpa koreksi beralasan ditolak <b>meskipun</b> pengirimnya adalah halaman yang sedang dipaksa, skrip, atau berkas cadangan yang disunting manual — penolakannya dicatat di Audit Log. Karena itu tidak ada jalan pintas: kalau meter fisik memang lebih rendah, prosedur tiga langkah di atas adalah satu-satunya jalur, dan ia sengaja dibuat meninggalkan jejak.</div>
+<h4>Detail unit (tab)</h4>
+<p><span class="lbl">RINGKASAN · PERAWATAN · SUKU CADANG · GARANSI · SEWA · DOKUMEN · PASSPORT DIGITAL</span>. Tombol pada kartu ini yang berhubungan dengan riwayat ada di tiap tab: <span class="lbl">+ Catat Service Baru</span> (PERAWATAN), <span class="lbl">Lihat Stok Suku Cadang</span> dan <span class="lbl">Catat Pemakaian Part (lewat WO)</span> (SUKU CADANG), <span class="lbl">+ Alokasikan Kontrak Baru</span> (SEWA), <span class="lbl">+ Upload Dokumen</span> (DOKUMEN). Foto unit diatur lewat <span class="lbl">📷 Kelola Foto</span> di atas gambar unit, data unit diubah lewat <span class="lbl">Edit</span>, dan <span class="lbl">PASSPORT DIGITAL</span> membuka halaman riwayat lengkap satu alat.</p>
+<ul>
+  <li><span class="lbl">PERAWATAN</span> menampilkan Work Order <b>unit ini</b>, dibaca dari database lewat nomor sasis dan diurutkan dari yang terbaru: kolom <span class="lbl">No SPK · Jenis Perawatan · Hour Meter (HM) · Tanggal Buka · Teknisi / Mekanik · Status · Biaya (aktual / estimasi)</span>. Maksimal 12 baris; di bawahnya tertulis <i>“Menampilkan 12 dari N Work Order unit ini, yang terbaru lebih dulu.”</i></li>
+  <li><span class="lbl">SEWA</span> memakai cara yang sama untuk kontrak: <span class="lbl">No Kontrak · Penyewa · Model Unit · Periode · Tarif / Bulan · Status</span>.</li>
+  <li><span class="lbl">SUKU CADANG</span>, <span class="lbl">GARANSI</span> dan <span class="lbl">DOKUMEN</span> <b>tidak menampilkan daftar fiktif</b>. Kartunya mengucapkan apa adanya: baris mutasi gudang tidak menyimpan nomor sasis (yang tercatat untuk unit ini hanyalah jumlah Work Order-nya), masa berlaku garansi tidak disimpan di baris unit maupun katalog Merek &amp; Model, dan menu Dokumen tidak punya kolom penaut per unit. Karena itu, tulis nomor sasis di kolom <span class="lbl">Keterangan</span> saat mengupload dokumen supaya bisa dicari kembali dari menu Dokumen.</li>
+  <li>Empat tombol pintas benar-benar mengantar ke menu tempat record itu dibuat, dengan alat yang sedang dibuka ikut terisi: <span class="lbl">+ Catat Service Baru</span> membuka form Work Order di menu Servis (kolom <span class="lbl">Pilih Unit</span> dan <span class="lbl">Model Terpilih</span> sudah terisi, nomor WO diusulkan dari isi file), <span class="lbl">+ Alokasikan Kontrak Baru</span> membuka form kontrak di menu Rental, <span class="lbl">Catat Pemakaian Part (lewat WO)</span> membuka daftar Servis yang tersaring nomor sasis unit ini, dan <span class="lbl">+ Upload Dokumen</span> membuka form upload di menu Dokumen. Tidak ada satu pun tombol di tab ini yang hanya memunculkan <i>alert</i>.</li>
+  <li>Angkanya satu sumber: Work Order yang Anda catat pada pembacaan 520 HM tampil sebagai <span class="lbl">520 HM</span> di tab ini, dan kartu <span class="lbl">RINGKASAN</span> unit yang sama ikut berubah menjadi 520 HM begitu servisnya selesai.</li>
+</ul>
+<div class="catatan"><b class="ct">Biaya pada tab PERAWATAN.</b> Saat servis diselesaikan, biaya aktual dicatat sebagai Invoice dan baris Kas — nilai itu tidak ditulis kembali ke baris Work Order. Kolom <span class="lbl">Biaya (aktual / estimasi)</span> karena itu menampilkan biaya aktual bila baris WO memang memilikinya, dan selain itu menampilkan <b>estimasi</b> WO. Angka yang sama tidak dihitung dua kali di Kas.</div>
+<div class="bahaya"><b class="ct">Hapus unit.</b> Konfirmasi <i>“Hapus unit alat berat ini dari sistem?”</i> Hanya lakukan bila unit belum pernah disebut dokumen. Bila masih dirujuk PO/SPK/kontrak/WO, penolakan muncul beserta daftar dokumen yang menahan — hapus atau pindahkan dokumennya lebih dulu.</div>
+
+<h2>5.5 Digital Equipment Passport <code>/equipment-passport/:id</code></h2>
+<p>Kiwayat lengkap satu unit: Overview (Total Service / Total Rental / Total Sales), Identity, Operation, Maintenance (maks 30 catatan terbaru; “Menampilkan 30 dari N catatan”), Financial, Documents. Halaman ini <b>tampilan saja</b> — tidak ada form, tidak ada cetak; gunakan <span class="lbl">← Kembali ke Unit</span>.</p>
+<div class="catatan"><b class="ct">Catatan.</b> Engine Number, Chassis Number, dan Estimasi Utilization bisa tampil “-” bila kolomnya belum pernah diisi atau sumber datanya belum ada. Itu status data, bukan kerusakan.</div>
+
+<h2>5.6 Pelanggan <code>/customers</code> · 5.7 Pemasok <code>/suppliers</code></h2>
+<p>Master sederhana: <span class="lbl">Nama Perusahaan *</span>, <span class="lbl">PIC</span>/<span class="lbl">Kontak</span>, <span class="lbl">Telepon</span>, <span class="lbl">Email</span>, <span class="lbl">Alamat</span>, <span class="lbl">NPWP</span>; Pemasok tambahan <span class="lbl">Nama Bank</span> dan <span class="lbl">No. Rekening</span>. Tombol <span class="lbl">Tambah Pelanggan</span>/<span class="lbl">Tambah Pemasok</span>, baris <span class="lbl">Edit</span>/<span class="lbl">Hapus</span>, pencarian <i>“Cari pelanggan...”</i>.</p>
+<div class="contoh"><b class="ct">Contoh.</b> Isi pemasok sebelum membuat PO — bila nama pemasok baru diketik di PO, aplikasi otomatis menuliskannya ke master Pemasok saat barang diterima, jadi tidak ada salah ketik ganda yang perlu dirapikan manual.</div>
+
+<h2>5.8 Operator <code>/operators</code> · 5.9 Teknisi <code>/technicians</code></h2>
+<p>Kartu statistik (Total / Aktif / Cuti / Suspensi), pencarian, filter status <span class="lbl">Semua Status · Aktif · Non-Aktif · Cuti · Suspensi</span>. Formulir Operator: <span class="lbl">No. Operator</span> (bawaan <code>OP-2026-001</code>, tidak bisa diubah), <span class="lbl">Nama Lengkap *</span>, <span class="lbl">Telepon *</span>, <span class="lbl">Email</span>, <span class="lbl">NIK</span> (harus 16 digit), <span class="lbl">Status *</span>, <span class="lbl">Tanggal Mulai *</span>, <span class="lbl">Unit Terassign</span> (dropdown serial), <span class="lbl">Project Terassign</span>, <span class="lbl">Total Jam Kerja</span>, <span class="lbl">No. Lisensi</span> + <span class="lbl">Masa Berlaku Lisensi</span>, <span class="lbl">Catatan</span>. Teknisi serupa dengan <code>TECH-2026-001</code>, plus <span class="lbl">Spesialisasi</span> dan <span class="lbl">Skills</span> (tombol <span class="lbl">+ Tambah Spesialisasi</span> / <span class="lbl">+ Tambah Skill</span> meminta teks lewat kotak kecil), <span class="lbl">Total Work Orders</span>, <span class="lbl">Total Jam Kerja</span>. Tombol baris: ✏️ edit, 🖨️ cetak profil, 🗑️ hapus.</p>
+<div class="contoh"><b class="ct">Contoh.</b> Operator: nama <i>Darto Wibowo</i>, telepon <i>081234567890</i> (minimal 10 digit), NIK 16 digit, mulai <i>01/03/2026</i>, unit <code>SY-SY215C-099</code>, lisensi <i>SIO-OP-2026-118</i> berlaku sampai <i>01/03/2029</i>.</div>
+<div class="catatan"><b class="ct">Catatan.</b> Menu Operator hanya ditawarkan ke Super Admin. Menghapus teknisi/operator yang masih disebut dokumen (WO, breakdown) ditolak dari tombolnya sendiri — itu perlindungan, bukan bug. Kolom “operator di kontrak rental” <b>masih belum ada sampai 3.0.4</b> (penambahannya memerlukan perubahan skema dan pengisian ulang data lama, jadi direncanakan untuk 3.0.6); sampai itu, penugasan operator dibaca dari kolom <span class="lbl">Unit Terassign</span> di halaman Operator.</div>
+
+<h2>5.10 Pembelian / PO <code>/purchase</code></h2>
+<p>Formulir <span class="lbl">Buat Purchase Order (PO) Baru</span>: <span class="lbl">Nomor PO</span> (diusulkan <code>PO-2026-00X</code>), <span class="lbl">Kategori Pembelian</span> (<i>Unit Alat Berat Baru/Bekas</i>, <i>Spare Parts &amp; Komponen</i>, <i>BBM (Solar)</i>, <i>Oli, Filter &amp; Pelumas</i>, <i>Lainnya</i>), <span class="lbl">Nama Pemasok</span>, <span class="lbl">Nama Barang / Spesifikasi Pesanan</span>, <span class="lbl">Tanggal Order</span> (hari ini), <span class="lbl">Estimasi Tanggal Pengiriman</span> (+14 hari), <span class="lbl">Total Nilai Pembelian</span>, <span class="lbl">Catatan / Syarat Pengiriman</span>.</p>
+<p>Status: <i>Draft PO</i> → <i>Dipesan ke Supplier</i> → <i>Diterima di Gudang</i> (atau <i>Dibatalkan</i>). Tombol <span class="lbl">Buat PO Baru</span>, <span class="lbl">Terima Barang</span> (hanya muncul saat <i>Dipesan</i>), <span class="lbl">Edit</span>, <span class="lbl">🖨 Cetak PO</span>, <span class="lbl">Hapus</span>.</p>
+<div class="kotak"><b>Akibat “Terima Barang”:</b> status jadi <i>Diterima di Gudang</i> + tanggal terima; mutasi Gudang masuk <code>GR-&lt;Nomor PO&gt;</code> di yard tujuan; pemasok baru dibuat otomatis; spare part kategori non-unit ditambah stoknya; Kas mencatat <b>keluar</b> kategori <i>Pembelian / PO</i> dengan keterangan <i>Pembayaran PO … ke …</i>. Karena itu jangan menambah pengeluaran manual untuk PO yang sama.</div>
+<div class="catatan"><b class="ct">BBM sekarang bisa dibeli.</b> Kategori <i>BBM (Solar)</i> adalah pilihan resmi sejak 3.0.3. Pembelian solar untuk proyek dicatat di sini, sehingga biaya operasional yang masuk perhitungan Cost per Hour ikut terbaca — bukan lewat Kas manual.</div>
+
+<h2>5.11 Penjualan / SPK <code>/sales</code></h2>
+<p>Formulir: <span class="lbl">Nomor SPK</span> (<code>SO-2026-00X</code>), <span class="lbl">Tanggal Order</span>, <span class="lbl">Nama Pembeli (Pilih dari Data Pelanggan)</span>, <span class="lbl">Pilih Unit (AVAILABLE)</span> — hanya unit berstatus Tersedia, <span class="lbl">Model Terpilih</span> (otomatis, tidak bisa diubah), <span class="lbl">Total Harga Unit</span>, <span class="lbl">Uang Muka / DP</span>, <span class="lbl">Skema Pembayaran</span> (<i>Hard Cash (Tunai)</i>, <i>Leasing Financing</i>, <i>Cicilan Internal (Bertahap)</i>), <span class="lbl">Sales Representative</span>.</p>
+<p>Status: <i>Draft / Penawaran</i> → <i>SPK Dikonfirmasi</i> → <i>Proses Unit / Leasing</i> → <i>Unit Terkirim / Selesai</i> (atau <i>Dibatalkan</i>). Tombol <span class="lbl">Buat SPK Baru</span>, <span class="lbl">Proses</span>, <span class="lbl">Selesai</span>, <span class="lbl">🖨 Cetak SPK</span>, <span class="lbl">Edit</span>, <span class="lbl">Hapus</span>.</p>
+<div class="kotak"><b>Akibat menyimpan SPK:</b> invoice <code>INV/SALE/&lt;No SPK&gt;</code> dibuat (jatuh tempo +30 hari); DP yang diisi menciptakan penerimaan Kas <i>Penerimaan DP Penjualan …</i>; surat jalan otomatis berstatus <i>Menunggu Jadwal</i> dengan catatan <i>“Dibuat otomatis dari SPK; lengkapi jadwal dan tujuan pengiriman”</i>; saat <span class="lbl">Selesai</span> unit ditandai <i>Terjual</i>.</div>
+<div class="catatan"><b class="ct">Validasi:</b> <i>“Uang muka tidak boleh lebih dari harga unit.”</i> Unit yang tidak muncul di dropdown = statusnya bukan Tersedia (sedang dirental, di proyek, maintenance, dsb.) — selesaikan kontrak/WO lebih dulu.</div>
+
+<h2>5.12 Sewa / Rental <code>/rental</code></h2>
+<p>Dua tampilan: <span class="lbl">📈 Timeline</span> (bar kontrak per bulan, tampilan awal) dan <span class="lbl">📊 Tabel</span>. Formulir: <span class="lbl">Nomor Kontrak</span> (<code>RNT-2026-00X</code>), <span class="lbl">Nama Penyewa</span>, <span class="lbl">Pilih Unit (AVAILABLE)</span>, <span class="lbl">Lokasi Penempatan / Jobsite</span>, <span class="lbl">Tanggal Mulai</span>, <span class="lbl">Tanggal Berakhir</span> (+90 hari), <span class="lbl">Tarif Bulanan</span> (bawaan Rp 90.000.000), <span class="lbl">Minimal Jam Operasi (HM)</span> (bawaan 200), centang <span class="lbl">Termasuk Tenaga Operator (Include Operator)</span>.</p>
+<p>Status: <i>Sedang Berjalan</i>, <i>Menunggu Mobilisasi</i>, <i>Selesai / Demobilisasi</i>, <i>Diperpanjang</i>. Tombol <span class="lbl">Buat Kontrak Sewa</span>, <span class="lbl">Selesai Sewa</span>, <span class="lbl">Edit</span>, <span class="lbl">Cetak Perjanjian</span>, <span class="lbl">Hapus</span>.</p>
+<div class="kotak"><b>Akibat:</b> simpan kontrak → unit <i>Dirental</i> + invoice <code>INV/RENT/&lt;No Kontrak&gt;</code> (tempo +14 hari). <span class="lbl">Selesai Sewa</span> → konfirmasi <i>“Selesaikan kontrak sewa ini dan jadwalkan demobilisasi alat?”</i> lalu unit kembali <i>Tersedia</i>.</div>
+<div class="catatan"><b class="ct">Validasi:</b> <i>“Tanggal Selesai tidak boleh sebelum Tanggal Mulai.”</i> <span class="lbl">Minimal Jam Operasi</span> adalah janji HM per bulan kepada penyewa — isikan dari penawaran, supaya tagihan dan pemakaian bisa dibandingkan di Laporan.</div>
+
+<h2>5.13 Persetujuan / Approval <code>/approvals</code></h2>
+<p>Permintaan wewenang: <span class="lbl">No. Request</span> (<code>APR-2026-00X</code>), <span class="lbl">Tipe Request *</span> (<i>Purchase Request</i>, <i>Maintenance Request</i>, <i>Rental Contract</i>, <i>Discount</i>, <i>Payment</i>, <i>Expense</i>), <span class="lbl">Judul *</span>, <span class="lbl">Deskripsi *</span>, <span class="lbl">Requested By *</span>, <span class="lbl">Amount</span>, <span class="lbl">Approver Level</span> (Level 1/2/3), <span class="lbl">Current Approver</span>, <span class="lbl">Catatan</span>. Aksi baris: <span class="lbl">✓</span> approve (catatan opsional), <span class="lbl">✗</span> reject (<b>alasan wajib</b>), ✏️ edit, 🖨️ cetak, 🗑️ hapus.</p>
+<div class="bahaya"><b class="ct">Penting.</b> Menyetujui <i>Purchase Request</i> <b>tidak membuat PO</b>, dan menyetujui <i>Rental Contract</i> <b>tidak membuat kontrak</b>. Persetujuan adalah jejak keputusan; dokumen kerjanya tetap harus dibuat di menu Transaksi masing-masing. Referensikan nomor <code>APR-…</code> di kolom catatan dokumen supaya keterkaitannya terbaca.</div>
+<div class="catatan"><b class="ct">Validasi:</b> <i>Judul minimal 5 karakter</i>, <i>Deskripsi minimal 10 karakter</i>; penolakan tanpa alasan ditolak: <i>“Alasan penolakan wajib diisi”</i>.</div>
+
+<h2>5.14 Faktur / Invoice <code>/invoices</code></h2>
+<p>Invoice bisa dibuat manual (<span class="lbl">Buat Invoice Baru</span>) atau datang otomatis dari Penjualan, Sewa, dan Servis. Tipe: <i>Rental Alat Berat</i>, <i>Penjualan Unit</i>, <i>Jasa Service &amp; Perbaikan</i>, <i>Spare Parts &amp; Komponen</i>. Status: <i>Lunas</i>, <i>Sebagian (Cicil)</i>, <i>Belum Bayar</i>, <i>Jatuh Tempo</i>. Kolom pencarian <i>“Cari no. invoice, pelanggan...”</i>, 25 baris per halaman.</p>
+<h4>Mencatat pembayaran</h4>
+<ol>
+  <li>Klik <span class="lbl">Bayar</span> pada invoice belum lunas. Jendela menampilkan <span class="lbl">Nomor Invoice</span>, <span class="lbl">Total Tagihan</span>, <span class="lbl">Sisa Belum Bayar</span>.</li>
+  <li>Isi <span class="lbl">Jumlah Pembayaran Diterima (IDR)</span> — otomatis terisi sisa; kurangi untuk mencicil.</li>
+  <li>Pilih <span class="lbl">Diterima di Rekening</span> (daftar rekening aktif dari Pengaturan; fallback <i>Kas Tunai</i>).</li>
+  <li><span class="lbl">Simpan Pembayaran</span> → kas masuk tercatat otomatis; status jadi <i>Sebagian (Cicil)</i> atau <i>Lunas</i>.</li>
+</ol>
+<div class="catatan"><b class="ct">Validasi:</b> <i>“Mohon isi nama pelanggan dan nominal tagihan dengan benar.”</i> <i>“Pembayaran melebihi sisa tagihan Rp …”</i> Pembayaran kedua untuk invoice yang sama ditolak saat referensinya duplikat. Menghapus invoice yang sudah punya jejak pembayaran akan ditolak dengan penjelasan dokumen penahannya.</div>
+<p>Tombol lain: <span class="lbl">🖨 Cetak</span> (judul dokumen <i>INVOICE / TAGIHAN</i>, cap <i>LUNAS</i> bila sudah lunas), <span class="lbl">Ekspor CSV</span> (berkas <code>Daftar_Invoice_FATHONI_&lt;tanggal&gt;.csv</code>), <span class="lbl">Edit</span>, <span class="lbl">Hapus</span>.</p>
+
+<h2>5.15 Pengiriman / Surat Jalan <code>/delivery</code></h2>
+<p>Formulir <span class="lbl">Buat Surat Jalan Pengiriman</span>: <span class="lbl">Nomor Surat Jalan</span> (<code>DO-2026-00X</code>), <span class="lbl">Referensi SPK (Belum Dikirim)</span> — memilih SPK mengisi pelanggan/unit/serial otomatis, <span class="lbl">Nama Pelanggan / Penerima</span>, <span class="lbl">Model Unit</span>, <span class="lbl">Serial Number</span>, <span class="lbl">Tujuan Pengiriman / Jobsite</span>, <span class="lbl">Tanggal Kirim</span>, <span class="lbl">Nama Driver</span>, <span class="lbl">Plat Kendaraan</span>, <span class="lbl">Catatan</span>.</p>
+<p>Status: <i>Menunggu Jadwal</i> → <i>Dalam Perjalanan</i> (<span class="lbl">Berangkat</span>) → <i>Serah Terima Selesai</i> (<span class="lbl">Serah Terima</span>). Tombol cetak: <span class="lbl">🖨 Cetak SJ</span>.</p>
+<div class="catatan"><b class="ct">Dua status yang belum bisa diklik.</b> Peta status pengiriman mengenal <i>Tiba di Lokasi</i> dan <i>Dibatalkan</i>, tetapi sampai 3.0.4 layar hanya menyediakan tombol <span class="lbl">Berangkat</span> dan <span class="lbl">Serah Terima</span> — kedua status itu tidak dapat dicapai dari menu Pengiriman (catat keberangkatannya lewat <span class="lbl">Catatan</span> surat jalan sampai tombolnya ada). Surat jalan juga <b>tidak</b> mengubah status unit atau Kas: status unit berubah lewat menu asalnya (SPK <span class="lbl">Selesai</span>, kontrak rental, WO), supaya satu pergerakan unit tidak bisa tercatat dua kali.</div>
+
+<h2>5.16 Gudang <code>/warehouse</code></h2>
+<p>Jenis mutasi: <span class="lbl">Barang Masuk (Inbound / Penerimaan)</span>, <span class="lbl">Barang Keluar (Outbound / Pemakaian)</span>, <span class="lbl">Transfer Antar Yard / Gudang</span>. Formulir: <span class="lbl">No. Bukti Mutasi *</span> (diusulkan <code>TRX-2026-###</code>), <span class="lbl">Jenis Mutasi</span>, <span class="lbl">Lokasi Gudang / Yard</span> (empat yard tetap; bawaan <i>Yard Cikande Main Hub</i>), <span class="lbl">Nama Barang / Unit Alat Berat *</span>, <span class="lbl">Kuantitas / Jumlah *</span> (minimal 1), <span class="lbl">Satuan</span> (bawaan <i>Unit</i>), <span class="lbl">No. Dokumen Referensi (PO/WO/SPK)</span> — kosong berarti <code>NON-REF</code>, <span class="lbl">Nama Petugas (PIC)</span>, tanggal, keterangan. Filter tombol <span class="lbl">Semua / Barang Masuk / Barang Keluar / Mutasi Antar Gudang</span>, 25 baris per halaman.</p>
+<div class="catatan"><b class="ct">Selalu isi nomor referensi</b> (mis. <code>PO-2026-004</code> atau <code>WO-2026-007</code>). Tanpa referensi, mutasi tidak bisa ditelusuri ke dokumen asal saat laporan biaya diverifikasi.</div>
+<div class="kotak"><b class="ct">Cetak Bukti sudah mencetak sejak 3.0.4.</b> Tombol <span class="lbl">Cetak Bukti</span> di tiap baris membuka jendela cetak berisi <b>BUKTI SERAH TERIMA MUTASI BARANG</b>: header nama perusahaan dari Pengaturan, nomor transaksi dan tanggal, jenis mutasi, gudang/yard, uraian barang, jumlah + satuan, nomor dokumen referensi, petugas (PIC), catatan, lalu tiga blok tanda tangan (<i>Petugas Gudang</i>, <i>Admin Logistik</i>, <i>Penerima Barang</i>). Jendela pratinjau cetak Windows yang muncul adalah tempat memilih printer — aplikasi tidak lagi hanya menampilkan nomor bukti dalam kotak dialog seperti di 3.0.3.</div>
+
+<h2>5.17 Suku Cadang <code>/spareparts</code></h2>
+<p>Kartu KPI: <span class="lbl">Total Nilai Persediaan</span>, <span class="lbl">Stok Rendah (Restock Alert)</span>, <span class="lbl">Katalog Suku Cadang</span>. Formulir: <span class="lbl">Part Number *</span> (contoh <code>6736-51-5142</code>), <span class="lbl">Kategori Komponen</span> (Belum dikategorikan, Filter &amp; Saringan, Undercarriage (Track/Roller), Hydraulic Component, Engine &amp; Transmission, Electrical &amp; Starter, Bucket/Teeth &amp; Breaker), <span class="lbl">Nama Suku Cadang *</span>, <span class="lbl">Model Kompatibel / Brand</span>, <span class="lbl">Stok Awal</span>, <span class="lbl">Batas Min. Stok</span> (bawaan 5), <span class="lbl">Satuan</span> (<i>Pcs</i>), <span class="lbl">Harga Beli Modal</span>, <span class="lbl">Harga Jual</span>, <span class="lbl">Lokasi Rak / Bin Gudang</span> (contoh <code>A1-02-04</code>). Aksi: <span class="lbl">Tambah Spare Part</span>, <span class="lbl">+1/-1</span> stok opname cepat, <span class="lbl">Edit</span>, <span class="lbl">Hapus</span>; pencarian <i>“Cari part number, nama part, rak...”</i>.</p>
+<div class="kotak"><b>Hubungan dengan Servis:</b> pemakaian part dicatat di Work Order (bukan dikurangi manual di sini). Stok turun otomatis, dan mutasi keluar Gudang ikut tercatat. Bila stok tidak cukup, WO menolak dengan <i>“Stok … hanya N … Kurangi jumlah pemakaian.”</i></div>
+
+<h2>5.18 Servis &amp; Work Order <code>/service</code></h2>
+<p>Dua tampilan: <span class="lbl">📋 Kanban</span> (kolom <i>Menunggu Teknisi</i>, <i>Menunggu Part</i>, <i>Sedang Dikerjakan</i>, <i>Selesai</i> — kartu bisa ditarik, “Tarik item ke sini”) dan <span class="lbl">📊 Tabel</span>. Tipe WO: <i>Servis Berkala 250 Jam (Oli &amp; Filter)</i>, <i>500 Jam (Filter Komplit)</i>, <i>1000 Jam (Major Check)</i>, <i>Breakdown Repair (Kerusakan Lapangan)</i>, <i>Overhaul Komponen</i>, <i>Inspeksi Pra-Kirim (PDI)</i>. Status: <i>Menunggu Teknisi</i>, <i>Sedang Dikerjakan</i>, <i>Menunggu Sparepart</i>, <i>Servis Selesai</i>.</p>
+<p>Formulir: <span class="lbl">Nomor Work Order</span> (<code>WO-2026-###</code>), <span class="lbl">Tipe Servis</span>, <span class="lbl">Pilih Unit (AVAILABLE/ON_PROJECT) *</span>, <span class="lbl">Pelanggan (Pilih dari Master) *</span> (ada pilihan <i>INTERNAL Yard / Gudang Utama</i> untuk unit sendiri), <span class="lbl">Hour Meter (HM)</span> — bacaan meter hari itu, <span class="lbl">Teknisi / Mekanik *</span>, <span class="lbl">Estimasi Biaya (IDR)</span>, <span class="lbl">Keluhan / Catatan</span>.</p>
+<h4>Menyelesaikan WO</h4>
+<ol>
+  <li>Klik <span class="lbl">Selesai</span> pada kartu WO. Buka <span class="lbl">Suku Cadang Terpakai</span> → <span class="lbl">+ Tambah Part</span>, pilih dari daftar <i>nama part (part number) — stok N unit</i>.</li>
+  <li>Isi <span class="lbl">Biaya Aktual Tagihan (IDR)</span> (wajib, maksimal Rp 1.000.000.000). Shortcut <i>Isi dengan total part</i> mengisi dari total part.</li>
+  <li>Klik <span class="lbl">Tandai Selesai &amp; Terbitkan Invoice</span>.</li>
+</ol>
+<div class="kotak"><b>Akibat WO selesai (satu kali, jangan ditiru manual):</b> WO → <i>Servis Selesai</i> + tanggal selesai; stok part berkurang; mutasi Gudang keluar <i>“Pemakaian suku cadang Work Order”</i> bereferensi nomor WO; <b>HM unit dinaikkan</b> ke bacaan meter dan <b>hari servis terakhir</b> tercatat (siklus servis berputar dari sini); unit → <i>Tersedia</i>; invoice <code>INV/SVC/&lt;No WO&gt;</code> terbit, jatuh tempo +14 hari. Pembayaran tagihan servis dicatat di Faktur, bukan di halaman ini.</div>
+<h4>Kapan servis berikutnya?</h4>
+<p>Siklus standar aplikasi adalah <b>500 HM</b>. Sisa menuju servis berikutnya dihitung dari meter saat ini: <code>500 − (HM mod 500)</code>. Contoh: HM 5.020 → sisa 480 HM; servis berikutnya di 5.500. Angka ini yang dipakai kartu “Service Due” di Dasbor/Control Tower. <span class="lbl">Tipe Servis</span> boleh 250/500/1000 jam — pilih sesuai pekerjaan yang benar-benar dikerjakan, itu menentukan nama WO, bukan menghitung ulang jadwal.</p>
+<div class="catatan"><b class="ct">Bila HM di WO lebih kecil dari HM unit</b>, gunakan centang koreksi + alasan (prosedur di §5.4). Aksi ini tercatat, bukan diselundupkan.</div>
+
+<h2>5.19 Breakdown <code>/breakdown</code></h2>
+<p>Formulir <span class="lbl">+ Lapor Breakdown</span>: <span class="lbl">No. Breakdown</span> (<code>BD-2026-###</code>), <span class="lbl">Serial Number Unit *</span>, <span class="lbl">Model Unit *</span>, <span class="lbl">Lokasi *</span>, <span class="lbl">Dilaporkan Oleh *</span>, <span class="lbl">Severity *</span> (<i>Critical</i> = unit tidak bisa bergerak sama sekali, <i>Major</i> = fungsi utama terganggu, <i>Minor</i> = masalah kecil, masih bisa operasi), <span class="lbl">Status *</span> (<i>Dilaporkan → Inspeksi → Diagnosis → Perbaikan → Testing → Selesai</i>, atau <i>Dibatalkan</i>), <span class="lbl">Deskripsi Masalah *</span> (minimal 10 karakter), <span class="lbl">Diagnosis</span>, <span class="lbl">Teknisi yang Ditugaskan</span>, <span class="lbl">Estimasi Biaya Perbaikan</span>, <span class="lbl">Biaya Aktual</span>, <span class="lbl">Waktu Mulai/Selesai</span>, <span class="lbl">Catatan Penyelesaian</span>.</p>
+<p>Waktu mulai/selesai terisi otomatis pada status tertentu dan <b>downtime</b> dihitung darinya. Melapor breakdown mengubah unit menjadi <i>Breakdown / Rusak</i>; menyelesaikan mengembalikan <i>Tersedia</i>. Perbaikan fisiknya dikerjakan lewat WO Servis (agar part, biaya, dan HM tercatat); Breakdown adalah catatan kejadian &amp; downtime.</p>
+<div class="catatan"><b class="ct">Validasi:</b> <i>“Tanggal selesai tidak boleh sebelum tanggal mulai.”</i> Cetak: <span class="lbl">Cetak Breakdown Report &lt;no&gt;?</span> → judul <i>Breakdown Management Report</i>.</div>
+
+<h2>5.20 Kas &amp; Bank <code>/finance</code></h2>
+<p>Tipe: <span class="lbl">⬆ Kas Masuk (Penerimaan)</span> / <span class="lbl">⬇ Kas Keluar (Pengeluaran)</span>. Kategori: <i>Penjualan Unit</i>, <i>Rental Alat</i>, <i>Jasa Service</i>, <i>Pembelian / PO</i>, <i>Biaya Operasional</i>, <i>Gaji &amp; Tunjangan</i>, <i>Lainnya</i>. Formulir: <span class="lbl">Tipe Transaksi</span>, <span class="lbl">Tanggal Transaksi</span>, <span class="lbl">Keterangan *</span>, <span class="lbl">Kategori</span>, <span class="lbl">Rekening / Kas</span>, <span class="lbl">Jumlah (IDR) *</span>, <span class="lbl">Nomor Referensi (SPK/PO/INV)</span>. KPI Total Kas Masuk / Keluar / Saldo Bersih dihitung langsung dari database; daftar 25 baris per halaman.</p>
+<div class="kotak"><b>Batas peran.</b> Menu dan collection kas hanya untuk peran <b>Keuangan</b> (dan Super Admin). Petugas lain yang melihat pengeluaran harus lewat dokumennya (PO/WO/Invoice), bukan membuat catatan kas sendiri.</div>
+<div class="catatan"><b class="ct">Satu pembayaran tidak bisa masuk dua kali (baru di 3.0.5).</b> Bila Anda mencatat transaksi dengan <span class="lbl">Nomor Referensi</span>, <span class="lbl">Kategori</span> dan <span class="lbl">Tipe Transaksi</span> yang sama dengan baris yang sudah ada, <span class="lbl">Simpan Transaksi</span> ditolak dengan pesan yang menunjuk baris penahannya — <i>“Transaksi KELUAR/PEMBELIAN dengan referensi &quot;PO-1&quot; sudah tercatat di baris 1728-…. Satu dokumen hanya boleh dibayar sekali — bila ini memang pembayaran kedua (mis. DP lalu pelunasan), pakai nomor referensi yang berbeda.”</i> — dan formulirnya <b>tidak ditutup</b>, jadi angkanya masih bisa diperbaiki. Transaksi tanpa nomor referensi, arah berbeda atas dokumen yang sama (masuk vs keluar), dan suntingan atas baris itu sendiri tetap boleh. Aturan yang sama berlaku di jalur otomatis (penerimaan PO, pelunasan Invoice, servis selesai) dan diperiksa ulang oleh proses utama aplikasi saat menulis ke database, jadi satu biaya tidak dapat dihitung dua kali dari jalan mana pun.</div>
+<div class="catatan"><b class="ct">Rekening belum ada?</b> Tambahkan di <b>Pengaturan → Rekening Bank</b>. Tanpa itu dropdown memakai daftar bawaan (<i>Kas Tunai</i> dsb.) dan laporan per rekening tidak meaningful.</div>
+
+<h2>5.21 Laporan <code>/reports</code></h2>
+<p>Tiga tab: <span class="lbl">💰 Laporan Pendapatan</span> (bulanan: Rental/Penjualan/Service/Total + baris <i>TOTAL KESELURUHAN</i>, 6 bulan terakhir, KPI sepanjang masa), <span class="lbl">🚜 Laporan Kinerja Unit</span> (serial, model, status, Total Jam Digunakan/HM, harga perolehan), <span class="lbl">📋 Laporan Piutang (AR)</span> (invoice belum lunas/sebagian; KPI <i>Total Piutang Beredar</i>, <i>Piutang Jatuh Tempo</i>, <i>Rata-Rata Umur Piutang (DSO)</i>). Tombol <span class="lbl">Ekspor CSV</span> dan <span class="lbl">Cetak PDF</span> per tab.</p>
+<div class="catatan"><b class="ct">Batas ekspor dan cetak.</b> Tab <i>Kinerja Unit</i> dan <i>Piutang</i> kini menelusuri database halaman demi halaman, jadi <b>CSV berisi sampai 5.000 baris</b> (di 3.0.3 mentok 500 baris karena satu kueri tidak boleh meminta lebih). Bila database lebih besar dari itu, baris terakhir CSV memberi catatan <i>“Ekspor dibatasi 5.000 baris pertama; total N baris di database.”</i> — jangan disalahartikan sebagai data hilang; saring dengan pencarian atau perbaiki periode, lalu ekspor lagi. <span class="lbl">Cetak PDF</span> sengaja tetap dibatasi <b>500 baris</b>: jendela cetak menyusun seluruh tabelnya di layar, ribuan baris akan membekukannya. Tab <i>Pendapatan</i> hanya berisi baris bulanan, jadi tidak terpengaruh batas ini.</div>
+
+<h2>5.22 Pengaturan <code>/settings</code></h2>
+<p>Enam tab, tombol <span class="lbl">Simpan Pengaturan</span> (balasan <span class="lbl">✅ Tersimpan!</span>):</p>
+<table>
+  <tr><th style="width:17%">Tab</th><th>Isi</th></tr>
+  <tr><td>Perusahaan</td><td><span class="lbl">Nama Perusahaan</span>, <span class="lbl">NPWP</span>, <span class="lbl">Alamat Lengkap</span>, <span class="lbl">Telepon</span>, <span class="lbl">Email</span> — header semua dokumen cetak.</td></tr>
+  <tr><td>Modul &amp; Menu</td><td>17 sakelar modul (Merek &amp; Model … Backup &amp; Restore), tombol <span class="lbl">⚙️ Ubah Profil Bisnis</span> dan <span class="lbl">⚡ Aktifkan Semua Modul</span>. Modul mati = tidak muncul di sidebar, cari menu, maupun Ctrl+K.</td></tr>
+  <tr><td>Sistem</td><td><span class="lbl">Mata Uang</span> (IDR/USD/SGD), <span class="lbl">Zona Waktu</span> (WIB/WITA/WIT). Format tanggal Indonesia DD/MM/YYYY. <i>“Perubahan zona waktu berlaku setelah restart aplikasi.”</i></td></tr>
+  <tr><td>Rekening Bank</td><td>Daftar nama bank + nomor rekening + status aktif — sumber dropdown Kas &amp; Bank dan Faktur.</td></tr>
+  <tr><td>Cetak</td><td><span class="lbl">Ukuran Kertas Default</span> (A4, A5, Letter, Thermal 58mm, Thermal 80mm) dan <span class="lbl">Orientasi Default</span> (Portrait, Landscape). <b>Keduanya hiasan di 3.0.4:</b> pilihannya tidak tersimpan dan tidak dibaca dokumen cetak mana pun — ukuran dan orientasi setiap cetakan ditentukan halaman asalnya (Bab 12).</td></tr>
+  <tr><td>Tentang</td><td>Nama aplikasi, <span class="lbl">Versi</span> — angka ini dibaca dari versi aplikasi yang terpasang (3.1.0 pada panduan ini), lisensi, hak cipta.</td></tr>
+</table>
+
+<h2>5.23 Pengguna <code>/users</code></h2>
+<p>Hanya <b>Super Admin</b>. Formulir akun: <span class="lbl">Username</span> (3–32 karakter: huruf kecil, angka, titik, garis bawah, tanda hubung — tidak bisa diubah setelah dibuat), <span class="lbl">Nama Lengkap</span>, <span class="lbl">Email</span>, <span class="lbl">Peran (Role)</span>, <span class="lbl">Password awal</span> (minimal 8 karakter) / <span class="lbl">Reset password</span> (kosongkan bila tidak diganti), centang <span class="lbl">Akun Aktif (dapat login)</span>. Aksi: <span class="lbl">Muat ulang</span>, <span class="lbl">Tambah Pengguna</span>, <span class="lbl">Ubah</span>, <span class="lbl">Nonaktifkan</span>/<span class="lbl">Aktifkan</span>, <span class="lbl">Hapus</span>. Layar ini tidak pernah menampilkan password, hash, atau salt.</p>
+<div class="kotak"><b>Aturan yang melindungi Anda:</b> tidak bisa menonaktifkan/menurunkan/menghapus akun sendiri; harus tetap ada minimal satu Super Admin aktif; hapus akun dikonfirmasi <i>“Hapus akun …? Riwayat operasinya tetap tercatat.”</i> Kartu KPI: Total Pengguna, Pengguna Aktif, Tidak Aktif, <span class="lbl">Wajib Ganti Password</span> (sub <i>Masih Pakai Bawaan Instalasi</i>). Kolom <span class="lbl">Terakhir Login</span> menunjukkan akun yang benar-benar dipakai.</div>
+<div class="contoh"><b class="ct">Contoh.</b> Menambah mekanik baru: Tambah Pengguna → username <code>rimba</code>, nama <i>Rimba Prayoga</i>, email, peran <b>Teknisi / Mekanik</b>, password awal 9 karakter sementara, centang aktif. Ia login, dipaksa ganti password oleh layar kunci, dan hanya melihat menu servis/parts/gudang sesuai perannya.</div>
+
+<h2>5.24 Dokumen Legal <code>/documents</code></h2>
+<p>Tombol <span class="lbl">+ Upload Dokumen</span>: <span class="lbl">Jenis Dokumen</span> (<i>SIA (Surat Izin Alat)</i>, <i>SIUP (Surat Izin Usaha Perdagangan)</i>, <i>NIB (Nomor Induk Berusaha)</i>, <i>NPWP (Nomor Pokok Wajib Pajak)</i>, <i>Sertifikat Kepemilikan Unit</i>, <i>STNK (Surat Tanda Nomor Kendaraan)</i>, <i>BPKB (Bukti Kepemilikan Kendaraan)</i>, <i>Asuransi Unit</i>, <i>Perjanjian Sewa</i>, <i>Kontrak Kerjasama</i>, <i>Lainnya</i>), <span class="lbl">Nomor Dokumen *</span> (contoh <code>SIA-2024-8891-JKT</code>), <span class="lbl">Masa Berlaku *</span>, <span class="lbl">Status Legalitas</span> (<i>Aktif</i>, <i>Kadaluarsa</i>, <i>Dicabut</i>, <i>Menunggu</i>), <span class="lbl">Upload File PDF</span> (pemilih berkas menerima <code>.pdf</code> saja), <span class="lbl">Keterangan</span>. Baris punya <span class="lbl">📥 Unduh PDF</span>, <span class="lbl">✏️ Edit</span>, <span class="lbl">🗑️ Hapus</span>; badge kedaluwarsa dihitung otomatis dari tanggal: lewat tanggal → <i>Kadaluarsa</i>, ≤ 30 hari → <i>Menunggu (N hari lagi)</i>.</p>
+<div class="catatan"><b class="ct">BPKB kini tersedia sebagai jenis sendiri (3.0.4).</b> Di 3.0.3 pilihan itu tidak ada dan panduan ini menyuruh mencatat BPKB sebagai <i>STNK</i> atau <i>Sertifikat Kepemilikan Unit</i> lalu mengubah teksnya di berkas — tidak perlu lagi. Catatan lama yang terlanjur memakai jenis lain boleh disunting lewat <span class="lbl">✏️ Edit</span> ke <i>BPKB (Bukti Kepemilikan Kendaraan)</i>.</div>
+<div class="catatan"><b class="ct">Batasan:</b> yang disimpan adalah <b>catatan dokumen</b> (jenis, nomor, masa berlaku, nama berkas). Berkas PDF-nya sendiri tidak ikut tersimpan di database, jadi simpan file aslinya di folder bersama/arsip dan samakan namanya dengan <span class="lbl">Nomor Dokumen</span>.</div>
+
+<h2>5.25 Backup &amp; Restore <code>/backup</code></h2>
+<table>
+  <tr><th style="width:30%">Fitur</th><th>Cara pakai dan batas</th></tr>
+  <tr><td>Backup Database → <span class="lbl">Backup Sekarang</span></td><td>Mengekspor berkas cadangan <code>.sanybak</code> (JSON berstruktur <code>{_meta, data}</code>). Maksimal <b>64 MB per berkas</b>. Aplikasi menanyakan <i>“Sertakan N berkas foto ke backup?”</i> — foto disimpan di luar database, jadi harus disetuju terpisah.</td></tr>
+  <tr><td>Snapshot Database Lokal → <span class="lbl">Buat Snapshot</span></td><td>Cadangan internal di folder <code>snapshots\</code>, tiap baris menampilkan tanggal, sebab (<i>manual</i>/<i>auto</i>/<i>pra-restore</i>), jumlah baris, ukuran, dan checksum <code>sha1</code>. Desktop menyimpan <b>7 snapshot terbaru</b> (terlama dihapus otomatis). Tombol <span class="lbl">Pulihkan</span> per baris.</td></tr>
+  <tr><td>Backup otomatis</td><td>Tiap <b>30 menit</b>, dijeda saat jendela aplikasi tidak terlihat. Ini jaring pengaman, bukan pengganti backup harian yang Anda simpan di luar komputer.</td></tr>
+  <tr><td>Restore Database → <span class="lbl">Pilih File Backup...</span></td><td>Konfirmasi keras: <i>“PERINGATAN: Restore akan MENGGANTIKAN seluruh data saat ini dengan data dari file backup. Pastikan Anda sudah melakukan backup terbaru sebelum melanjutkan. Lanjutkan?”</i> Untuk snapshot: keadaan sebelum restore dicadangkan lebih dulu sebagai snapshot <i>pra-restore</i>, lalu hasil pemeriksaan integritas database dilaporkan.</td></tr>
+  <tr><td>Penolakan berkas</td><td><i>“File bukan JSON yang valid (kemungkinan rusak di tengah).”</i>, <i>“File tidak punya _meta.version …”</i>, <i>“File tidak berisi database utama (hems_data_store_v1) — ini bukan backup data FATHONI.”</i>, <i>“Database tidak bisa dibaca — backup dibatalkan agar tidak menyimpan data setengah.”</i></td></tr>
+  <tr><td>📊 Penggunaan Storage · 📋 Ringkasan Data · Log Aktivitas</td><td>Peringatan <i>“⚠️ Storage hampir penuh! Segera lakukan backup dan bersihkan data lama.”</i>. Log bisa dibersihkan dengan <span class="lbl">Bersihkan</span>.</td></tr>
+</table>
+<div class="bahaya"><b class="ct">Rutin yang direkomendasikan.</b> Setiap akhir hari kerja: <span class="lbl">Backup Sekarang</span> dan <b>salin berkasnya ke media lain</b> (flashdisk/network drive). Snapshot internal tidak melindungi Anda dari kerusakan disk komputer.</div>
+
+<h2>5.26 Pemeliharaan Sistem <code>/maintenance</code></h2>
+<p>Tombol: <span class="lbl">🔄 Run Health Check</span> (status <i>HEALTHY / DEGRADED / UNHEALTHY</i> dengan rincian <i>PASS/WARN/FAIL</i> per pemeriksaan), <span class="lbl">📦 Muat Data Contoh</span>, <span class="lbl">💾 Create Backup</span>, <span class="lbl">🔧 Repair Data</span>, <span class="lbl">🗑️ Clear Backups</span>, <span class="lbl">Restore</span> per berkas, <span class="lbl">📥 Export</span> log error, <span class="lbl">📊 Export Health Report</span>. Bagian lain: Storage Usage, Data &amp; Migrasi, Data Recovery, Error Logs (10 terakhir).</p>
+<div class="bahaya"><b class="ct">Tiga konfirmasi yang harus dibaca sebelum OK.</b> <i>“Muat data contoh ke database? Record yang id-nya sudah dipakai tidak ditimpa.”</i> — jangan jalankan di data produksi. <i>“Apakah Anda yakin ingin memperbaiki data? Ini akan membuat backup terlebih dahulu.”</i> <i>“Hapus SEMUA snapshot cadangan? Setelah ini tidak ada jaring pengaman bila file database rusak. Buat backup file lewat menu Backup &amp; Restore terlebih dahulu.”</i></div>
+<div class="contoh"><b class="ct">Contoh pemakaian.</b> Komputer mati mendadak saat ada transaksi; pagi hari aplikasi membuka dengan banner. Buka <b>Pemeliharaan Sistem</b> → <span class="lbl">Run Health Check</span> → bila ada FAIL, jalankan <span class="lbl">🔧 Repair Data</span> (ia membuat backup sendiri lebih dulu) → buka lagi menu mana pun untuk memastikan data sehat. Error bisa diekspor untuk dikirim ke tim pendukung.</div>
+
+<h2>5.27 Audit Log <code>/audit-log</code></h2>
+<p>Hanya <b>Super Admin</b>. KPI: Total Kejadian, Login Gagal / Terkunci, Perubahan Password, Kejadian Akun. Filter: pencarian <i>“Cari akun, kejadian, atau detail...”</i> + pilihan 11 jenis kejadian: <i>Login berhasil, Login gagal, Akun terkunci, Keluar, Password diganti, Password direset, Akun dibuat, Akun diubah, Akun dihapus, Baris dihapus, Tulis data ditolak</i>. Kolom: Waktu / Kejadian / Akun / Dilakukan oleh (kosong → <i>Sistem</i>) / Detail. Tersedia <span class="lbl">📥 Export CSV</span> dan cetak per baris.</p>
+<div class="catatan"><b class="ct">Yang TIDAK tercatat:</b> penyimpanan rutin/autosave harian — log khusus untuk kejadian akun, sesi, <b>penghapusan baris</b>, dan <b>penolakan tulis</b>. Di disk disimpan 300 entri terbaru; layar menampilkan 100 terbaru.</div>
+
+<div class="brk"></div>
+<h1>Bab 6 — Aturan Angka dan Pesan Validasi</h1>
+<p>Aplikasi menolak angka yang mustahil sebelum masuk database. Tabel ini membuat pesan yang muncul di layar bisa langsung ditindaklanjuti.</p>
+<table>
+  <tr><th style="width:26%">Aturan</th><th style="width:37%">Pesan di layar</th><th>Yang harus dilakukan</th></tr>
+  <tr><td>Hour Meter maksimal 100.000 HM</td><td><i>Hour Meter tidak realistis (maksimal 100.000 HM)</i></td><td>Cek satuan: HM adalah jam meter, bukan menit.</td></tr>
+  <tr><td>HM tidak boleh negatif / bukan angka</td><td><i>Hour Meter harus berupa angka</i> · <i>Hour Meter tidak boleh negatif</i></td><td>Kosongkan bila belum diketahui; jangan menulis “±”.</td></tr>
+  <tr><td>Meter mundur wajib jadi koreksi beralasan</td><td><i>Hour Meter mundur dari X ke Y (Z jam). … centang “Ini koreksi pembacaan meter” …</i></td><td>Centang koreksi + isi alasan (§5.4).</td></tr>
+  <tr><td>Serial unik, min 3 karakter</td><td><i>Serial Number wajib diisi</i> · <i>… sudah terdaftar pada unit lain</i></td><td>Cari dulu di daftar unit sebelum membuat.</td></tr>
+  <tr><td>Merek/kategori harus dari daftar</td><td><i>Merek tidak valid. Pilih dari: …</i> · <i>Kategori tidak valid. Pilih dari: …</i></td><td>Pilih dari dropdown, jangan mengetik bebas.</td></tr>
+  <tr><td>Tahun pembuatan ≥ 1990</td><td><i>Tahun minimal 1990</i></td><td>Perbaiki tahun unit tua hasil impor.</td></tr>
+  <tr><td>Nilai unit Rp 1 juta – Rp 10 miliar</td><td><i>Nilai minimal Rp 1.000.000</i> · <i>Nilai maksimal Rp 10.000.000.000</i></td><td>Isi harga perolehan, bukan harga jual penawaran.</td></tr>
+  <tr><td>DP ≤ harga unit</td><td><i>Uang muka tidak boleh lebih dari harga unit</i></td><td>Pindah kelebihan ke DP kedua atau kurangi.</td></tr>
+  <tr><td>Bayar ≤ sisa tagihan</td><td><i>Pembayaran melebihi sisa tagihan Rp …</i></td><td>Catat sebagian, atau buat invoice lain untuk kelebihan.</td></tr>
+  <tr><td>Estimasi biaya WO ≤ Rp 100 juta; biaya aktual ≤ Rp 1 miliar</td><td>pesan validasi nilai muncul di kolom terkait</td><td>Pecah pekerjaan besar jadi beberapa WO.</td></tr>
+  <tr><td>Tanggal akhir ≥ tanggal awal</td><td><i>Tanggal Selesai tidak boleh sebelum Tanggal Mulai</i> · <i>Estimasi Tiba tidak boleh sebelum Tanggal Order</i> · <i>Tanggal selesai tidak boleh sebelum tanggal mulai</i></td><td>Perbaiki urutan tanggal sebelum menyimpan.</td></tr>
+  <tr><td>NIK 16 digit</td><td><i>NIK harus 16 digit</i></td><td>Kosongkan bila belum memiliki NIK; jangan isi 15.</td></tr>
+  <tr><td>Telepon ≥ 10 digit</td><td><i>Nomor telepon minimal 10 digit</i> · <i>Format nomor telepon tidak valid</i></td><td>Format <code>0812xxxxxxx</code>; hindari spasi dan tanda hubung berlebih.</td></tr>
+  <tr><td>Deskripsi ≥ 10 karakter</td><td><i>Deskripsi minimal 10 karakter</i></td><td>Tulis gejala/pekerjaan lengkap, bukan “rusak”.</td></tr>
+  <tr><td>Rekening/part wajib lengkap</td><td><i>Isi part number dan nama suku cadang</i> · <i>Isi keterangan transaksi dan jumlah dengan benar</i> · <i>Isi deskripsi barang/unit yang dimutasi</i></td><td>Lengkapi kolom bertanda <span class="lbl">*</span>.</td></tr>
+  <tr><td>Stok part cukup</td><td><i>Stok … hanya N … Kurangi jumlah pemakaian.</i></td><td>Restok lewat PO, atau kurangi pemakaian dan catat sisanya di WO susulan.</td></tr>
+  <tr><td>Orang/unit masih dirujuk dokumen</td><td><i>Record ini masih dipakai dokumen lain, jadi belum bisa dihapus. Hapus atau pindahkan dokumennya lebih dulu — …</i></td><td>Ikuti daftar penahannya; jangan hapus induk demi menghapus anak.</td></tr>
+  <tr><td>Wewenang peran</td><td><i>Akun dengan peran … tidak berwewenang menulis ke “…”.</i></td><td>Pindahkan catatan ke peran pemilik menu, atau minta Super Admin.</td></tr>
+</table>
+
+<div class="brk"></div>
+<h1>Bab 7 — Penomoran Dokumen Otomatis</h1>
+<p>Nomor diusulkan otomatis saat formulir dibuka, bersumber dari database (tidak akan menabrak nomor yang sudah ada), dan <b>boleh Anda ganti</b> bila mengikuti nomor buku fisik. Nomor orang (OP/TECH) terkunci di layar.</p>
+<table>
+  <tr><th style="width:22%">Dokumen</th><th style="width:20%">Pola</th><th>Contoh</th></tr>
+  <tr><td>Purchase Order</td><td><code>PO-&lt;tahun&gt;-00X</code></td><td><code>PO-2026-004</code></td></tr>
+  <tr><td>SPK Penjualan</td><td><code>SO-&lt;tahun&gt;-00X</code></td><td><code>SO-2026-002</code></td></tr>
+  <tr><td>Kontrak Sewa</td><td><code>RNT-&lt;tahun&gt;-00X</code></td><td><code>RNT-2026-002</code></td></tr>
+  <tr><td>Invoice manual</td><td><code>INV-&lt;tahun&gt;-00X</code></td><td><code>INV-2026-011</code></td></tr>
+  <tr><td>Invoice otomatis servis</td><td><code>INV/SVC/&lt;No WO&gt;</code></td><td><code>INV/SVC/WO-2026-007</code></td></tr>
+  <tr><td>Invoice otomatis penjualan / sewa</td><td><code>INV/SALE/&lt;SPK&gt;</code>, <code>INV/RENT/&lt;Kontrak&gt;</code></td><td><code>INV/SALE/SO-2026-002</code></td></tr>
+  <tr><td>Surat Jalan</td><td><code>DO-&lt;tahun&gt;-00X</code></td><td><code>DO-2026-005</code></td></tr>
+  <tr><td>Work Order</td><td><code>WO-&lt;tahun&gt;-00X</code></td><td><code>WO-2026-007</code></td></tr>
+  <tr><td>Mutasi Gudang</td><td><code>TRX-&lt;tahun&gt;-###</code>; penerimaan PO = <code>GR-&lt;No PO&gt;</code>; tanpa referensi = <code>NON-REF</code></td><td><code>GR-PO-2026-004</code></td></tr>
+  <tr><td>Request Persetujuan</td><td><code>APR-&lt;tahun&gt;-00X</code></td><td><code>APR-2026-001</code></td></tr>
+  <tr><td>Breakdown</td><td><code>BD-&lt;tahun&gt;-###</code></td><td><code>BD-2026-003</code></td></tr>
+  <tr><td>Operator / Teknisi</td><td><code>OP-&lt;tahun&gt;-00X</code> / <code>TECH-&lt;tahun&gt;-00X</code></td><td><code>OP-2026-001</code>, <code>TECH-2026-002</code></td></tr>
+</table>
+
+<div class="brk"></div>
+<h1>Bab 8 — Mencetak Dokumen</h1>
+<p>Semua cetak memakai mekanisme aplikasi (bukan browser). Yang terjadi saat tombol cetak ditekan: muncul konfirmasi, lalu <b>jendela cetak asli Windows</b> terbuka dengan dokumen yang sudah diformat — pilih printer di jendela itu, atau “Save as PDF”.</p>
+<table>
+  <tr><th style="width:26%">Menu</th><th style="width:26%">Tombol</th><th>Judul dokumen tercetak</th></tr>
+  <tr><td>Pembelian</td><td>🖨 Cetak PO</td><td>PURCHASE ORDER</td></tr>
+  <tr><td>Penjualan</td><td>🖨 Cetak SPK</td><td>SURAT PESANAN KENDARAAN (SPK)</td></tr>
+  <tr><td>Sewa / Rental</td><td>Cetak Perjanjian</td><td>SURAT PERJANJIAN SEWA (RENTAL CONTRACT)</td></tr>
+  <tr><td>Faktur</td><td>🖨 Cetak</td><td>INVOICE / TAGIHAN (cap LUNAS bila lunas)</td></tr>
+  <tr><td>Pengiriman</td><td>🖨 Cetak SJ</td><td>SURAT JALAN PENGIRIMAN UNIT</td></tr>
+  <tr><td>Servis &amp; WO</td><td>🖨 Cetak WO</td><td>WORK ORDER SERVIS ALAT BERAT (TTD Mekanik, Kepala Bengkel, Pelanggan)</td></tr>
+  <tr><td>Breakdown</td><td>🖨️</td><td>Breakdown Management Report</td></tr>
+  <tr><td>Operator / Teknisi</td><td>🖨️</td><td>Operator Profile / Technician Profile</td></tr>
+  <tr><td>Persetujuan</td><td>🖨️</td><td>Approval Request</td></tr>
+  <tr><td>Gudang</td><td>Cetak Bukti</td><td>BUKTI SERAH TERIMA MUTASI BARANG (TTD Petugas Gudang, Admin Logistik, Penerima Barang) — baru mencetak sungguhan sejak 3.0.4</td></tr>
+  <tr><td>Laporan</td><td>Cetak PDF</td><td>LAPORAN REKAPITULASI PENDAPATAN / KINERJA &amp; ASET UNIT ALAT BERAT / PIUTANG BEREDAR (AR)</td></tr>
+  <tr><td>Audit Log</td><td>🖨️ per baris</td><td>Jejak audit satu kejadian</td></tr>
+</table>
+<p>Ukuran kertas dan orientasi diatur di <b>Pengaturan → Cetak</b> (bawaan A4, Portrait; tersedia A5, Letter, Thermal 58/80 mm). Konti: header memakai Nama Perusahaan dari Pengaturan → Perusahaan; footer bertuliskan dibuat oleh FATHONI EQUIPMENT OS.</p>
+<div class="catatan"><b class="ct">Bukti dan batas.</b> Jalur cetak sudah diuji otomatis sampai <b>jendela cetak benar-benar terbuka dengan isi yang sama dengan aplikasinya</b> (11 dokumen, ukuran kertas + latar, termasuk bukti mutasi Gudang yang baru dicetak sejak 3.0.4). Yang belum diuji adalah kertas keluar dari printer tertentu — bila hasil cetak terpotong, cek driver printer dan ukuran kertas di Pengaturan → Cetak, bukan datanya.</div>
+
+<div class="brk"></div>
+<h1>Bab 9 — Ekspor CSV</h1>
+<ul>
+  <li><b>Faktur</b> → <span class="lbl">Ekspor CSV</span> → <code>Daftar_Invoice_FATHONI_&lt;tanggal&gt;.csv</code>.</li>
+  <li><b>Laporan</b> → <span class="lbl">Ekspor CSV</span> per tab → <code>Laporan_Pendapatan_FATHONI_…</code>, <code>Laporan_Kinerja_Unit_FATHONI_…</code>, <code>Laporan_Piutang_FATHONI_…</code> (dua yang terakhir sampai 5.000 baris, ditelusuri halaman demi halaman).</li>
+  <li><b>Audit Log</b> → <span class="lbl">📥 Export CSV</span>.</li>
+</ul>
+<p>File yang berisi teks diawali <code>=</code>, <code>+</code>, <code>-</code>, atau <code>@</code> (mis. nama part) <b>di sanitize</b> supaya tidak menjadi rumus saat dibuka Excel — itu perlindungan, bukan kerusakan data. Buka CSV Excel dengan pilihan “UTF-8” agar karakter Indonesia terbaca.</p>
+
+<div class="brk"></div>
+<h1>Bab 10 — Rutinitas yang Dianjurkan</h1>
+<table>
+  <tr><th style="width:16%">Kapan</th><th style="width:24%">Siapa</th><th>Apa</th></tr>
+  <tr><td>Setiap pagi</td><td>Semua</td><td>Buka Dasbor → baca ALERT CENTER (Service Due, Sparepart Low, Invoice Overdue). Pastikan tidak ada banner merah di atas layar.</td></tr>
+  <tr><td>Saat ada pekerjaan lapangan</td><td>Operator/Telemetri</td><td>Catat HM di WO Servis saat mengerjakan; lapor Breakdown begitu terjadi, jangan menumpuk di akhir pekan.</td></tr>
+  <tr><td>Setiap transaksi selesai</td><td>Sales/Keuangan</td><td>Invoice dibayar lewat tombol <span class="lbl">Bayar</span> di Faktur. Jangan membuat catatan Kas duplikat.</td></tr>
+  <tr><td>Setiap akhir hari</td><td>Super Admin/Keuangan</td><td><b>Backup Sekarang</b> di Backup &amp; Restore; salin berkas keluar dari komputer.</td></tr>
+  <tr><td>Setiap minggu</td><td>Super Admin</td><td>Run Health Check di Pemeliharaan Sistem; cek <span class="lbl">Terakhir Login</span> di Pengguna untuk akun mati; review Audit Log (Login gagal, Tulis data ditolak, Baris dihapus).</td></tr>
+  <tr><td>Setiap bulan</td><td>Keuangan</td><td>Laporan Pendapatan &amp; Piutang: ekspor, cocokkan dengan rekening koran; tutup kontrak sewa yang habis agar unit kembali Tersedia.</td></tr>
+  <tr><td>Sebelum upgrade versi</td><td>Super Admin</td><td>Backup file (snapshot saja tidak cukup). Instalasi versi baru tidak menghapus data, tetapi backup adalah kebijakan baku.</td></tr>
+</table>
+
+<div class="brk"></div>
+<h1>Bab 11 — Troubleshooting</h1>
+<table>
+  <tr><th style="width:27%">Gejala</th><th style="width:28%">Sebab paling mungkin</th><th>Tindakan</th></tr>
+  <tr><td>Menu yang “harus ada” tidak muncul di sidebar</td><td>Profil bisnis tidak mencakup modul; atau peran Anda tidak memegangnya; atau modul dimatikan</td><td>Cek badge profil → aktifkan profil; Pengaturan → Modul &amp; Menu → <span class="lbl">⚡ Aktifkan Semua Modul</span>; bila tetap tidak muncul, itu memang hak peran lain (§2.5).</td></tr>
+  <tr><td>Daftar kosong padahal data ada</td><td>Data masih dimuat dari database</td><td>Tunggu pager menampilkan jumlah record; bila tulisan <i>“Tidak ada record · memuat...”</i> menetap, muat ulang halaman (menu lain → kembali).</td></tr>
+  <tr><td>Unit tidak bisa dipilih di SPK/kontrak</td><td>Status unit bukan <i>Tersedia</i> (masih dirental/di proyek/maintenance/breakdown/terjual)</td><td>Selesaikan kontrak (<span class="lbl">Selesai Sewa</span>) atau WO/Breakdown lebih dulu.</td></tr>
+  <tr><td>Penolakan saat simpan: <i>tidak berwenang menulis ke …</i></td><td>Peran tidak memegang collection</td><td>Catat nomor/isi yang diminta dan minta peran pemilik menu atau Super Admin. Kejadian tercatat di Audit Log.</td></tr>
+  <tr><td>Hapus teknisi/pelanggan/unit ditolak</td><td>Record masih dirujuk dokumen lain</td><td>Baca daftar penahan di pesan; hapus/pindahkan dokumen itu lebih dulu.</td></tr>
+  <tr><td>Topbar berbunyi <span class="lbl">● Belum tersimpan</span> lama tidak hilang</td><td>Penyimpanan otomatis sedang tertunda/gagal</td><td>Jangan tutup aplikasi. Lihat banner atas; jalankan <span class="lbl">Run Health Check</span>; bila perlu Backup Sekarang lalu kirim pesan error ke pendukung.</td></tr>
+  <tr><td>Login ditolak padahal password benar</td><td>Akun terkunci 5 menit (5× salah) atau nonaktif</td><td>Tunggu 5 menit; minta Super Admin mengecek status akun.</td></tr>
+  <tr><td><i>Sesi tidak valid atau kedaluwarsa</i></td><td>12 jam tanpa aktivitas / 24 jam absolut</td><td>Login ulang. Simpan pekerjaan sebelum jeda panjang.</td></tr>
+  <tr><td>Restore menolak berkas</td><td>Berkas bukan backup FATHONI (struktur/format tidak sesuai)</td><td>Gunakan berkas <code>.sanybak</code> keluaran aplikasi ini; cek ulang berkas yang benar (lihat §5.25).</td></tr>
+  <tr><td>Storage hampir penuh</td><td>Banyak backup/snapshot lama atau dataset sangat besar</td><td>Buka Backup Sekarang ke luar, lalu bersihkan backup lama di Pemeliharaan Sistem — <b>jangan</b> <span class="lbl">🗑️ Clear Backups</span> sebelum ada cadangan di luar komputer.</td></tr>
+  <tr><td>Hasil cetak terpotong / kertas salah</td><td>Ukuran kertas default berbeda dengan printer</td><td>Pengaturan → Cetak → A4/Letter + orientasi; coba “Save as PDF” untuk memastikan datanya utuh.</td></tr>
+  <tr><td>Kolom <span class="lbl">Merek</span> di Unit hanya menampilkan daftar bawaan</td><td>Katalog <b>Merek &amp; Model</b> masih kosong — daftar bawaan adalah cadangan, bukan pengganti katalog (§5.3)</td><td>Isi katalog: <span class="lbl">Tambah Merek</span> satu per satu, atau <span class="lbl">Muat Katalog Awal</span> lalu sunting. Dropdown Unit ikut isi katalog ini.</td></tr>
+  <tr><td>Merek/model tidak bisa dihapus atau namanya tidak bisa diganti</td><td>Masih dirujuk: model di bawah merek itu, atau unit yang mencatat merek/kode modelnya (§5.3)</td><td>Baca daftar penahan di pesan; pindahkan unitnya lewat <b>Unit / Armada</b> (atau hapus dokumennya) lebih dulu. Katalog tidak pernah mengubah unit secara diam-diam.</td></tr>
+  <tr><td>Peran selain Sales/Gudang/Teknisi mencoba menyimpan katalog</td><td>Hak tulis collection katalog hanya untuk peran yang memegang menunya (§2.5)</td><td>Minta peran pemilik menu atau Super Admin yang menyimpan. Kejadian tercatat di Audit Log sebagai <b>Tulis data ditolak</b>.</td></tr>
+  <tr><td>CSV Laporan berhenti di 5.000 baris</td><td>Satu ekspor ditelusuri halaman demi halaman sampai batas itu; di atasnya database sengaja tidak disedot sekaligus (§5.21)</td><td>Saring dengan pencarian/periode lalu ekspor lagi; butuh seluruhnya, minta tim pengembang menambahkan filter baku atau jalankan dari berkas cadangan.</td></tr>
+  <tr><td>Pencarian terasa lambat pada data sangat besar</td><td>Pencarian teks bebas memindai baris; diuji ringan sampai 400.000 baris</td><td>Persempit dengan filter status + 1 kata kunci; gunakan ekspor CSV untuk analisis panjang.</td></tr>
+  <tr><td>Satu layar menampilkan “Terjadi Kesalahan”</td><td>Satu baris data rusak di layar itu saja</td><td>Pindah ke menu lain (pemisah kesalahan per layar), lalu laporkan teks lengkapnya. Data menu lain tidak ikut rusak.</td></tr>
+</table>
+
+<div class="brk"></div>
+<h1>Bab 12 — Kapasitas dan Batas yang Diketahui</h1>
+<ul>
+  <li><b>Kapasitas terukur:</b> 400.000 baris (100.000 per collection besar, ±233 MB) — aplikasi tetap boot dan terpakai tanpa error, pemakaian memori tampilan tetap datar, diuji pada mesin RAM 3,8 GB. Yang terukur di sana: boot 4,3 detik (ambang ujinya 20 detik; pada jalan dengan RAM longgar titik yang sama 1 detik), pencarian layar 0,32–0,34 detik, penulisan ulang 400.000 baris 9,8 detik. Angka ini bergantung pada mesin — yang dijamin adalah ia tidak tumbuh mengikuti jumlah baris saat boot, karena boot tidak memindahkan baris apa pun ke layar.</li>
+  <li><b>Di atas itu belum diukur</b>, khususnya pencarian teks bebas yang biayanya tumbuh linear terhadap jumlah baris.</li>
+  <li><b>Satu komputer per instalasi.</b> Ini aplikasi desktop lokal; tidak ada sinkronisasi dua komputer secara real time. Untuk multi-kantor, perlu server/kebijakan tersendiri.</li>
+  <li><b>Pengguna banyak, bersamaan pada satu mesin: dibatasi sesi</b> — logout/login bergantian aman, tetapi dua jendela aplikasi memakai data yang sama sebaiknya dihindari.</li>
+  <li><b>Foto unit</b> disimpan di luar database; hanya ikut cadangan bila Anda menyetujui pertanyaan penyertaan foto.</li>
+  <li><b>Bukan pengganti akuntansi ber-standar:</b> aplikasi mencatat kas, invoice, dan biaya operasional — tidak menghasilkan buku besar/laporan pajak resmi.</li>
+  <li><b>Batas ekspor berbeda per jalur.</b> CSV Laporan menelusuri <b>5.000 baris</b> per ekspor (halaman demi halaman, dihentikan di angka itu dengan catatan di akhir berkas); cetak/PDF Laporan berhenti di <b>500 baris</b> karena jendela cetak menyusun seluruh tabel sekaligus; dan satu kueri ke layar tidak pernah meminta lebih dari <b>500 baris</b>. Ketiga angka itu disengaja — yang di luar batasnya harus disaring lebih dulu, bukan disedot sekaligus.</li>
+  <li><b>Yang masih direncanakan (3.0.6):</b> kolom “operator di kontrak rental” (§5.8) dan tombol status <i>Tiba di Lokasi</i>/<i>Dibatalkan</i> di Pengiriman (§5.15). Keduanya memerlukan perubahan struktur data atau aksi baru, jadi tidak dimasukkan ke 3.0.4.</li>
+  <li><b>Nilai perolehan unit tidak bisa diisi</b> (§13.2, Bab 6). <span class="lbl">Tambah Unit</span> tidak menampilkan kolom harga; setiap unit baru tercatat <b>Rp 1.750.000.000</b> dan angka itu yang mengalir ke Equipment Passport, Laporan Kinerja Unit, dan biaya per jam. Nilai hanya bisa berubah lewat restaurasi berkas data, bukan dari layar. Yang aman dilakukan hari ini: catat harga sebenarnya di berkas eksternal, dan perlakukan laporan nominal per unit sebagai perkiraan sampai kolomnya dibuka.</li>
+  <li><b>Simpan yang diam</b> (§13.5). Form Pemasok dan Pelanggan menutup jendelanya tanpa pesan kalau kolom wajib masih kosong — tidak ada record yang masuk, tidak ada yang berubah, dan daftarnya tetap sama. Bukan kegagalan tersimpan; isi ulang kolomnya, lalu klik simpan lagi. Form lain (Unit, PO, Operator, Merek/Model, Suku Cadang) selalu menampilkan pesan.</li>
+  <li><b>Lokasi bawaan Gudang tidak ada di daftar pilihan</b> (§13.8). Kolom <span class="lbl">Lokasi Gudang / Yard</span> di jendela mutasi terbuka dengan teks bawaan yang tidak persis sama dengan keempat opsi dropdown-nya. Yang membuat ini menjengkelkan: dropdown tetap <b>menampilkan</b> pilihan pertama (<i>Yard Cikande Main Hub (Banten)</i>) sementara nilai yang benar-benar tersimpan adalah teks bawaan yang lebih pendek (<i>Yard Cikande Main Hub</i>) — jadi yang Anda lihat di layar bukan yang masuk ke database, seperti yang terlihat pada Gambar 13-10. Kalau dibiarkan, mutasi tercatat ke nama lokasi yang berbeda dari kartu yard yang Anda lihat di halaman. Pilih ulang lokasinya dari daftar sebelum menekan <span class="lbl">Simpan Mutasi</span>.</li>
+  <li><b>Empat jendela form masih bergaya lama</b> (§13.4): Operator, Teknisi, Breakdown, dan Persetujuan menampilkan kolom putih di atas jendela gelap, dan kolom <span class="lbl">Telepon *</span> di Operator/Teknisi tidak menahan penyimpanan ketika dibiarkan kosong meski labelnya berbintang. Hanya tampilan dan satu aturan kosong — data yang tersimpan identik dengan form lain.</li>
+  <li><b>Belum ada pemeriksaan duplikat identitas</b> (§13.4, §13.5). NIK operator (16 digit), NPWP, dan Nama Perusahaan bisa masuk dua kali tanpa peringatan. Yang dijaga unik oleh aplikasi baru <span class="lbl">Nomor Seri / PIN</span> unit, <span class="lbl">Username</span> akun, dan nomor dokumen. Kuncinya: cari dulu di daftar sebelum mengetik orang yang sama.</li>
+  <li><b>Validasi beberapa menu masih lewat pesan jendela (alert), bukan tanda merah di kolom</b> — Suku Cadang, Gudang, Surat Jalan/Pengiriman, Kas, Dokumen Legal, dan pembayaran Invoice (§13.8–§13.9). Isian yang salah tetap ditolak dan tidak ada record yang masuk; hanya saja berandanya pesan yang harus diklik, dan kolomnya tidak ditandai — isian Anda tidak hilang, jadi perbaiki lalu simpan lagi. Form Unit, PO, Operator, Teknisi, dan Merek/Model memakai pesan yang lebih rinci; Pemasok dan Pelanggan malah tidak menampilkan apa pun (butir “Simpan yang diam” di atas).</li>
+  <li><b>Tab Cetak di Pengaturan belum berfungsi.</b> Dua dropdown-nya — <span class="lbl">Ukuran Kertas Default</span> dan <span class="lbl">Orientasi Default</span> — dirender tanpa terhubung ke state apa pun: pilihan Anda tidak tersimpan (bahkan tidak setelah <span class="lbl">Simpan Pengaturan</span>, yang hanya menyimpan tab Perusahaan/Sistem) dan tidak dibaca satu dokumen cetak pun. Yang menentukan ukuran hasil cetak hari ini adalah halaman asalnya sendiri: formulir Surat Jalan, PO, Invoice, dan Bukti Gudang membawa gaya cetaknya sendiri. Anggap tab itu daftar isi, bukan sakelar (sasaran 3.0.6).</li>
+  <li><b>Belum diuji:</b> macOS/Linux, scaling DPI selain 100%, dan kertas keluar dari printer lapangan tertentu. Paket juga <b>belum ditandatangani</b> (SmartScreen).</li>
+</ul>
+
+<div class="brk"></div>
+<h1>Bab 13 — Cara Membuat Record: Form demi Form</h1>
+<p>Bab ini mengikuti <b>jendela yang benar-benar muncul di layar</b> — judulnya, urutan kolomnya, teks di dalam kolom, dan tombolnya — untuk setiap record yang biasa dibuat setiap hari. Nama kolom di bawah ditulis <span class="lbl">persis</span> seperti yang tampil, jadi bandingkan saja layar Anda dengan baris yang sama. Bab 5 tetap berisi penjelasan fungsinya apa; bab ini berisi urutan menekan tombolnya.</p>
+<div class="kotak"><b>Tiga hal yang selalu otomatis di semua form</b>, jadi tidak pernah ditanyakan: <b>(1) nomor dokumen</b> — kolom nomor sudah terisi usulan dari database (Bab 7), dan usulan itu yang dipakai kalau Anda tidak mengubahnya; <b>(2) status awal</b> — record baru selalu masuk dengan status pertama alurnya (Bab 4); <b>(3) tanggal</b> — order/terbit/mulai terisi hari ini, kecuali form yang menyebut lain. Yang disimpan adalah apa yang Anda lihat di kolom; tidak ada kolom tersembunyi yang isinya bisa Anda tebak — kecuali satu, yang ditandai merah di §13.2 dan terlihat di Gambar 13-10.</div>
+<div class="catatan"><b class="ct">Soal sepuluh gambar di bab ini.</b> Gambar 13-1 sampai 13-5 adalah tangkapan layar dari aplikasi yang benar-benar sedang dipakai; Gambar 13-6 sampai 13-10 diambil dari <b>instalasi baru</b> (profil kosong, akun admin baru) supaya jendela yang Anda lihat persis seperti jendela pertama Anda — kolom bawaan, nomor usulan, dan daftar di belakangnya masih kosong. Nama orang, merek dan nomor pada gambar bukan data perusahaan mana pun. Yang perlu dicocokkan dari gambar itu adalah <b>jendelanya</b>: judul, urutan kolom dan labelnya; isi daftar di belakangnya tidak ikut menentukan.</div>
+
+<h2>13.1 Urutan membuat yang benar (kalau urutannya salah, form berikutnya menolak)</h2>
+<ol>
+  <li><b>Pengaturan</b> → nama perusahaan, mata uang, rekening bank. Header semua dokumen cetak diambil dari sini. (Ukuran kertas di tab Cetak belum terpakai — lihat Bab 12.)</li>
+  <li><b>Merek &amp; Model</b> (<code>/brands</code>) → isi katalog lebih dulu, karena dropdown <span class="lbl">Merek</span> di form Unit membaca daftar ini (§13.7).</li>
+  <li><b>Pelanggan</b> dan <b>Pemasok</b> → master data nama. SPK, kontrak sewa, invoice dan PO menyebut namanya dari daftar ini.</li>
+  <li><b>Unit / Armada</b> → unit harus ada dan berstatus <i>Tersedia</i> sebelum bisa dipilih di SPK atau kontrak sewa.</li>
+  <li><b>Suku Cadang</b> → katalog part + stok awal, sebelum Work Order memakai part dan sebelum mutasi gudang bergerak.</li>
+  <li><b>Operator / Teknisi</b> → needed saat WO Servis menunjuk mekanik dan saat kontrak sewa menyertakan operator.</li>
+  <li>Baru dokumen kerja: <b>PO → Penerimaan Gudang → Invoice → Pembayaran Kas</b>, dan <b>SPK/Kontrak → Surat Jalan → Servis → Breakdown</b> (contoh satu proyek utuh ada di Bab 4).</li>
+  <li>Terakhir <b>Pengguna</b> untuk akun harian, lalu <b>Backup Sekarang</b> sebelum ditinggal.</li>
+</ol>
+
+<h2>13.2 Membuat unit alat berat — <code>/units</code></h2>
+<p>Buka menu <span class="lbl">Unit / Armada</span> → tombol <span class="lbl">Tambah Unit</span> (pada daftar kosong tombolnya bernama <span class="lbl">Mulai Tambah Unit Baru</span>). Jendela yang terbuka berjudul <b>"Tambah Unit Alat Berat Baru"</b>.</p>
+<figure class="gambar"><img src="panduan-gambar/13-2-tambah-unit.png" alt="Jendela Tambah Unit Alat Berat Baru"><figcaption><b>Gambar 13-1.</b> Jendela <span class="lbl">Tambah Unit Alat Berat Baru</span> persis seperti yang tampil: dua kolom per baris, <span class="lbl">Merek</span> berupa dropdown, dan blok <span class="lbl">Foto Unit</span> di bagian bawah. Perhatikan bahwa tidak ada kolom harga di jendela ini — penjelasannya ada di kotak merah di bawah tabel ini.</figcaption></figure>
+<table>
+  <tr><th style="width:24%">Kolom di layar</th><th style="width:13%">Isian</th><th style="width:8%">Wajib</th><th>Yang diterima / yang terjadi</th></tr>
+  <tr><td><span class="lbl">Nomor Seri / PIN *</span></td><td>teks</td><td>ya</td><td>3–50 karakter. Nomor ini kunci rujukan lintas menu (WO, Surat Jalan, Passport, Breakdown). Rangkap ditolak: <i>Serial Number … sudah terdaftar pada unit lain</i> — pemeriksaan tidak peduli huruf besar/kecil.</td></tr>
+  <tr><td><span class="lbl">Merek *</span></td><td>dropdown</td><td>ya</td><td>Isinya diambil dari katalog <b>Merek &amp; Model</b> (§13.7). Katalog masih kosong → dropdown menampilkan daftar merek bawaan, dan itu cadangan, bukan katalog Anda.</td></tr>
+  <tr><td><span class="lbl">Kode Model *</span></td><td>teks + saran</td><td>ya</td><td>2–100 karakter. Kolom ini memberi saran isi otomatis dari daftar model <b>milik merek yang dipilih di baris atas</b> — jadi pilih merek lebih dulu. Contoh <code>SY215C</code>.</td></tr>
+  <tr><td><span class="lbl">Kategori Unit</span></td><td>teks bebas</td><td>boleh kosong</td><td>Bawaan <code>Excavator</code>. Ini kolom ketik, bukan dropdown: nilainya harus sama persis dengan salah satu dari <code>Excavator, Dozer, Wheel Loader, Motor Grader, Compactor, Crane, Dump Truck, Truck Mixer, Forklift, Lainnya</code> (huruf besar di awal ikut menentukan). Salah ketik → <i>Kategori tidak valid. Pilih dari: …</i></td></tr>
+  <tr><td><span class="lbl">Status Operasional</span></td><td>dropdown</td><td>ya</td><td>Bawaan <i>Tersedia (Ready)</i>. Hanya <i>Tersedia</i> yang bisa dipilih SPK/kontrak; <i>Tersedia</i> dan <i>Di Proyek</i> yang bisa dibuatkan WO.</td></tr>
+  <tr><td><span class="lbl">Hour Meter saat ini (HM)</span></td><td>angka</td><td>ya</td><td>Bawaan <code>0</code>, maksimal 100.000. HM awal ini yang menjadi patokan siklus servis berikutnya dan biaya per jam.</td></tr>
+  <tr><td><span class="lbl">Lokasi Saat Ini</span></td><td>teks</td><td>ya</td><td>3–100 karakter, bawaan <code>Gudang Utama</code>.</td></tr>
+  <tr><td><span class="lbl">Tahun Pembuatan</span></td><td>teks</td><td>ya</td><td>Bawaan <code>2024</code>; yang diterima 1990 s.d. tahun berjalan + 1. Tahun ikut menghitung skor kesehatan di Equipment Passport.</td></tr>
+  <tr><td><span class="lbl">Foto Unit</span></td><td>klik → berkas</td><td>tidak</td><td>JPEG/PNG/WebP. Foto dikompres otomatis (sisi terpanjang 1400 px) dan disimpan <b>sebagai berkas di folder data, bukan di dalam database</b>. Sementara foto diproses, tombol berubah jadi <span class="lbl">Menyiapkan foto...</span> — tunggu, jangan klik dua kali.</td></tr>
+</table>
+<p>Tombol: <span class="lbl">Batal</span> dan <span class="lbl">Simpan Unit</span>. Setelah tersimpan, unit muncul di daftar (baru terbit di halaman pertama karena daftar terurut dari yang paling akhir masuk) dan tanggal pembeliannya tercatat hari ini.</p>
+<div class="bahaya"><b class="ct">Yang form ini TIDAK tanyakan.</b> Harga perolehan / nilai unit tidak ada kolomnya di jendela ini, dan tidak ada di layar lain tempat angka itu bisa Anda ubah. Setiap unit baru dicatat dengan nilai bawaan aplikasi: <b>Rp 1.750.000.000</b>. Angka itu yang tampil di <span class="lbl">Harga Perolehan</span> Equipment Passport, di kolom nilai <span class="lbl">Laporan Kinerja Unit</span>, dan yang dipakai perhitungan biaya per jam. Jadi jangan membaca nilai aset armada sebagai harga beli yang sebenarnya sampai batas ini dicabut (didaftarkan di Bab 12, sasaran 3.0.6). Yang boleh Anda percayai dari unit baru: serial, merek, model, kategori, status, HM, lokasi, tahun, foto.</div>
+<div class="contoh"><b class="ct">Contoh isi.</b> <code>Nomor Seri / PIN</code> = <code>SY-SY215C-099</code> · <code>Merek</code> = SANY · <code>Kode Model</code> = <code>SY215C</code> · <code>Kategori Unit</code> = Excavator · <code>Status</code> = Tersedia (Ready) · <code>HM</code> = 4520 · <code>Lokasi</code> = Yard Cikande Main Hub · <code>Tahun</code> = 2024. Simpan → sisa HM menuju servis 500 jam berikutnya langsung terbaca 480 di daftar.</div>
+
+<h2>13.3 Membuat Purchase Order — <code>/purchase</code></h2>
+<p><span class="lbl">Buat PO Baru</span> → jendela <b>"Buat Purchase Order (PO Baru)"</b>. Tidak ada kolom berbintang di sini, tapi enam di antaranya tetap diperiksa saat <span class="lbl">Terbitkan PO</span> ditekan.</p>
+<figure class="gambar"><img src="panduan-gambar/13-3-buat-po.png" alt="Jendela Buat Purchase Order Baru"><figcaption><b>Gambar 13-2.</b> Jendela <span class="lbl">Buat Purchase Order (PO Baru)</span> dalam keadaan baru dibuka: <span class="lbl">Nomor PO</span> sudah terisi usulan, <span class="lbl">Tanggal Order</span> hari ini, <span class="lbl">Estimasi Tanggal Pengiriman</span> empat belas hari kemudian, dan <span class="lbl">Total Nilai Pembelian (IDR)</span> masih <code>0</code> — angka nol inilah yang akan ditolak saat menerbitkan.</figcaption></figure>
+<table>
+  <tr><th style="width:28%">Kolom</th><th style="width:13%">Isian</th><th>Ketentuan</th></tr>
+  <tr><td><span class="lbl">Nomor PO</span></td><td>teks, sudah terisi</td><td>Usulan <code>PO-&lt;tahun&gt;-00X</code> dari database (mis. <code>PO-2026-005</code>). Boleh diganti; kalau diganti, nomor itu yang menjadi rujukan penerimaan gudang dan kas.</td></tr>
+  <tr><td><span class="lbl">Kategori Pembelian</span></td><td>dropdown</td><td>Bawaan <i>Spare Parts &amp; Komponen</i>. Pilihan: <i>Unit Alat Berat Baru/Bekas</i>, <i>Spare Parts &amp; Komponen</i>, <i>BBM (Solar)</i>, <i>Oli, Filter &amp; Pelumas</i>, <i>Lainnya</i>. Kategori menentukan bagaimana Laporan membaca pengeluaran ini.</td></tr>
+  <tr><td><span class="lbl">Nama Pemasok / Supplier</span></td><td>teks</td><td>3–100 karakter. Tidak harus ada di menu Pemasok, tapi kalau namanya sudah terdaftar di sana, tulis persis sama supaya pengelompokan tidak pecah.</td></tr>
+  <tr><td><span class="lbl">Nama Barang / Spesifikasi Pesanan</span></td><td>teks</td><td>3–200 karakter. Ini yang nanti ikut tercetak di PO dan menjadi <span class="lbl">Deskripsi Barang</span> saat PO diterima gudang.</td></tr>
+  <tr><td><span class="lbl">Tanggal Order</span></td><td>tanggal</td><td>Bawaan hari ini; wajib diisi.</td></tr>
+  <tr><td><span class="lbl">Estimasi Tanggal Pengiriman</span></td><td>tanggal</td><td>Bawaan hari ini + 14 hari. Tidak boleh sebelum Tanggal Order → <i>Estimasi Tiba tidak boleh sebelum Tanggal Order</i>.</td></tr>
+  <tr><td><span class="lbl">Total Nilai Pembelian (IDR)</span></td><td>angka</td><td>Rp 100.000 s.d. Rp 10.000.000.000. Bawaan <code>0</code> <b>akan ditolak</b> dengan <i>Nilai minimal Rp 100.000</i> — jadi PO tidak bisa diterbitkan tanpa nominal.</td></tr>
+  <tr><td><span class="lbl">Catatan / Syarat Pengiriman</span></td><td>textarea</td><td>Bebas, ikut tercetak di dokumen PO.</td></tr>
+</table>
+<p>Setelah <span class="lbl">Terbitkan PO</span>: statusnya <i>Draft PO</i> → <i>Dipesan ke Supplier</i> (<code>ORDERED</code>). Barang, stok dan kas <b>belum</b> bergerak. Gerakkan dengan <span class="lbl">Terima di Gudang</span> pada baris PO itu: itu yang membuat mutasi gudang <code>GR-&lt;No PO&gt;</code>, menaikkan stok part, dan mencatat kas keluar.</p>
+
+<h2>13.4 Membuat operator dan teknisi — <code>/operators</code>, <code>/technicians</code></h2>
+<p><span class="lbl">+ Tambah Operator</span> → jendela <b>"Tambah Operator Baru"</b>. Teknisi sama persis bentuknya (<span class="lbl">+ Tambah Teknisi</span> → "Tambah Teknisi Baru"), hanya nomor otomatisnya <code>TECH-</code> dan kolomnya menambah <span class="lbl">Spesialisasi</span> / <span class="lbl">Skills</span> (dipakai lewat tombol <span class="lbl">+ Tambah Spesialisasi</span>) dan <span class="lbl">Total Work Orders</span>.</p>
+<figure class="gambar"><img src="panduan-gambar/13-4-tambah-operator.png" alt="Jendela Tambah Operator Baru"><figcaption><b>Gambar 13-3.</b> Jendela <span class="lbl">Tambah Operator Baru</span>. Inilah salah satu dari empat jendela yang masih bergaya lama: kolom isinya tampil <b>putih</b> di atas jendela gelap (bandingkan dengan Gambar 13-1 dan 13-2). <span class="lbl">No. Operator</span> sudah terisi <code>OP-2026-00X</code> dan kolomnya terkunci; <span class="lbl">Tanggal Mulai</span> memang kosong dan harus diisi.</figcaption></figure>
+<table>
+  <tr><th style="width:24%">Kolom</th><th style="width:13%">Isian</th><th>Ketentuan</th></tr>
+  <tr><td><span class="lbl">No. Operator</span></td><td>terkunci (abu-abu)</td><td>Sudah terisi <code>OP-&lt;tahun&gt;-00X</code> dan <b>tidak bisa diubah</b> — kolomnya sengaja dikunci. Yang bisa diubah hanya isian di bawahnya.</td></tr>
+  <tr><td><span class="lbl">Nama Lengkap *</span></td><td>teks</td><td>3–100 karakter. Nama inilah yang ditulis ke WO Servis dan Laporan Kerusakan, dan nama inilah yang menahan penghapusan (§13.10).</td></tr>
+  <tr><td><span class="lbl">Telepon *</span></td><td>teks</td><td>Boleh hanya angka, <code>+</code>, <code>-</code>, kurung atau spasi; minimal 10 digit angka → <i>Nomor telepon minimal 10 digit</i>. Catatan jujur: bintangnya baru di label — kolom yang <b>dibiarkan kosong</b> tetap diterima aplikasi. Isi saja, ini kontak yang dicari saat unit rusak di lapangan.</td></tr>
+  <tr><td><span class="lbl">Email</span></td><td>teks</td><td>Bila diisi harus berbentuk alamat email → <i>Format email tidak valid</i>.</td></tr>
+  <tr><td><span class="lbl">NIK</span></td><td>teks (maks 16)</td><td>Bila diisi harus 16 karakter → <i>NIK harus 16 digit</i>. <b>Belum ada pemeriksaan duplikat NIK</b>: orang yang sama bisa masuk dua kali (Bab 12).</td></tr>
+  <tr><td><span class="lbl">Status *</span></td><td>dropdown</td><td><i>Aktif</i> (bawaan) / <i>Non-Aktif</i> / <i>Cuti</i> / <i>Suspensi</i>.</td></tr>
+  <tr><td><span class="lbl">Tanggal Mulai *</span></td><td>tanggal</td><td>Wajib → <i>Tanggal Mulai wajib diisi</i>. Kolom ini memang kosong saat jendela baru dibuka, jadi harus diisi.</td></tr>
+  <tr><td><span class="lbl">Unit Terassign</span></td><td>dropdown</td><td>Isinya daftar unit (<i>nomor seri – model</i>). <i>Tidak ada</i> = lepas. Penugasan di sini hanya catatan di profil operator; status unit tidak ikut berubah.</td></tr>
+  <tr><td><span class="lbl">Project Terassign</span></td><td>teks</td><td>Bebas, nama proyek/lokasi.</td></tr>
+  <tr><td><span class="lbl">Total Jam Kerja</span></td><td>angka</td><td>Mulai dari <code>0</code>; naik dari jam kerja servis yang diselesaikan orang ini.</td></tr>
+  <tr><td><span class="lbl">No. Lisensi</span> · <span class="lbl">Masa Berlaku Lisensi</span></td><td>teks · tanggal</td><td>Bebas. Isi masa berlaku untuk melihat peringatan lisensi di menunya.</td></tr>
+  <tr><td><span class="lbl">Catatan</span></td><td>textarea</td><td>Bebas.</td></tr>
+</table>
+<p>Tombol <span class="lbl">Tambah Operator</span> / <span class="lbl">Tambah Teknisi</span>.</p>
+<div class="catatan"><b class="ct">Tampilan, bukan data.</b> Jendela form Operator, Teknisi, Breakdown dan Persetujuan masih memakai susunan lama: kolom isinya tampil <b>putih</b> di atas jendela yang gelap, sementara form lain (Unit, PO, Pemasok, Pelanggan) serba gelap. Hanya tampilan — nama kolom, isi yang tersimpan dan pesan validasinya identik. <b>Belum diperbaiki sampai 3.0.5</b>; tercatat di Bab 12 sebagai sasaran rilis berikutnya.</div>
+
+<h2>13.5 Membuat pelanggan dan pemasok — <code>/customers</code>, <code>/suppliers</code></h2>
+<p><span class="lbl">Tambah Pelanggan</span> → "Tambah Pelanggan Baru"; <span class="lbl">Tambah Pemasok</span> → "Tambah Pemasok". Keduanya form pendek dengan satu kolom wajib.</p>
+<div class="gambar dua">
+  <figure class="gambar"><img src="panduan-gambar/13-5-tambah-pelanggan.png" alt="Jendela Tambah Pelanggan Baru"><figcaption><b>Gambar 13-4.</b> <span class="lbl">Tambah Pelanggan Baru</span> — hanya <span class="lbl">Nama Perusahaan</span> yang wajib.</figcaption></figure>
+  <figure class="gambar"><img src="panduan-gambar/13-5-tambah-pemasok.png" alt="Jendela Tambah Pemasok"><figcaption><b>Gambar 13-5.</b> <span class="lbl">Tambah Pemasok</span> — lebih pendek, dan punya dua kolom rekening yang tidak dimiliki pelanggan.</figcaption></figure>
+</div>
+<table>
+  <tr><th style="width:26%">Kolom</th><th style="width:30%">Pelanggan</th><th>Pemasok</th></tr>
+  <tr><td><span class="lbl">Nama Perusahaan *</span></td><td>teks, contoh <code>PT. ...</code> — satu-satunya yang wajib</td><td>teks — satu-satunya yang wajib</td></tr>
+  <tr><td><span class="lbl">Kontak / PIC</span></td><td><span class="lbl">PIC</span>, contoh <code>Nama kontak</code></td><td><span class="lbl">Kontak / PIC</span></td></tr>
+  <tr><td><span class="lbl">Telepon</span></td><td>contoh <code>021-...</code></td><td>teks bebas</td></tr>
+  <tr><td><span class="lbl">Email</span></td><td>contoh <code>email@...</code></td><td>kolom email</td></tr>
+  <tr><td><span class="lbl">Alamat</span></td><td>contoh <code>Kota / Provinsi</code></td><td>teks bebas</td></tr>
+  <tr><td><span class="lbl">NPWP</span></td><td>contoh <code>12.345.678,9-...</code></td><td>teks bebas</td></tr>
+  <tr><td><span class="lbl">Nama Bank</span> · <span class="lbl">No. Rekening</span></td><td>— (tidak ada di form ini)</td><td>ada; contoh <code>BCA, Mandiri, ...</code>. Rekening pemasok yang aktif ikut menjadi pilihan <span class="lbl">Rekening / Kas</span> di menu Kas (§13.9).</td></tr>
+</table>
+<p>Tombol keduanya <span class="lbl">Simpan</span> (dengan <span class="lbl">Batal</span> di sebelahnya).</p>
+<div class="bahaya"><b class="ct">Kenapa tombol Simpan kadang terasa mati.</b> Di dua halaman ini, kalau <span class="lbl">Nama Perusahaan</span> masih kosong aplikasi <b>tidak menampilkan pesan apa pun</b> — jendelanya hanya diam. Jadi "tombolnya tidak jalan" hampir selalu berarti "namanya belum diketik". Periksa juga spasi di depan nama: nama yang hanya berisi spasi dianggap kosong. Tidak ada pemeriksaan duplikat maupun NPWP: dua baris dengan nama sama bisa masuk, dan itu memecah pembacaan laporan per pelanggan. Cari dulu di kotak pencarian halaman sebelum membuat.</div>
+
+<h2>13.6 Membuat akun pengguna (login) — <code>/users</code></h2>
+<p>Hanya <b>Super Admin</b> yang melihat tombol ini. Menu <span class="lbl">Pengguna</span> → <span class="lbl">Tambah Pengguna</span> → jendela <b>"Tambah Pengguna Baru"</b>. Akun login <b>bukan</b> data bisnis: ia tidak ikut di ekspor CSV dan tidak disimpan sebagai baris daftar — passwordnya di-hash di proses aplikasi dan tidak bisa dibaca kembali oleh siapa pun, termasuk Super Admin.</p>
+<figure class="gambar"><img src="panduan-gambar/13-6-tambah-pengguna.png" alt="Jendela Tambah Pengguna Baru"><figcaption><b>Gambar 13-6.</b> Jendela <span class="lbl">Tambah Pengguna Baru</span> dengan peran bawaan <i>Staff Penjualan</i>. Panel abu-abu <span class="lbl">Hak akses peran ini:</span> berubah isinya seketika ketika <span class="lbl">Peran (Role)</span> diganti — itulah hak yang ditegakkan aplikasi, jadi biasakan membaca panel itu sebelum menyimpan.</figcaption></figure>
+<table>
+  <tr><th style="width:24%">Kolom</th><th style="width:13%">Isian</th><th>Ketentuan</th></tr>
+  <tr><td><span class="lbl">Username</span></td><td>teks</td><td>3–32 karakter: huruf <b>kecil</b>, angka, titik, garis bawah, tanda hubung (mis. <code>mekanik1</code>). Diubah jadi huruf kecil otomatis dan <b>tidak dapat diubah setelah akun dibuat</b>. Rangkap → <i>Username sudah dipakai.</i></td></tr>
+  <tr><td><span class="lbl">Nama Lengkap</span></td><td>teks</td><td>1–80 karakter → <i>Nama tidak valid (1-80 karakter).</i></td></tr>
+  <tr><td><span class="lbl">Email</span></td><td>teks</td><td>harus berbentuk alamat → <i>Email tidak valid.</i></td></tr>
+  <tr><td><span class="lbl">Peran (Role)</span></td><td>dropdown</td><td><i>Super Admin</i> · <i>Staff Penjualan</i> · <i>Petugas Gudang</i> · <i>Teknisi / Mekanik</i> · <i>Staf Keuangan</i> (bawaan <i>Staff Penjualan</i>). Panel <span class="lbl">Hak akses peran ini:</span> di bawahnya hanya baca — daftar menu dan collection yang boleh ditulis peran itu, dan daftar itulah yang ditegakkan di proses aplikasi, bukan hanya di layar.</td></tr>
+  <tr><td><span class="lbl">Password awal</span></td><td>password</td><td>Minimal 8 karakter, maksimal 128; tidak boleh berawal/berakhiran spasi, tidak boleh sama dengan username, tidak boleh salah satu password bawaan instalasi. Pesan yang muncul: <i>Password minimal 8 karakter.</i> · <i>Password tidak boleh sama dengan username.</i> · <i>Password masih memakai bawaan instalasi. Tentukan password sendiri.</i></td></tr>
+  <tr><td><span class="lbl">Akun Aktif (dapat login)</span></td><td>centang</td><td>Bawaan tercentang. Matikan centang untuk memblokir login tanpa menghapus jejaknya.</td></tr>
+</table>
+<p>Tombol <span class="lbl">Buat Akun</span> (selama menyimpan tertulis <span class="lbl">Menyimpan...</span>). Yang perlu Anda tahu:</p>
+<ul>
+  <li><b>Akun buatan Anda tidak wajib ganti password</b> di login pertama — yang wajib ganti hanya lima akun bawaan instalasi (admin, sales, gudang, service, finance). Tetap sampaikan password awal lewat jalur yang aman, lalu minta penggunanya menggantinya sendiri lewat <span class="lbl">Ganti Password</span> (§2.2).</li>
+  <li><b>Menonaktifkan lebih baik daripada menghapus.</b> Akun yang dimatikan kehilangan akses login tapi jejak auditnya tetap terhubung ke nama yang benar.</li>
+  <li><b>Reset password</b>: buka baris akun → <span class="lbl">Ubah</span> → label berubah menjadi <span class="lbl">Reset password (kosongkan bila tidak diganti)</span>. Isi password baru, simpan dengan <span class="lbl">Simpan Perubahan</span>. Kejadian tercatat di Audit Log sebagai <code>PASSWORD_RESET</code>.</li>
+  <li>Tiga penolakan yang akan Anda temui dan itu memang perlindungan: <i>Anda tidak dapat menonaktifkan akun sendiri.</i> · <i>Anda tidak dapat menurunkan hak akses sendiri.</i> · <i>Harus tetap ada minimal satu Super Admin yang aktif.</i></li>
+  <li>Mengganti peran atau status akun <b>memutus sesi login akun itu</b> — dia harus login ulang. Perubahan apa pun pada akun tercatat di Jejak Audit.</li>
+</ul>
+
+<h2>13.7 Mengisi katalog Merek &amp; Model — <code>/brands</code></h2>
+<p>Katalog ini (sejak 3.0.4 tersimpan permanen di database) yang mengisi dropdown <span class="lbl">Merek</span> di form Unit dan saran <span class="lbl">Kode Model</span>. Dua tombol, dua jendela:</p>
+<ul>
+  <li><b>Merek</b> — <span class="lbl">Tambah Merek</span> → "Tambah Merek Baru": <span class="lbl">Nama Merek / Manufaktur *</span> (2–60 karakter, rangkap ditolak tanpa peduli huruf besar → <i>Merek "…" sudah ada di katalog…</i>), <span class="lbl">Negara Asal</span>, <span class="lbl">Kategori Peralatan Utama</span>, <span class="lbl">Deskripsi / Keterangan</span> (maks 300). Simpan dengan <span class="lbl">Simpan Merek</span>.</li>
+  <li><b>Model</b> — <span class="lbl">Tambah Model Unit</span> → "Tambah Model Unit Baru": <span class="lbl">Merek *</span> harus merek yang <b>sudah ada</b> di katalog (katalog kosong → <i>Belum ada merek di katalog…</i>), <span class="lbl">Kode / Nama Model *</span> (2–40 karakter, unik), lalu yang bebas isi: <span class="lbl">Kategori Unit</span>, <span class="lbl">Kapasitas (Bucket/Blade/Payload)</span>, <span class="lbl">Daya Mesin (Engine Power)</span>, <span class="lbl">Berat Operasional (Operating Weight)</span>. Simpan dengan <span class="lbl">Simpan Model Unit</span>.</li>
+</ul>
+<div class="gambar dua">
+  <figure class="gambar"><img src="panduan-gambar/13-7-tambah-merek.png" alt="Jendela Tambah Merek Baru"><figcaption><b>Gambar 13-7.</b> <span class="lbl">Tambah Merek Baru</span> — satu kolom wajib, tiga kolom pelengkap yang ikut tercetak di katalog.</figcaption></figure>
+  <figure class="gambar"><img src="panduan-gambar/13-7-tambah-model.png" alt="Jendela Tambah Model Unit Baru"><figcaption><b>Gambar 13-8.</b> <span class="lbl">Tambah Model Unit Baru</span>, dibuka dari tab <span class="lbl">Spesifikasi Model Unit</span>. <span class="lbl">Merek *</span> di sini dropdown yang hanya berisi merek yang sudah ada — bukan tempat mengetik merek baru.</figcaption></figure>
+</div>
+<div class="contoh"><b class="ct">Alur yang benar.</b> Buat merek <code>SANY</code> → buat model <code>SY215C</code> di bawahnya → buka <span class="lbl">Tambah Unit</span> dan merek/model itu sudah ada di dropdown. Kolom <span class="lbl">Jumlah Model</span> di daftar merek dihitung dari isinya, bukan diketik. Tombol <span class="lbl">Muat Katalog Awal</span> hanya menambahkan 5 merek + 5 model contoh dan selalu meminta konfirmasi dulu — kalau katalog Anda sudah berisi, lewati tombol itu.</div>
+<div class="catatan"><b class="ct">Yang ditahan.</b> Merek yang masih dipakai sebuah unit tidak bisa dihapus maupun <b>diganti namanya</b> (<i>Nama merek tidak bisa diubah: masih ada N unit…</i>), dan model yang sudah menjadi unit menahan hapus kode modelnya. Ubah nama merek = memutus seluruh unit yang mencatat merek lama, jadi aplikasi tidak membolehkannya; buat merek baru dan pindahkan unitnya satu per satu kalau memang perlu.</div>
+
+<h2>13.8 Suku cadang dan mutasi gudang — <code>/spareparts</code>, <code>/warehouse</code></h2>
+<p><b>Suku cadang</b> (<span class="lbl">Tambah Spare Part</span>): <span class="lbl">Part Number *</span> (mis. <code>6736-51-5142</code>), <span class="lbl">Kategori Komponen</span> (dropdown), <span class="lbl">Nama Suku Cadang *</span>, <span class="lbl">Model Kompatibel / Brand</span>, <span class="lbl">Stok Awal</span>, <span class="lbl">Batas Min. Stok</span> (bawaan 5), <span class="lbl">Satuan</span> (<i>Pcs</i>), <span class="lbl">Harga Beli Modal</span>, <span class="lbl">Harga Jual</span>, <span class="lbl">Lokasi Rak / Bin Gudang</span> (mis. <code>A1-02-04</code>). Perhitungan stok kritis dan nilai persediaan memakai Batas Min. Stok ini, jadi isi angkanya serius.</p>
+<figure class="gambar"><img src="panduan-gambar/13-8-tambah-suku-cadang.png" alt="Jendela Tambah Data Suku Cadang"><figcaption><b>Gambar 13-9.</b> Jendela <span class="lbl">Tambah Data Suku Cadang</span> dalam keadaan baru dibuka: <span class="lbl">Stok Awal</span> <code>0</code>, <span class="lbl">Batas Min. Stok</span> <code>5</code>, <span class="lbl">Satuan</span> <i>Pcs</i>, dan <span class="lbl">Kategori Komponen</span> masih <i>Belum dikategorikan</i>. Semua kolom yang disebut di atas terlihat di layar ini — tidak ada kolom tersembunyi di bawahnya.</figcaption></figure>
+<p><b>Mutasi gudang</b> (<span class="lbl">Catat Mutasi Stok</span> → "Catat Mutasi Masuk / Keluar Gudang"): <span class="lbl">No. Bukti Mutasi</span> otomatis (<code>TRX-&lt;tahun&gt;-###</code>), <span class="lbl">Jenis Mutasi</span> (Masuk / Keluar / Transfer Antar Yard), <span class="lbl">Lokasi Gudang / Yard</span> (dropdown), <span class="lbl">Nama Barang / Unit Alat Berat</span> (wajib — kosong hanya memunculkan <i>Isi deskripsi barang/unit yang dimutasi</i>), <span class="lbl">Kuantitas / Jumlah</span> (minimal 1), <span class="lbl">Satuan</span> (bawaan <code>Unit</code>), <span class="lbl">No. Dokumen Referensi (PO/WO/SPK)</span>, <span class="lbl">Nama Petugas (PIC)</span>, <span class="lbl">Keterangan Tambahan</span>. Simpan dengan <span class="lbl">Simpan Mutasi</span>; bukti tercetaknya <span class="lbl">Cetak Bukti</span> → "BUKTI SERAH TERIMA MUTASI BARANG" dengan tiga blok tanda tangan (Bab 8).</p>
+<figure class="gambar"><img src="panduan-gambar/13-8-mutasi-gudang.png" alt="Jendela Catat Mutasi Masuk / Keluar Gudang"><figcaption><b>Gambar 13-10.</b> Jendela <span class="lbl">Catat Mutasi Masuk / Keluar Gudang</span>. Perhatikan <span class="lbl">Lokasi Gudang / Yard</span>: yang <b>tampil</b> di layar adalah <i>Yard Cikande Main Hub (Banten)</i>, tetapi nilai yang <b>tersimpan</b> kalau kolom itu dibiarkan adalah teks bawaan yang lebih pendek (<i>Yard Cikande Main Hub</i>, tanpa "(Banten)") — persis bedanya yang membuat mutasi tidak mengelompok dengan kartu yardnya. Pilih ulang dari daftar sebelum menyimpan. <span class="lbl">No. Bukti Mutasi</span> sudah terisi <code>TRX-2026-001</code>, dan <span class="lbl">Nama Petugas (PIC)</span> terbuka dengan nama tetap <i>Rudi Hermawan</i> — bukan nama akun yang sedang login, jadi gantilah kalau yang menyerahkan barang orang lain.</figcaption></figure>
+<div class="catatan"><b class="ct">Dua kebiasaan yang membuat data gudang Anda bersih.</b> (1) <b>Pilih ulang lokasinya</b> walau sudah terlihat terisi: nilai bawaan kolom itu tidak persis sama dengan salah satu pilihan di dropdown, jadi kalau dibiarkan mutasi tercatat ke nama lokasi yang berbeda dari empat kartu yard di bagian atas halaman. (2) <b>Isi nomor referensi</b> (PO/WO/SPK). Dibiarkan kosong pun boleh — aplikasi menulis <code>NON-REF</code> — tapi mutasi tanpa referensi tidak bisa ditelusuri balik ke dokumennya saat audit.</div>
+
+<h2>13.9 Dokumen kerja: tombol, nomor, dan apa yang ikut berubah</h2>
+<p>Semua form berikut punya bentuk yang sama dengan §13.2–§13.4 (kolom bertanda <span class="lbl">*</span> wajib, nomor sudah terisi usulan). Yang membedakan justru <b>efeknya ke menu lain</b>, jadi tabel ini yang perlu dibaca sebelum menekan tombol simpan:</p>
+<table>
+  <tr><th style="width:19%">Record</th><th style="width:19%">Tombol → judul jendela</th><th style="width:15%">Nomor otomatis</th><th>Yang ikut berubah saat disimpan</th></tr>
+  <tr><td>SPK Penjualan</td><td><span class="lbl">Buat SPK Baru</span> → "Buat SPK Penjualan Baru"</td><td><code>SO-&lt;tahun&gt;-00X</code></td><td>Unit berpindah ke <i>Terjual</i>, invoice <code>INV/SALE/&lt;SPK&gt;</code> terbit, uang muka masuk Kas, dan surat jalan disiapkan. Kolom <span class="lbl">Model Terpilih</span> terisi sendiri dari unit yang dipilih; <span class="lbl">Uang Muka</span> tidak boleh melebihi harga unit.</td></tr>
+  <tr><td>Kontrak Sewa</td><td><span class="lbl">Buat Kontrak Sewa</span> → "Buat Kontrak Sewa Alat Baru"</td><td><code>RNT-&lt;tahun&gt;-00X</code></td><td>Unit menjadi <i>Dirental</i> dan invoice pertama <code>INV/RENT/&lt;Kontrak&gt;</code> terbit. Tanggal berakhir bawaan +90 hari, tarif bawaan Rp 90.000.000, minimal jam operasi 200 HM, centang <span class="lbl">Termasuk Tenaga Operator</span> terpasang.</td></tr>
+  <tr><td>Invoice manual</td><td><span class="lbl">Buat Invoice Baru</span> → "Terbitkan Invoice Baru"</td><td><code>INV-&lt;tahun&gt;-00X</code></td><td>Status awal <i>Belum Bayar</i>, jatuh tempo bawaan +30 hari dan dihitung otomatis menjadi <i>Jatuh Tempo</i> oleh sistem (bukan diketik). Pembayaran dicatat lewat tombol <span class="lbl">Bayar</span> di Faktur, bukan lewat form ini.</td></tr>
+  <tr><td>Work Order Servis</td><td><span class="lbl">Buka Work Order Servis</span> → "Buka Work Order Servis Baru"</td><td><code>WO-&lt;tahun&gt;-00X</code></td><td>Hanya unit <i>Tersedia</i>/<i>Di Proyek</i> yang bisa dipilih. <span class="lbl">Model Terpilih</span> terisi sendiri. Saat WO ditandai <b>Selesai</b>: HM unit naik, part yang dipakai keluar dari stok, invoice <code>INV/SVC/&lt;WO&gt;</code> terbit, dan jadwal servis berikutnya dihitung ulang.</td></tr>
+  <tr><td>Surat Jalan</td><td><span class="lbl">Buat Surat Jalan</span> → "Buat Surat Jalan Pengiriman"</td><td><code>DO-&lt;tahun&gt;-00X</code></td><td>Memilih <span class="lbl">Referensi SPK</span> mengisi nama penerima, model dan serial otomatis. Status awal <i>Menunggu Jadwal</i>; bergerak dengan tombol <span class="lbl">Berangkat</span> dan <span class="lbl">Serah Terima</span>.</td></tr>
+  <tr><td>Breakdown</td><td><span class="lbl">+ Lapor Breakdown</span> → "Lapor Breakdown Baru"</td><td><code>BD-&lt;tahun&gt;-###</code> (terkunci)</td><td>Unit yang dilaporkan dipaksa ke status <i>Breakdown / Rusak</i>; kembali <i>Tersedia</i> saat status diubah ke <i>Selesai</i> atau <i>Dibatalkan</i>. Downtime dihitung dari <span class="lbl">Waktu Mulai</span> dan <span class="lbl">Waktu Selesai</span> (selesai tidak boleh sebelum mulai). <span class="lbl">Deskripsi Masalah *</span> minimal 10 karakter.</td></tr>
+  <tr><td>Transaksi Kas</td><td><span class="lbl">Catat Transaksi</span> → "Catat Transaksi Kas"</td><td>tanpa nomor</td><td>Tipe <i>Kas Masuk</i>/<i>Kas Keluar</i> + <span class="lbl">Kategori</span> (7 pilihan) menentukan cara Laporan membacanya. <span class="lbl">Rekening / Kas</span> diambil dari rekening pemasok yang aktif. Isi <span class="lbl">Nomor Referensi</span> (SPK/PO/INV) supaya transaksi bisa ditelusuri.</td></tr>
+  <tr><td>Request Persetujuan</td><td><span class="lbl">+ Buat Request</span> → "Buat Request Baru"</td><td><code>APR-&lt;tahun&gt;-00X</code> (terkunci)</td><td>Status awal <i>Pending</i>. Request <b>tidak</b> membuat dokumen kerja — ia hanya antrean keputusan; PO/WO/Invoice tetap harus dibuat di menunya masing-masing.</td></tr>
+  <tr><td>Catatan Dokumen Legal</td><td><span class="lbl">+ Upload Dokumen</span> → "Upload Dokumen Baru"</td><td>tanpa nomor</td><td>Yang tersimpan adalah <b>catatannya</b> (jenis — termasuk <i>BPKB (Bukti Kepemilikan Kendaraan)</i> sejak 3.0.4 — nomor, masa berlaku, nama berkas). Berkas PDF-nya tidak ikut masuk database: simpan file aslinya di folder bersama dengan nama yang sama dengan <span class="lbl">Nomor Dokumen</span>.</td></tr>
+</table>
+
+<h2>13.10 Kalau simpan ditolak — dan mana yang hanya berbunyi popup</h2>
+<p>Penolakan datang dari tiga tempat, dan bedanya penting saat Anda mencari sebabnya:</p>
+<ol>
+  <li><b>Aturan isi form</b> (pesan spesifik, lihat Bab 6). Contoh yang paling sering: <i>Nomor Seri wajib diisi</i>, <i>Serial Number … sudah terdaftar pada unit lain</i>, <i>Kategori tidak valid. Pilih dari: …</i>, <i>Nilai minimal Rp 100.000</i>, <i>Estimasi Tiba tidak boleh sebelum Tanggal Order</i>, <i>Uang muka tidak boleh lebih dari harga unit</i>, <i>Tanggal Selesai tidak boleh sebelum Tanggal Mulai</i>.</li>
+  <li><b>Wewenang peran</b> (ditolak proses aplikasi, bukan oleh form): <i>tidak berwenang menulis ke …</i>. Peran Anda tidak memegang collection itu — lihat panel <span class="lbl">Hak akses peran ini:</span> di §13.6. Setiap penolakan masuk <b>Jejak Audit</b> sebagai <code>Tulis data ditolak</code>, jadi pendukung bisa melihat siapa, kapan, dan collection apa.</li>
+  <li><b>Record masih dirujuk</b> saat dihapus: pesannya menyebut dokumennya (mis. Work Order Servis / Surat Jalan / unit yang mencatat merek). Selesaikan atau pindahkan dokumen itu lebih dulu — jangan hapus dokumennya untuk memaksa.</li>
+</ol>
+<div class="catatan"><b class="ct">Jujur soal bentuk pesannya.</b> Unit, PO, Penjualan, Sewa, Servis, Breakdown, Persetujuan, Merek/Model dan akun memeriksa isinya dengan aturan lengkap dan menolak baris yang cacat. Empat form masih memakai pemeriksaan singkat yang hanya memunculkan popup: <b>Invoice manual</b> (<i>Mohon isi nama pelanggan dan nominal tagihan dengan benar</i>), <b>Gudang</b> (<i>Isi deskripsi barang/unit yang dimutasi</i>), <b>Surat Jalan</b> (<i>Isi nama penerima dan model unit</i>), <b>Kas</b> (<i>Isi keterangan transaksi dan jumlah dengan benar</i>) dan <b>Dokumen Legal</b> (<i>Isi nomor dokumen dan masa berlaku</i>) — di halaman-halaman itu format tanggal/nomor tidak diperiksa, jadi isi angkanya yang harus dijaga. Pelanggan dan Pemasok malah tidak menampilkan apa pun (§13.5).</div>
+<div class="kotak"><b>Satu klik = satu record.</b> Semua form di bab ini sudah diuji dengan tombol yang ditekan dua kali cepat: yang masuk ke database tetap satu baris. Simpanan berjalan otomatis setelah ±0,8 detik Anda berhenti mengetik; kalau topbar masih menulis <span class="lbl">● Belum tersimpan</span>, jangan tutup aplikasinya (Bab 11).</div>
+
+<div class="brk"></div>
+<h1>Lampiran A — Glosarium Status</h1>
+<table>
+  <tr><th style="width:19%">Konteks</th><th style="width:42%">Label di layar</th><th>Arti operasional</th></tr>
+  <tr><td>Unit</td><td>Tersedia (Ready) · Dipesan (Booking) · Terjual · Dirental · Di Proyek · Dalam Pengiriman · Maintenance · Breakdown / Rusak · Tidak Aktif · Afkir / Disposed</td><td>Hanya <i>Tersedia</i> yang bisa dipilih SPK/kontrak; <i>Di Proyek</i> dan <i>Tersedia</i> bisa dibuat WO.</td></tr>
+  <tr><td>PO</td><td>Draft PO · Dipesan ke Supplier · Diterima di Gudang · Dibatalkan</td><td>Barang/kas/gudang baru bergerak saat <i>Diterima di Gudang</i>.</td></tr>
+  <tr><td>SPK</td><td>Draft / Penawaran · SPK Dikonfirmasi · Proses Unit / Leasing · Unit Terkirim / Selesai · Dibatalkan</td><td><i>Selesai</i> menandai unit <i>Terjual</i>.</td></tr>
+  <tr><td>Kontrak Sewa</td><td>Sedang Berjalan · Menunggu Mobilisasi · Selesai / Demobilisasi · Diperpanjang</td><td>Selesai mengembalikan unit ke <i>Tersedia</i>.</td></tr>
+  <tr><td>Invoice</td><td>Lunas · Sebagian (Cicil) · Belum Bayar · Jatuh Tempo</td><td><i>Jatuh Tempo</i> dihitung dari tanggal tempo, bukan input manual.</td></tr>
+  <tr><td>WO Servis</td><td>Menunggu Teknisi · Sedang Dikerjakan · Menunggu Sparepart · Servis Selesai</td><td>HM &amp; parts tercatat saat <i>Selesai</i>.</td></tr>
+  <tr><td>Surat Jalan</td><td>Menunggu Jadwal · Dalam Perjalanan · Tiba di Lokasi · Serah Terima Selesai · Dibatalkan</td><td>Tombol layar menyediakan Berangkat dan Serah Terima.</td></tr>
+  <tr><td>Breakdown</td><td>Dilaporkan · Inspeksi · Diagnosis · Perbaikan · Testing · Selesai · Dibatalkan</td><td>Downtime dihitung dari waktu mulai/selesai.</td></tr>
+  <tr><td>Kas</td><td>Kas Masuk · Kas Keluar + 7 kategori</td><td>Kategori menentukan pembacaan Laporan.</td></tr>
+  <tr><td>Persetujuan</td><td>Pending · Disetujui · Ditolak · Dibatalkan</td><td>Tidak membuat dokumen kerja.</td></tr>
+</table>
+
+<h1>Lampiran B — Checklist Hari Pertama</h1>
+<ol>
+  <li>☐ Ganti password semua akun bawaan oleh penerimanya.</li>
+  <li>☐ Nonaktifkan akun bawaan yang tidak dipakai (Pengguna → <span class="lbl">Nonaktifkan</span>).</li>
+  <li>☐ Pengaturan → Perusahaan: nama, NPWP, alamat, telepon, email.</li>
+  <li>☐ Pengaturan → Rekening Bank: minimal 1 rekening kas + rekening bank utama.</li>
+  <li>☐ Profil bisnis dipilih (badge topbar sesuai).</li>
+  <li>☐ Pengaturan → Cetak: ukuran kertas printer Anda.</li>
+  <li>☐ Master data awal: 1 pelanggan, 1 pemasok, 1 operator, 1 teknisi, 5 part terpopuler.</li>
+  <li>☐ Unit masuk dengan HM awal + lokasi + foto + nilai perolehan.</li>
+  <li>☐ Backup Sekarang → salin berkas keluar komputer.</li>
+  <li>☐ Tes cetak 1 dokumen dan cek header perusahaan sudah benar.</li>
+</ol>
+
+<h1>Lampiran C — Daftar Menu dan Alamannya</h1>
+<table>
+  <tr><th style="width:24%">Menu</th><th style="width:18%">Alamat</th><th style="width:15%">Peran penunggu</th><th>Catatan</th></tr>
+  <tr><td>Dasbor</td><td><code>/dashboard</code></td><td>Semua</td><td>Ringkasan per profil</td></tr>
+  <tr><td>Control Tower</td><td><code>/control-tower</code></td><td>Semua</td><td>Read-only; empat tombol View All membuka menunya</td></tr>
+  <tr><td>Merek &amp; Model</td><td><code>/brands</code></td><td>SA, Sales, Gudang, Teknisi</td><td>Katalog tersimpan di database; sumber dropdown merek Unit</td></tr>
+  <tr><td>Unit / Armada</td><td><code>/units</code></td><td>SA, Sales, Gudang, Teknisi</td><td>Pasal: Passport <code>/equipment-passport/:id</code></td></tr>
+  <tr><td>Pelanggan</td><td><code>/customers</code></td><td>SA, Sales</td><td>—</td></tr>
+  <tr><td>Pemasok</td><td><code>/suppliers</code></td><td>SA, Gudang</td><td>Rekening pemasok di sini</td></tr>
+  <tr><td>Operator</td><td><code>/operators</code></td><td>SA</td><td>Penugasan per serial</td></tr>
+  <tr><td>Teknisi</td><td><code>/technicians</code></td><td>SA, Teknisi</td><td>Spesialisasi &amp; skill</td></tr>
+  <tr><td>Pembelian</td><td><code>/purchase</code></td><td>SA, Gudang</td><td>Kategori BBM tersedia</td></tr>
+  <tr><td>Penjualan</td><td><code>/sales</code></td><td>SA, Sales</td><td>Auto invoice + SJ + DP kas</td></tr>
+  <tr><td>Sewa / Rental</td><td><code>/rental</code></td><td>SA, Sales</td><td>Timeline &amp; Tabel</td></tr>
+  <tr><td>Persetujuan</td><td><code>/approvals</code></td><td>SA</td><td>Tidak membuat dokumen kerja</td></tr>
+  <tr><td>Faktur / Invoice</td><td><code>/invoices</code></td><td>SA, Sales, Teknisi, Keuangan</td><td>Pembayaran → kas</td></tr>
+  <tr><td>Gudang</td><td><code>/warehouse</code></td><td>SA, Gudang, Teknisi</td><td>Isi nomor referensi; <span class="lbl">Cetak Bukti</span> mencetak bukti serah terima</td></tr>
+  <tr><td>Suku Cadang</td><td><code>/spareparts</code></td><td>SA, Gudang, Teknisi</td><td>Stok turun lewat WO/PO</td></tr>
+  <tr><td>Breakdown</td><td><code>/breakdown</code></td><td>SA, Teknisi</td><td>Sumber downtime</td></tr>
+  <tr><td>Servis &amp; Work Order</td><td><code>/service</code></td><td>SA, Teknisi</td><td>Kunci HM &amp; siklus 500</td></tr>
+  <tr><td>Pengiriman</td><td><code>/delivery</code></td><td>SA, Sales, Gudang</td><td>Surat jalan</td></tr>
+  <tr><td>Kas &amp; Bank</td><td><code>/finance</code></td><td>SA, Keuangan</td><td>Saldo dari database</td></tr>
+  <tr><td>Laporan</td><td><code>/reports</code></td><td>Semua</td><td>3 tab; CSV sampai 5.000 baris, PDF 500 baris</td></tr>
+  <tr><td>Pengaturan</td><td><code>/settings</code></td><td>Semua (profil/modul)</td><td>6 tab</td></tr>
+  <tr><td>Pengguna</td><td><code>/users</code></td><td>SA</td><td>Kelola akun &amp; reset</td></tr>
+  <tr><td>Dokumen Legal</td><td><code>/documents</code></td><td>Semua</td><td>Badge kedaluwarsa; jenis termasuk BPKB (3.0.4)</td></tr>
+  <tr><td>Backup &amp; Restore</td><td><code>/backup</code></td><td>Semua</td><td>.sanybak ≤ 64 MB</td></tr>
+  <tr><td>Pemeliharaan Sistem</td><td><code>/maintenance</code></td><td>Semua</td><td>Health check &amp; repair</td></tr>
+  <tr><td>Audit Log</td><td><code>/audit-log</code></td><td>SA</td><td>11 jenis kejadian</td></tr>
+  <tr><td>Login / Setup profil</td><td><code>/login</code>, <code>/setup</code></td><td>—</td><td>Di luar sidebar</td></tr>
+</table>
+<p><i>SA = Super Admin.</i> Daftar “peran penunggu” mengikuti menu yang ditawarkan; collection yang boleh ditulis terinci di Bab 2.5.</p>
+
+<footer class="catatan-kaki">Panduan Pemakaian &amp; Pengoperasian — FATHONI EQUIPMENT OS versi 3.1.0 · disusun 22 Oktober 2026 dari isi aplikasi terpasang · seluruh label layar, pesan validasi, dan aturan wewenang dikutip apa adanya dari sumber aplikasi.</footer>
+
+</body>
+</html>

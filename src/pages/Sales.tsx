@@ -11,7 +11,6 @@ import {
   validateAmount,
   validateDateRange,
   validateName,
-  validateOrderStatus
 } from '../utils/validation';
 
 import { type SalesOrder } from '../data/demoTransactions';
@@ -28,7 +27,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; badge: string }> = {
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Sales() {
-  const { sales: data, setSales: setData, units, customers, addSale, updateUnitStatus, removeRow } = useDataStore();
+  const { sales: data, setSales: setData, units, customers, addSale, updateUnitStatus, saveRow, removeRow } = useDataStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -63,7 +62,7 @@ export default function Sales() {
   const activeOrders = data.filter(i => i.status !== 'COMPLETED' && i.status !== 'CANCELLED').length;
   const completedOrders = data.filter(i => i.status === 'COMPLETED').length;
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi nama pelanggan
@@ -131,18 +130,20 @@ export default function Sales() {
     }
 
     if (editingId) {
-      setData(data.map(i => i.id === editingId ? {
-        ...i,
+      const existing = data.find(i => i.id === editingId);
+      if (!existing) return;
+      await saveRow('sales', {
+        ...existing,
         orderNo: form.orderNo,
         customerName: form.customerName,
         unitModel: form.unitModel,
-        serialNumber: form.serialNumber || i.serialNumber,
+        serialNumber: form.serialNumber || existing.serialNumber,
         orderDate: form.orderDate,
         totalPrice: Number(form.totalPrice),
         downPayment: Number(form.downPayment),
         paymentScheme: form.paymentScheme,
         salesPerson: form.salesPerson,
-      } : i));
+      });
     } else {
       const newItem: SalesOrder = {
         id: Date.now().toString(),
@@ -191,18 +192,13 @@ export default function Sales() {
     }
   };
 
-  const handleUpdateStatus = (id: string, newStatus: OrderStatus) => {
-    setData(data.map(i => (i.id === id ? { ...i, status: newStatus } : i)));
-    
-    // Sinkronisasi status Unit jika pesanan selesai (COMPLETED) menggunakan helper function
-    if (newStatus === 'COMPLETED') {
-      const sale = data.find(i => i.id === id);
-      if (sale && sale.serialNumber) {
-        const unit = units.find((u: any) => u.serialNumber === sale.serialNumber);
-        if (unit) {
-          updateUnitStatus(unit.id, 'SOLD');
-        }
-      }
+  const handleUpdateStatus = async (id: string, newStatus: OrderStatus) => {
+    const item = data.find(i => i.id === id);
+    if (!item) return;
+    await saveRow('sales', { ...item, status: newStatus });
+    if (newStatus === 'COMPLETED' && item.serialNumber) {
+      const unit = units.find((u: any) => u.serialNumber === item.serialNumber);
+      if (unit) updateUnitStatus(unit.id, 'SOLD');
     }
   };
 

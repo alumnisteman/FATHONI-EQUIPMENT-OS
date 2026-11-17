@@ -8,6 +8,8 @@ import { diffRows } from '../store/writeGuard';
 import { dbAvailable, dbQuery } from '../services/dbClient';
 import UnitPhoto from '../components/UnitPhoto';
 import { usePagedCollection } from '../hooks/usePagedCollection';
+import { useCollectionQuery } from '../hooks/useCollectionTotals';
+import { SERVICE_TYPE_LABEL, STATUS_SEWA, STATUS_WO } from '../domain/labels';
 import Pager from '../components/Pager';
 import {
   storeUnitPhoto, deleteUnitPhotos, migrateInlinePhotos, isDataUrl,
@@ -16,12 +18,15 @@ import {
   validateField,
   validateUniqueSerialNumber,
   validateHourMeter,
+  validateHourMeterProgress,
   validateYear,
   validateAmount,
   validateUnitCategory,
   validateBrand,
-  validateUnitStatus
+  validateUnitStatus,
+  VALID_BRANDS
 } from '../utils/validation';
+import { hmServisBerikutnyaOf, SIKLUS_SERVIS_HM } from '../domain/derivedColumns';
 
 const STATUS_LABEL: Record<UnitStatus, string> = {
   AVAILABLE: 'Tersedia (Ready)',
@@ -64,6 +69,10 @@ interface UnitRow {
   year: string;
   photoId?: string; // berkas foto di folder data aplikasi
   photo?: string;   // base64 lama, dipindahkan oleh migrateInlinePhotos
+  lastServiceHM?: number; // HM saat servis terakhir selesai (ditulis completeService)
+  /** Riwayat koreksi pembacaan meter: meter yang mundur wajib beralasan, dan
+   *  alasannya tidak boleh hilang saat angkanya ditimpa. */
+  hmKoreksi?: { dari: number; ke: number; alasan: string; pada: string }[];
 }
 
 // Foto default berdasarkan merek
@@ -85,9 +94,41 @@ const BATAS_KANDIDAT = 500;
 
 export default function Units() {
   const navigate = useNavigate();
-  const { units: data, saveRow, saveRows, removeRow, savedTick } = useDataStore();
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
+  const { units: data, brands, models, saveRow, saveRows, removeRow, savedTick } = useDataStore();
+
+  // Pilihan merek/model diambil dari katalog Merek & Model (collection brands +
+  // models), bukan dari daftar yang hardcoded di halaman ini. Katalog yang masih
+  // kosong jatuh balik ke VALID_BRANDS supaya data dan alur kerja lama tetap
+  // bisa disimpan sebelum katalognya diisi.
+  const merekKatalog = Array.from(new Set(
+    (Array.isArray(brands) ? brands : []).map((b: any) => String(b?.name ?? '').trim()).filter(Boolean)
+  ));
+  const merekPilihan = merekKatalog.length > 0 ? merekKatalog : VALID_BRANDS;
+  const kodeModelKatalog = (merek: string) => {
+    const target = String(merek ?? '').trim().toLowerCase();
+    return Array.from(new Set(
+      (Array.isArray(models) ? models : [])
+        .filter((m: any) => !target || String(m?.brandName ?? '').trim().toLowerCase() === target)
+        .map((m: any) => String(m?.modelCode ?? '').trim())
+        .filter(Boolean)
+    ));
+  };
+
+  // Spesifikasi teknis hidup di katalog Merek & Model (kolom capacity,
+  // enginePower, operatingWeight), bukan di baris unit. Kartu detail dulu
+  // menuliskan angka tetap yang sama untuk semua alat; sekarang angkanya dibaca
+  // dari katalog dan ditulis apa adanya bila katalognya belum diisi.
+  const specModel = (brand?: string, model?: string) => {
+    const b = String(brand ?? '').trim().toLowerCase();
+    const m = String(model ?? '').trim().toLowerCase();
+    const temu = (Array.isArray(models) ? models : []).find((x: any) =>
+      String(x?.modelCode ?? '').trim().toLowerCase() === m
+      && (!b || String(x?.brandName ?? '').trim().toLowerCase() === b));
+    const isi = (v: unknown) => String(v ?? '').trim() || 'belum diisi di Merek & Model';
+    return { capacity: isi(temu?.capacity), enginePower: isi(temu?.enginePower), operatingWeight: isi(temu?.operatingWeight) };
+  };
+
+  const [search, setSearch] = useState('');  const [page, setPage] = useState(0);
   const [selectedUnit, setSelectedUnit] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('RINGKASAN');
 
@@ -209,6 +250,11 @@ export default function Units() {
     purchasePrice: 1500000000,
   });
 
+  // Meter yang mundur hanya sah lewat gerbang ini: pencet centang + isi alasan.
+  // Tidak ikut tersimpan ke record (form di-spread apa adanya ke baris), jadi ia
+  // dipegang terpisah dan hasilnya ditulis ke `hmKoreksi`.
+  const [koreksiHm, setKoreksiHm] = useState({ aktif: false, alasan: '' });
+
   // Daftar fleet dibaca per halaman dari SQLite: dengan puluhan ribu unit,
   // pencarian dan halaman yang tampil tidak lagi menelusuri seluruh array.
   const paged = usePagedCollection<UnitRow>({
@@ -245,10 +291,11 @@ export default function Units() {
   const openAdd = () => {
     setEditingUnit(null);
     setTempPhotoId(undefined);
+    setKoreksiHm({ aktif: false, alasan: '' });
     setForm({
       serialNumber: '',
-      brand: 'SANY',
-      model: 'SY215C',
+      brand: merekPilihan[0] ?? 'SANY',
+      model: '',
       category: 'Excavator',
       status: 'AVAILABLE',
       hourMeter: 0,
@@ -263,6 +310,7 @@ export default function Units() {
     e.stopPropagation();
     setEditingUnit(u);
     setTempPhotoId(u.photoId);
+    setKoreksiHm({ aktif: false, alasan: '' });
     setForm({
       serialNumber: u.serialNumber,
       brand: u.brand,
@@ -314,8 +362,8 @@ export default function Units() {
       return;
     }
 
-    // Validasi Brand
-    const brandError = validateBrand(form.brand);
+    // Validasi Brand — katalog merek ikut diterima, bukan hanya daftar bawaan.
+    const brandError = validateBrand(form.brand, merekKatalog);
     if (brandError) {
       alert(brandError);
       return;
@@ -349,6 +397,21 @@ export default function Units() {
       return;
     }
 
+    // Meter yang mundur terhadap HM yang sudah tercatat hanya sah lewat gerbang
+    // koreksi beralasan. Tanpa ini, satu salah ketik di lapangan menurunkan seluruh
+    // hitungan siklus servis dan biaya per jam tanpa jejak.
+    const hmLama = editingUnit ? Number(editingUnit.hourMeter) : undefined;
+    // Kunci state layar (aktif) dipetakan ke kunci API validator (koreksi); kirim
+    // objek apa adanya membuat opts.koreksi undefined dan gerbang tak pernah lolos.
+    const hmMundur = validateHourMeterProgress(form.hourMeter, hmLama,
+      { koreksi: koreksiHm.aktif, alasan: koreksiHm.alasan });
+    if (hmMundur) {
+      alert(hmMundur);
+      return;
+    }
+    const adaKoreksi = hmLama !== undefined && Number.isFinite(hmLama)
+      && Number(form.hourMeter) < hmLama;
+
     // Validasi Tahun
     const yearError = validateYear(form.year);
     if (yearError) {
@@ -379,6 +442,14 @@ export default function Units() {
         currentValue: form.purchasePrice,
         photoId: tempPhotoId,
         photo: undefined,
+        hmKoreksi: adaKoreksi
+          ? [...(editingUnit.hmKoreksi ?? []), {
+              dari: hmLama as number,
+              ke: Number(form.hourMeter),
+              alasan: koreksiHm.alasan.trim(),
+              pada: new Date().toISOString(),
+            }]
+          : editingUnit.hmKoreksi,
       });
     } else {
       commit({
@@ -517,11 +588,22 @@ export default function Units() {
                   </div>
                   <div className="card" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', padding: 16 }}>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Service Periodik Selanjutnya</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6' }}>{u.hourMeter + 250} HM</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6' }}>
+                      {hmServisBerikutnyaOf(u.hourMeter) ?? '-'} HM
+                    </div>
+                    {/* Satu aturan dengan alert Dasbor dan kolom turunan serviceDueIn:
+                        kartu ini dulu menulis `hourMeter + 250`, jadi dua menu
+                        melaporkan servis berikutnya berbeda untuk alat yang sama. */}
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      siklus {SIKLUS_SERVIS_HM} HM{typeof u.lastServiceHM === 'number' ? ` • servis terakhir ${u.lastServiceHM} HM` : ' • servis terakhir belum tercatat'}
+                      {(u.hmKoreksi ?? []).length > 0 ? ` • ${ (u.hmKoreksi ?? []).length } koreksi meter` : ''}
+                    </div>
                   </div>
                   <div className="card" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', padding: 16 }}>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Status Garansi</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>Aktif (s.d Jan 2026)</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-muted)' }}>
+                      tidak tercatat di baris unit
+                    </div>
                   </div>
                 </div>
 
@@ -533,259 +615,44 @@ export default function Units() {
                         <tr><td style={{ color: 'var(--text-muted)' }}>Kategori Unit</td><td style={{ fontWeight: 600 }}>{u.category}</td></tr>
                         <tr><td style={{ color: 'var(--text-muted)' }}>Merek & Model</td><td style={{ fontWeight: 600 }}>{u.brand} {u.model}</td></tr>
                         <tr><td style={{ color: 'var(--text-muted)' }}>Tahun Pembuatan</td><td style={{ fontWeight: 600 }}>{u.year}</td></tr>
-                        <tr><td style={{ color: 'var(--text-muted)' }}>Kapasitas Bucket / Load</td><td style={{ fontWeight: 600 }}>1.0 m³ Standard</td></tr>
-                        <tr><td style={{ color: 'var(--text-muted)' }}>Daya Mesin (Engine)</td><td style={{ fontWeight: 600 }}>110 kW / 2000 rpm</td></tr>
+                        <tr><td style={{ color: 'var(--text-muted)' }}>Kapasitas Bucket / Load</td><td style={{ fontWeight: 600 }}>{specModel(u.brand, u.model).capacity}</td></tr>
+                        <tr><td style={{ color: 'var(--text-muted)' }}>Daya Mesin (Engine)</td><td style={{ fontWeight: 600 }}>{specModel(u.brand, u.model).enginePower}</td></tr>
+                        <tr><td style={{ color: 'var(--text-muted)' }}>Berat Operasi</td><td style={{ fontWeight: 600 }}>{specModel(u.brand, u.model).operatingWeight}</td></tr>
                       </tbody>
                     </table>
                   </div>
                   <div className="card" style={{ border: '1px solid var(--border-default)' }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Lokasi & Operator</h3>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Lokasi &amp; Perawatan</h3>
                     <table className="table" style={{ fontSize: 13 }}>
                       <tbody>
                         <tr><td style={{ color: 'var(--text-muted)' }}>Lokasi Operasional</td><td style={{ fontWeight: 600 }}>{u.location}</td></tr>
-                        <tr><td style={{ color: 'var(--text-muted)' }}>Operator Utama</td><td style={{ fontWeight: 600 }}>Bambang Supriyanto</td></tr>
-                        <tr><td style={{ color: 'var(--text-muted)' }}>Penanggung Jawab Jobsite</td><td style={{ fontWeight: 600 }}>Ir. Handoko</td></tr>
-                        <tr><td style={{ color: 'var(--text-muted)' }}>Status GPS Tracking</td><td style={{ fontWeight: 600, color: '#10b981' }}>● Online (Signal Strong)</td></tr>
-                        <tr><td style={{ color: 'var(--text-muted)' }}>Konsumsi BBM Rata-rata</td><td style={{ fontWeight: 600 }}>16.5 Liter / Jam</td></tr>
+                        <tr><td style={{ color: 'var(--text-muted)' }}>Status Unit</td><td style={{ fontWeight: 600 }}>{u.status}</td></tr>
+                        <tr><td style={{ color: 'var(--text-muted)' }}>Servis Terakhir Tercatat</td><td style={{ fontWeight: 600 }}>
+                          {typeof u.lastServiceHM === 'number' ? `${new Intl.NumberFormat('id-ID').format(u.lastServiceHM)} HM` : 'belum tercatat'}
+                        </td></tr>
                       </tbody>
                     </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'PERAWATAN' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700 }}>Riwayat Perawatan & SPK Work Order</h3>
-                  <button className="btn btn-primary btn-sm" onClick={() => alert('Fitur Tambah SPK Perawatan Unit terhubung ke Modul Service.')}>
-                    + Catat Service Baru
-                  </button>
-                </div>
-                <table className="table" style={{ fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th>No SPK</th>
-                      <th>Jenis Perawatan</th>
-                      <th>Hour Meter (HM)</th>
-                      <th>Tanggal</th>
-                      <th>Teknisi / Mekanik</th>
-                      <th>Status</th>
-                      <th>Biaya</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>SPK-2025-012</td>
-                      <td>Service Periodik 4.500 HM</td>
-                      <td>4.500 HM</td>
-                      <td>12 Jan 2025</td>
-                      <td>Budi Santoso</td>
-                      <td><span className="badge badge-success">Selesai</span></td>
-                      <td>Rp 14.500.000</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>SPK-2024-089</td>
-                      <td>Penggantian Hydraulic Filter & Oil</td>
-                      <td>3.800 HM</td>
-                      <td>15 Nov 2024</td>
-                      <td>Ahmad Jaya</td>
-                      <td><span className="badge badge-success">Selesai</span></td>
-                      <td>Rp 8.200.000</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>SPK-2024-042</td>
-                      <td>Preventive Maintenance 3.000 HM</td>
-                      <td>3.000 HM</td>
-                      <td>02 Jul 2024</td>
-                      <td>Budi Santoso</td>
-                      <td><span className="badge badge-success">Selesai</span></td>
-                      <td>Rp 21.300.000</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {activeTab === 'SUKU CADANG' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700 }}>Penggunaan Suku Cadang pada Unit Ini</h3>
-                  <button className="btn btn-secondary btn-sm" onClick={() => alert('Terhubung dengan Stok Spare Parts')}>
-                    + Pasang Spare Part
-                  </button>
-                </div>
-                <table className="table" style={{ fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th>Kode Part</th>
-                      <th>Nama Suku Cadang</th>
-                      <th>Jumlah (Qty)</th>
-                      <th>Tanggal Pasang</th>
-                      <th>Mekanik Penanggung Jawab</th>
-                      <th>Total Biaya Part</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>P-1002</td>
-                      <td>Filter Oli Engine High Performance</td>
-                      <td>2 Pcs</td>
-                      <td>12 Jan 2025</td>
-                      <td>Budi Santoso</td>
-                      <td>Rp 1.500.000</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>P-2004</td>
-                      <td>Hydraulic Main Filter Element</td>
-                      <td>1 Pcs</td>
-                      <td>15 Nov 2024</td>
-                      <td>Ahmad Jaya</td>
-                      <td>Rp 4.200.000</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>P-3001</td>
-                      <td>Track Shoe Bolt Set (Set of 20)</td>
-                      <td>1 Set</td>
-                      <td>02 Jul 2024</td>
-                      <td>Budi Santoso</td>
-                      <td>Rp 3.800.000</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {activeTab === 'GARANSI' && (
-              <div>
-                <div className="card" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', marginBottom: 20, padding: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Garansi Resmi Pabrikan</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981', marginTop: 4 }}>GARANSI AKTIF (24 Bulan / 4.000 HM)</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
-                        Distributor Resmi: <strong>PT SANY Indonesia Machinery</strong> &bull; Masa berlaku hingga: <strong>15 Januari 2026</strong>
-                      </div>
+                    {/* Nama operator, penanggung jawab jobsite, status GPS dan
+                        konsumsi BBM per jam dulu dipajang di sini sebagai teks
+                        tetap — angka yang sama untuk semua alat, dan tidak ada
+                        satu pun kolom penyimpannya. Consumption BBM per unit juga
+                        belum bisa dihitung karena pembelian tidak menaut barisnya
+                        ke satu unit (lihat kartu Cost per Hour di Dasbor). */}
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+                      Operator ditautkan di menu Operator; GPS dan konsumsi BBM per unit belum tercatat di data aplikasi.
                     </div>
-                    <span className="badge badge-success" style={{ fontSize: 13, padding: '6px 12px' }}>VERIFIED</span>
                   </div>
                 </div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Riwayat Klaim Garansi</h3>
-                <table className="table" style={{ fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th>No Klaim</th>
-                      <th>Deskripsi Masalah / Komponen</th>
-                      <th>Tanggal Klaim</th>
-                      <th>Status Klaim</th>
-                      <th>Biaya Tercover</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>CLM-2024-008</td>
-                      <td>Penggantian O-Ring Seal Boom Cylinder Unit</td>
-                      <td>14 Ags 2024</td>
-                      <td><span className="badge badge-success">Disetujui (Covered)</span></td>
-                      <td>Rp 0 (100% Garansi)</td>
-                    </tr>
-                  </tbody>
-                </table>
               </div>
             )}
 
-            {activeTab === 'SEWA' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700 }}>Riwayat Sewa & Kontrak Proyek</h3>
-                  <button className="btn btn-primary btn-sm" onClick={() => alert('Terhubung ke Modul Rental & Pengadaan Proyek')}>
-                    + Alokasikan Kontrak Baru
-                  </button>
-                </div>
-                <table className="table" style={{ fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th>No Kontrak</th>
-                      <th>Penyewa / Nama Proyek</th>
-                      <th>Lokasi Jobsite</th>
-                      <th>Periode Kontrak</th>
-                      <th>Tarif Sewa / Jam</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>KNT-2025-001</td>
-                      <td>PT Nusantara Mining Contractor</td>
-                      <td>Jobsite Morowali, Sulteng</td>
-                      <td>01 Jan 2025 - 31 Des 2025</td>
-                      <td>Rp 250.000 / HM</td>
-                      <td><span className="badge badge-info">Berjalan (Aktif)</span></td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>KNT-2024-044</td>
-                      <td>PT Tambang Jaya Bersama</td>
-                      <td>Jobsite Halmahera, Malut</td>
-                      <td>15 Feb 2024 - 15 Des 2024</td>
-                      <td>Rp 240.000 / HM</td>
-                      <td><span className="badge badge-muted">Selesai</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {activeTab === 'DOKUMEN' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700 }}>Dokumen Kelayakan & Legalitas Unit</h3>
-                  <button className="btn btn-secondary btn-sm" onClick={() => alert('Upload dokumen baru')}>
-                    + Upload Dokumen
-                  </button>
-                </div>
-                <table className="table" style={{ fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th>Jenis Dokumen</th>
-                      <th>Nomor Dokumen</th>
-                      <th>Masa Berlaku (Expiry)</th>
-                      <th>Status Legalitas</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontWeight: 600 }}>SIA (Surat Izin Alat)</td>
-                      <td style={{ fontFamily: 'monospace' }}>SIA-2024-8891-JKT</td>
-                      <td>15 Jan 2026</td>
-                      <td><span className="badge badge-success">Aktif</span></td>
-                      <td><button className="btn btn-ghost btn-sm" onClick={() => alert('Mengunduh SIA-2024-8891-JKT.pdf')}>Unduh PDF</button></td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: 600 }}>SILO (Surat Izin Layak Operasi)</td>
-                      <td style={{ fontFamily: 'monospace' }}>SILO-SANY-215C-09</td>
-                      <td>20 Des 2025</td>
-                      <td><span className="badge badge-success">Aktif</span></td>
-                      <td><button className="btn btn-ghost btn-sm" onClick={() => alert('Mengunduh SILO-SANY-215C-09.pdf')}>Unduh PDF</button></td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: 600 }}>Faktur Pembelian & Sertifikat Merek</td>
-                      <td style={{ fontFamily: 'monospace' }}>INV-SANY-2023-001</td>
-                      <td>Permanen</td>
-                      <td><span className="badge badge-success">Valid</span></td>
-                      <td><button className="btn btn-ghost btn-sm" onClick={() => alert('Mengunduh Faktur.pdf')}>Unduh PDF</button></td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: 600 }}>Polis Asuransi All Risk Equipment</td>
-                      <td style={{ fontFamily: 'monospace' }}>INS-ALLIANZ-771290</td>
-                      <td>10 Jan 2026</td>
-                      <td><span className="badge badge-success">Aktif</span></td>
-                      <td><button className="btn btn-ghost btn-sm" onClick={() => alert('Mengunduh Polis_Asuransi.pdf')}>Unduh PDF</button></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {/* Riwayat per unit di kartu ini dulu lima daftar tetap — WO, part,
+                klaim garansi, kontrak sewa, dokumen legal — yang isinya sama untuk
+                semua alat, dan tiap tombolnya hanya memunculkan alert(). Sekarang
+                angka yang punya kolom penaut dibaca dari database atas nomor sasis
+                unit ini, angka yang tidak punya penaut diucapkan apa adanya, dan
+                setiap tombol membuka menu tempat record itu memang dibuat. */}
+            {activeTab !== 'RINGKASAN' && <UnitRiwayat unit={u} activeTab={activeTab} />}
           </div>
         </div>
       </div>
@@ -916,19 +783,33 @@ export default function Units() {
                 <div className="form-group">
                   <label className="form-label">Merek *</label>
                   <select className="form-select" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}>
-                    <option value="SANY">SANY</option>
-                    <option value="Komatsu">Komatsu</option>
-                    <option value="Caterpillar">Caterpillar</option>
-                    <option value="Kobelco">Kobelco</option>
-                    <option value="Hitachi">Hitachi</option>
-                    <option value="Volvo">Volvo</option>
+                    {merekPilihan.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                    {/* Unit warisan bisa mencatat merek yang tidak ada di katalog;
+                        nilainya tetap harus bisa dibaca dan disimpan ulang tanpa
+                        diam-diam berpindah ke merek pertama daftar. */}
+                    {form.brand && !merekPilihan.includes(form.brand) && (
+                      <option value={form.brand}>{form.brand} (di luar katalog)</option>
+                    )}
                   </select>
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Kode Model *</label>
-                  <input className="form-input" placeholder="Contoh: SY215C, PC200-8" value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} />
+                  <input
+                    className="form-input"
+                    list="unit-kode-model"
+                    placeholder="Contoh: SY215C, PC200-8"
+                    value={form.model}
+                    onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
+                  />
+                  <datalist id="unit-kode-model">
+                    {kodeModelKatalog(form.brand).map(k => (
+                      <option key={k} value={k} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Kategori Unit</label>
@@ -945,8 +826,25 @@ export default function Units() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Hour Meter awal (HM)</label>
+                  <label className="form-label">Hour Meter saat ini (HM)</label>
                   <input className="form-input" type="number" value={form.hourMeter} onChange={e => setForm(f => ({ ...f, hourMeter: Number(e.target.value) }))} />
+                  {editingUnit && Number(editingUnit.hourMeter) >= 0 && !Number.isNaN(Number(editingUnit.hourMeter))
+                    && Number(form.hourMeter) < Number(editingUnit.hourMeter) && (
+                    <div style={{ marginTop: 8, padding: 8, border: '1px solid var(--status-warning, #f59e0b)', borderRadius: 6 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                        Meter mundur dari {editingUnit.hourMeter} ke {form.hourMeter}. Lanjut hanya sebagai koreksi yang tercatat.
+                      </div>
+                      <label style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input type="checkbox" checked={koreksiHm.aktif}
+                          onChange={e => setKoreksiHm(k => ({ ...k, aktif: e.target.checked }))} />
+                        Ini koreksi pembacaan meter
+                      </label>
+                      {koreksiHm.aktif && (
+                        <input className="form-input" style={{ marginTop: 6 }} placeholder="Alasan koreksi, mis. HM lama salah baca"
+                          value={koreksiHm.alasan} onChange={e => setKoreksiHm(k => ({ ...k, alasan: e.target.value }))} />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="form-row">
@@ -1105,6 +1003,206 @@ export default function Units() {
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+/** Baris riwayat yang dimuat per tab; sisanya tetap ada di file dan bisa dibuka
+ *  di menu asalnya. */
+const RIWAYAT_TAMPIL = 12;
+
+/**
+ * Tab riwayat di kartu detail unit.
+ *
+ * Bagian ini dulu berisi lima daftar tetap — SPK-2025-012, part P-1002, klaim
+ * CLM-2024-008, kontrak KNT-2025-001, dokumen SIA-2024-8891-JKT — yang tercetak
+ * identik untuk semua alat, dengan enam tombol yang hanya memunculkan alert().
+ * Sekarang:
+ *  - Work Order dan kontrak sewa unit ini dibaca dari database lewat nomor sasis,
+ *    sama seperti halaman Passport Digital;
+ *  - hal yang tidak punya kolom penaut per unit (pemakaian part, garansi,
+ *    dokumen legal) dinyatakan apa adanya, bukan dikarang — sama seperti kartu
+ *    RINGKASAN sudah menulis "GPS dan konsumsi BBM per unit belum tercatat";
+ *  - setiap tombol membawa pengguna ke menu tempat record itu memang dibuat,
+ *    dengan alat yang sedang dibuka ikut terisi.
+ */
+function UnitRiwayat({ unit, activeTab }: { unit: UnitRow; activeTab: string }) {
+  const navigate = useNavigate();
+  const { services, rentals, savedTick } = useDataStore();
+
+  const serial = String(unit.serialNumber ?? '').trim();
+  const model = `${unit.brand ?? ''} ${unit.model ?? ''}`.trim();
+  const kunciUnit = { serialNumber: serial };
+
+  const woHal = useCollectionQuery(
+    { collection: 'services', where: kunciUnit, sort: 'openDate', desc: true, limit: RIWAYAT_TAMPIL },
+    services, savedTick.services
+  );
+  const sewaHal = useCollectionQuery(
+    { collection: 'rentals', where: kunciUnit, sort: 'startDate', desc: true, limit: RIWAYAT_TAMPIL },
+    rentals, savedTick.rentals
+  );
+
+  const HM = (n: unknown) => new Intl.NumberFormat('id-ID').format(Number(n) || 0);
+  const badge = (map: Record<string, { label: string; badge: string }>, kode: unknown) => {
+    const item = map[String(kode ?? '')];
+    // Nilai asing dari file lama tampil apa adanya, bukan menabrakkan peta label.
+    return <span className={`badge ${item?.badge ?? 'badge-muted'}`}>{item?.label ?? String(kode ?? '-')}</span>;
+  };
+
+  const judul = (teks: string) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 700 }}>{teks}</h3>
+    </div>
+  );
+
+  const catatan = (teks: string) => (
+    <div style={{ padding: 16, background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 6, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+      {teks}
+    </div>
+  );
+
+  const keServisBaru = () => navigate('/service', {
+    state: { baru: true, unit: { serialNumber: serial, unitModel: model } },
+  });
+  const keServisUnit = () => navigate('/service', {
+    state: serial ? { cari: serial } : null,
+  });
+  const keKontrakBaru = () => navigate('/rental', {
+    state: { baru: true, unit: { serialNumber: serial, unitModel: model } },
+  });
+
+  if (activeTab === 'PERAWATAN') {
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700 }}>Riwayat Perawatan &amp; SPK Work Order</h3>
+          <button className="btn btn-primary btn-sm" onClick={keServisBaru}>+ Catat Service Baru</button>
+        </div>
+        {woHal.rows.length === 0 ? (
+          catatan(serial
+            ? `Belum ada Work Order dengan nomor sasis ${serial} di database. Catatan baru dibuat lewat menu Servis / Bengkel — tombol di atas membukanya untuk unit ini.`
+            : 'Unit ini belum punya nomor sasis, jadi Work Order-nya tidak bisa ditautkan. Isi Serial Number di form unit lebih dulu.')
+        ) : (
+          <table className="table" style={{ fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th>No SPK</th><th>Jenis Perawatan</th><th>Hour Meter (HM)</th><th>Tanggal Buka</th>
+                <th>Teknisi / Mekanik</th><th>Status</th><th>Biaya (aktual / estimasi)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {woHal.rows.map((w: any) => (
+                <tr key={String(w.id)}>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{w.woNumber}</td>
+                  <td>{SERVICE_TYPE_LABEL[String(w.serviceType ?? '')] ?? String(w.serviceType ?? '-')}</td>
+                  <td>{HM(w.hourMeter)} HM</td>
+                  <td>{String(w.openDate ?? '-')}</td>
+                  <td>{String(w.mechanicName ?? '-')}</td>
+                  <td>{badge(STATUS_WO, w.status)}</td>
+                  <td>{fmt(Number(w.actualCost) > 0 ? Number(w.actualCost) : Number(w.estimatedCost) || 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {woHal.total > woHal.rows.length && (
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+            Menampilkan {woHal.rows.length} dari {woHal.total} Work Order unit ini, yang terbaru lebih dulu. Daftar lengkap ada di menu Servis.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeTab === 'SUKU CADANG') {
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700 }}>Penggunaan Suku Cadang pada Unit Ini</h3>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/spareparts')}>Lihat Stok Suku Cadang</button>
+            <button className="btn btn-primary btn-sm" onClick={keServisUnit}>Catat Pemakaian Part (lewat WO)</button>
+          </div>
+        </div>
+        {catatan(
+          `Part dipasang saat sebuah Work Order diselesaikan di menu Servis; aksi itu mengurangi stok dan menulis mutasi keluar Gudang atas nomor WO. ` +
+          `Baris mutasi gudang tidak menyimpan nomor sasis, jadi daftar part per unit belum bisa dibaca dari database — yang tercatat untuk unit ini adalah ${woHal.total} Work Order. ` +
+          'Tombol di atas membuka daftar WO unit ini supaya pemakaian part bisa dicatat pada WO yang benar.'
+        )}
+      </div>
+    );
+  }
+
+  if (activeTab === 'GARANSI') {
+    return (
+      <div>
+        {judul('Garansi Resmi Pabrikan & Riwayat Klaim')}
+        {catatan(
+          `Istilah garansi (lama bulan, batas jam, distributor resmi, tanggal berakhir) tidak disimpan di baris unit maupun di katalog Merek & Model, dan belum ada record klaim garansi di aplikasi ini. ` +
+          `Yang tercatat untuk unit ini: tahun ${String(unit.year ?? '-')} dan tanggal perolehan ${String(unit.purchaseDate ?? '-')}, dengan ${woHal.total} Work Order. ` +
+          'Status garansi karena itu tidak bisa ditampilkan — mengisinya berarti menambah kolom data baru.'
+        )}
+      </div>
+    );
+  }
+
+  if (activeTab === 'SEWA') {
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700 }}>Riwayat Sewa &amp; Kontrak Proyek</h3>
+          <button className="btn btn-primary btn-sm" onClick={keKontrakBaru}>+ Alokasikan Kontrak Baru</button>
+        </div>
+        {sewaHal.rows.length === 0 ? (
+          catatan(serial
+            ? `Belum ada kontrak sewa dengan nomor sasis ${serial} di database. Kontrak baru dibuat lewat menu Rental / Sewa — tombol di atas membukanya untuk unit ini.`
+            : 'Unit ini belum punya nomor sasis, jadi kontrak sewanya tidak bisa ditautkan.')
+        ) : (
+          <table className="table" style={{ fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th>No Kontrak</th><th>Penyewa</th><th>Model Unit</th><th>Periode</th>
+                <th>Tarif / Bulan</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sewaHal.rows.map((r: any) => (
+                <tr key={String(r.id)}>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{r.contractNo}</td>
+                  <td>{String(r.customerName ?? '-')}</td>
+                  <td>{String(r.unitModel ?? model)}</td>
+                  <td>{`${String(r.startDate ?? '-')} s/d ${String(r.endDate ?? '-')}`}</td>
+                  <td>{fmt(Number(r.monthlyRate) || 0)}</td>
+                  <td>{badge(STATUS_SEWA, r.status)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {sewaHal.total > sewaHal.rows.length && (
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+            Menampilkan {sewaHal.rows.length} dari {sewaHal.total} kontrak unit ini. Daftar lengkap ada di menu Rental / Sewa.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // DOKUMEN — dan tab apa pun yang belum dikenal.
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700 }}>Dokumen Kelayakan &amp; Legalitas Unit</h3>
+        <button className="btn btn-primary btn-sm" onClick={() => navigate('/documents', { state: { baru: true } })}>
+          + Upload Dokumen
+        </button>
+      </div>
+      {catatan(
+        `Menu Dokumen menyimpan jenis, nomor, masa berlaku dan status legalitas, tapi tidak menyimpan nomor sasis alatnya ` +
+        `(kolom penaut per unit belum ada), jadi dokumen tidak bisa didaftar otomatis untuk ${serial || 'unit ini'}. ` +
+        'Tulis nomor sasis di kolom Keterangan saat mengupload supaya dokumennya bisa dicari kembali dari menu Dokumen.'
+      )}
     </div>
   );
 }

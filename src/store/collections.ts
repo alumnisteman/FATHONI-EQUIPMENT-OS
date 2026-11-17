@@ -11,7 +11,7 @@ export const STORAGE_KEY = 'hems_data_store_v1';
 
 // Kunci collection yang wajib berbentuk array di dalam store.
 export const COLLECTION_KEYS = [
-  'units', 'customers', 'suppliers', 'spareParts', 'invoices', 'sales',
+  'units', 'brands', 'models', 'customers', 'suppliers', 'spareParts', 'invoices', 'sales',
   'rentals', 'services', 'kas', 'deliveries', 'warehouse', 'purchases',
   'documents', 'bankAccounts', 'breakdowns', 'operators', 'technicians',
   'approvals',

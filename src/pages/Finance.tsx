@@ -1,11 +1,13 @@
 // src/pages/Finance.tsx - Modul Kas & Bank FATHONI EQUIPMENT OS
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDataStore } from '../store/dataStore';
 import { usePagedCollection } from '../hooks/usePagedCollection';
 import { useCollectionSum } from '../hooks/useCollectionTotals';
 import Pager from '../components/Pager';
 import { type TransaksiKas, type TipeTransaksi, type KategoriKas } from '../data/demoTransactions';
+import { validateKasKembar } from '../utils/validation';
+import { monthKey } from '../domain/revenue';
 
 const PAGE_SIZE = 25;
 
@@ -62,18 +64,35 @@ export default function Finance() {
     if (page > 0 && page >= paged.pages) setPage(paged.pages - 1);
   }, [page, paged.pages]);
 
-  // Saldo dihitung oleh SQLite, bukan dengan menjumlah seluruh transaksi di
-  // renderer — kartu KPI tetap ringan walau arus kas bertambah terus.
-  const totalMasuk = useCollectionSum('kas', 'jumlah', { tipe: 'MASUK' }, data, savedTick.kas);
-  const totalKeluar = useCollectionSum('kas', 'jumlah', { tipe: 'KELUAR' }, data, savedTick.kas);
-  const saldo = totalMasuk - totalKeluar;
+  // Kunci bulan saat ini ('YYYY-MM') — sama dengan kolom turunan `month` di SQLite.
+  // useMemo supaya referensi objek stabil dan useCollectionSum tidak query ulang
+  // setiap render; bulannya sendiri tidak berubah selama sesi ini terbuka.
+  const bulanIni = useMemo(() => monthKey(new Date()), []);
+  const whereMasuk        = useMemo(() => ({ tipe: 'MASUK',  month: bulanIni }), [bulanIni]);
+  const whereKeluar       = useMemo(() => ({ tipe: 'KELUAR', month: bulanIni }), [bulanIni]);
+  const whereMasukSemua   = useMemo(() => ({ tipe: 'MASUK'  }), []);
+  const whereKeluarSemua  = useMemo(() => ({ tipe: 'KELUAR' }), []);
+
+  // Dua pasang query: bulan ini (untuk kartu KPI) dan semua waktu (untuk saldo bersih).
+  const totalMasuk        = useCollectionSum('kas', 'jumlah', whereMasuk,       data, savedTick.kas);
+  const totalKeluar       = useCollectionSum('kas', 'jumlah', whereKeluar,      data, savedTick.kas);
+  const totalMasukSemua   = useCollectionSum('kas', 'jumlah', whereMasukSemua,  data, savedTick.kas);
+  const totalKeluarSemua  = useCollectionSum('kas', 'jumlah', whereKeluarSemua, data, savedTick.kas);
+  const saldoTotal        = totalMasukSemua - totalKeluarSemua;
 
   // Tulis lalu ambil halaman itu lagi dari file: tanpa simpanan langsung, hasil
   // edit baru terlihat setelah debounce dan halaman pertama justru menampilkan
   // data lama. Satu tulis = satu baris arus kas.
+  //
+  // Daftar dibaca ulang baik ditulis maupun ditolak: bila main process menolak
+  // (peran, angka rusak, atau biaya yang sama sudah tercatat), barisnya tidak
+  // pernah masuk file dan tidak boleh tampil seolah masuk. Balikannya juga penting
+  // — form tidak ditutup supaya angkanya bisa diperbaiki, sementara alasannya
+  // sudah ada di banner penyimpanan.
   const commit = async (row: TransaksiKas) => {
-    await saveRow('kas', row);
+    const tersimpan = await saveRow('kas', row);
     paged.refresh();
+    return tersimpan;
   };
 
   const drop = async (id: string) => {
@@ -85,22 +104,28 @@ export default function Finance() {
     paged.refresh();
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.keterangan || form.jumlah <= 0) {
       alert('Isi keterangan transaksi dan jumlah dengan benar');
       return;
     }
-    
-    if (editing) {
-      commit({ ...editing, ...form, jumlah: Number(form.jumlah) });
-    } else {
-      commit({
-        id: Date.now().toString(),
-        ...form,
-        jumlah: Number(form.jumlah),
-      });
+
+    const row: TransaksiKas = editing
+      ? { ...editing, ...form, jumlah: Number(form.jumlah) }
+      : { id: Date.now().toString(), ...form, jumlah: Number(form.jumlah) };
+
+    // Cek kembar di sisi form lebih dulu: tulisan yang sudah pasti ditolak main
+    // process tidak boleh sempat masuk ke memori layar, karena baris yang tertolak
+    // membuat simpanan otomatis collection lain ikut macet. Main process tetap
+    // hakim terakhir — aturan yang sama ada di electron/main.ts.
+    const kembar = validateKasKembar(row, data);
+    if (kembar) {
+      alert(kembar);
+      return;
     }
+
+    if (!await commit(row)) return;
     setShowModal(false);
     setEditing(null);
     setForm({ tanggal: new Date().toISOString().split('T')[0], keterangan: '', kategori: 'LAINNYA', tipe: 'MASUK', jumlah: 0, rekening: REKENING_LIST[0], referensi: '' });
@@ -147,18 +172,18 @@ export default function Finance() {
       {/* KPI */}
       <div className="grid-3 mb-4">
         <div className="card stat-card">
-          <div className="card-title">Total Kas Masuk</div>
+          <div className="card-title">Kas Masuk Bulan Ini</div>
           <div className="card-value" style={{ color: 'var(--status-operating)' }}>{fmt(totalMasuk)}</div>
-          <div className="card-sub">Penerimaan Bulan Ini</div>
+          <div className="card-sub">Penerimaan {bulanIni}</div>
         </div>
         <div className="card stat-card">
-          <div className="card-title">Total Kas Keluar</div>
+          <div className="card-title">Kas Keluar Bulan Ini</div>
           <div className="card-value" style={{ color: 'var(--status-out)' }}>{fmt(totalKeluar)}</div>
-          <div className="card-sub">Pengeluaran Bulan Ini</div>
+          <div className="card-sub">Pengeluaran {bulanIni}</div>
         </div>
         <div className="card stat-card">
-          <div className="card-title">Saldo Bersih</div>
-          <div className="card-value" style={{ color: saldo >= 0 ? 'var(--accent-blue)' : 'var(--status-out)' }}>{fmt(saldo)}</div>
+          <div className="card-title">Saldo Bersih (Semua)</div>
+          <div className="card-value" style={{ color: saldoTotal >= 0 ? 'var(--accent-blue)' : 'var(--status-out)' }}>{fmt(saldoTotal)}</div>
           <div className="card-sub">Selisih Masuk vs Keluar</div>
         </div>
       </div>

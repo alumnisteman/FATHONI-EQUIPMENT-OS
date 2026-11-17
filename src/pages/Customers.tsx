@@ -14,11 +14,12 @@ export const DEMO_CUSTOMERS: Customer[] = [
 ];
 
 export default function Customers() {
-  const { customers: data, setCustomers: setData, removeRow } = useDataStore();
+  const { customers: data, setCustomers: setData, saveRow, removeRow } = useDataStore();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [form, setForm] = useState({ name:'', phone:'', email:'', address:'', npwp:'', pic:'' });
+  const [saving, setSaving] = useState(false);
 
   const filtered = data.filter(c =>
     matchesQuery([c.name, c.phone, c.email], search)
@@ -27,13 +28,15 @@ export default function Customers() {
   const openAdd = () => { setEditing(null); setForm({ name:'',phone:'',email:'',address:'',npwp:'',pic:'' }); setShowForm(true); };
   const openEdit = (c: Customer) => { setEditing(c); setForm({ name:c.name, phone:c.phone||'', email:c.email||'', address:c.address||'', npwp:c.npwp||'', pic:c.pic||'' }); setShowForm(true); };
 
-  const save = () => {
-    if (!form.name.trim()) return;
-    if (editing) {
-      setData(d => d.map(c => c.id === editing.id ? { ...c, ...form, updatedAt: new Date().toISOString() } : c));
-    } else {
-      setData(d => [...d, { id: Date.now().toString(), ...form, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]);
-    }
+  const save = async () => {
+    if (!form.name.trim()) { alert('Nama pelanggan wajib diisi.'); return; }
+    setSaving(true);
+    const row: Customer = editing
+      ? { ...editing, ...form, updatedAt: new Date().toISOString() }
+      : { id: Date.now().toString(), ...form, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const ok = await saveRow('customers', row);
+    setSaving(false);
+    if (!ok) return; // banner sudah tampil dari dataStore
     setShowForm(false);
   };
 
@@ -59,7 +62,7 @@ export default function Customers() {
         <div className="page-header-actions">
           <div className="topbar-search" style={{ width:220 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input type="text" placeholder="Cari pelanggan..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input id="customer-search" type="text" placeholder="Cari pelanggan..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <button id="btn-add-customer" className="btn btn-primary" onClick={openAdd}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={15} height={15}><path d="M12 5v14M5 12h14"/></svg>
@@ -124,7 +127,7 @@ export default function Customers() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowForm(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={save}>Simpan</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
             </div>
           </div>
         </div>

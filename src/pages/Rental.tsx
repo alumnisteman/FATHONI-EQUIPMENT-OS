@@ -1,6 +1,7 @@
 // src/pages/Rental.tsx - Modul Manajemen Rental Alat Berat FATHONI EQUIPMENT OS
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
@@ -15,19 +16,20 @@ import {
 
 
 import { type RentalContract } from '../data/demoTransactions';
-
-
-const STATUS_MAP: Record<string, { label: string; badge: string }> = {
-  ACTIVE: { label: 'Sedang Berjalan', badge: 'badge-success' },
-  PENDING: { label: 'Menunggu Mobilisasi', badge: 'badge-warning' },
-  COMPLETED: { label: 'Selesai / Demobilisasi', badge: 'badge-muted' },
-  EXTENDED: { label: 'Diperpanjang', badge: 'badge-info' },
-};
+import { STATUS_SEWA as STATUS_MAP } from '../domain/labels';
 
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Rental() {
-  const { rentals: data, setRentals: setData, units, customers, addRental, updateUnitStatus, removeRow } = useDataStore();
+  const { rentals: data, setRentals: setData, units, customers, addRental, updateUnitStatus, saveRow, removeRow } = useDataStore();
+
+  // Ditawarkan dari kartu detail unit lewat tombol "Alokasikan Kontrak Baru":
+  // form kontrak dibuka dengan merek/model dan nomor sasis alat yang sedang
+  // dibuka. Tanpa state, layar berperilaku persis seperti sebelumnya.
+  const stateAwal = (useLocation().state ?? {}) as {
+    unit?: { serialNumber?: string; unitModel?: string };
+    baru?: boolean;
+  };
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -63,7 +65,7 @@ export default function Rental() {
     .filter(i => i.status === 'ACTIVE')
     .reduce((acc, i) => acc + i.monthlyRate, 0);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi nama pelanggan
@@ -132,7 +134,10 @@ export default function Rental() {
     }
 
     if (editingId) {
-      setData(data.map(i => i.id === editingId ? { ...i, contractNo: form.contractNo, customerName: form.customerName, unitModel: form.unitModel, serialNumber: form.serialNumber || i.serialNumber, startDate: form.startDate, endDate: form.endDate, location: form.location, monthlyRate: Number(form.monthlyRate), minimumHours: Number(form.minimumHours), operatorIncluded: form.operatorIncluded } : i));
+      const existing = data.find(i => i.id === editingId);
+      if (!existing) return;
+      const ok = await saveRow('rentals', { ...existing, contractNo: form.contractNo, customerName: form.customerName, unitModel: form.unitModel, serialNumber: form.serialNumber || existing.serialNumber, startDate: form.startDate, endDate: form.endDate, location: form.location, monthlyRate: Number(form.monthlyRate), minimumHours: Number(form.minimumHours), operatorIncluded: form.operatorIncluded });
+      if (!ok) return;
     } else {
       const newItem: RentalContract = {
         id: Date.now().toString(),
@@ -172,15 +177,14 @@ export default function Rental() {
     }
   };
 
-  const handleCompleteContract = (id: string) => {
+  const handleCompleteContract = async (id: string) => {
     if (confirm('Selesaikan kontrak sewa ini dan jadwalkan demobilisasi alat?')) {
-      setData(data.map(i => (i.id === id ? { ...i, status: 'COMPLETED' } : i)));
       const rental = data.find(i => i.id === id);
-      if (rental && rental.serialNumber) {
+      if (!rental) return;
+      await saveRow('rentals', { ...rental, status: 'COMPLETED' });
+      if (rental.serialNumber) {
         const unit = units.find((u: any) => u.serialNumber === rental.serialNumber);
-        if (unit) {
-          updateUnitStatus(unit.id, 'AVAILABLE');
-        }
+        if (unit) updateUnitStatus(unit.id, 'AVAILABLE');
       }
     }
   };
@@ -236,6 +240,24 @@ export default function Rental() {
     setForm({ ...formKosong, contractNo });
     setShowModal(true);
   };
+
+  // Nomor kontrak tetap dicalonkan dari file; hanya alatnya yang ikut terisi.
+  useEffect(() => {
+    if (!stateAwal.baru) return undefined;
+    let batal = false;
+    void (async () => {
+      await openCreateModal();
+      const unitAwal = stateAwal.unit;
+      if (batal || !unitAwal) return;
+      setForm(f => ({
+        ...f,
+        serialNumber: String(unitAwal.serialNumber ?? ''),
+        unitModel: String(unitAwal.unitModel ?? f.unitModel),
+      }));
+    })();
+    return () => { batal = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div>

@@ -44,9 +44,10 @@ function runPhase(phase) {
     if (/^(PASS|FAIL|RENDERER|TIMEOUT|HARNESS ERROR|SEED-DONE|FLUSH-MARK|===)/.test(line)) console.log(line);
   });
   const flushMark = /FLUSH-MARK (\d+)/.exec(out);
+  const flushExit = /FLUSH-EXIT (\d+)/.exec(out);
   ok(`fase ${phase}: proses keluar dengan bersih`, res.status === 0 && !res.error,
     { status: res.status, error: res.error && String(res.error), out: out.slice(-500) });
-  return { out, status: res.status, flushMark };
+  return { out, status: res.status, flushMark, flushExit };
 }
 
 // Fase seed: app boot sekali di folder kosong, lalu seed localStorage ditanam.
@@ -63,7 +64,15 @@ ok('file database dibuang sebelum fase import', !fs.existsSync(path.join(dataDir
 
 const imported = runPhase('import');
 ok('fase import selesai dengan bersih', imported.status === 0, { status: imported.status });
-const quitMs = imported.flushMark ? Date.now() - Number(imported.flushMark[1]) : Number.MAX_SAFE_INTEGER;
+ok('proses utama melaporkan kapan flush diminta dan kapan ia keluar',
+  !!imported.flushMark && !!imported.flushExit,
+  { mark: imported.flushMark && imported.flushMark[1], exit: imported.flushExit && imported.flushExit[1] });
+// Kedua stempel waktu diambil dari jam proses utama yang sama, jadi angka ini
+// hanya berisi handshake flush — bukan bongkar-proses sesudahnya, yang di mesin
+// ber-RAM kecil bisa memakan beberapa detik tanpa ada kaitan dengan simpanan.
+const quitMs = imported.flushMark && imported.flushExit
+  ? Number(imported.flushExit[1]) - Number(imported.flushMark[1])
+  : Number.MAX_SAFE_INTEGER;
 ok('quit tidak menggantung (handshake flush <= 6 detik)', quitMs <= 6000, { quitMs });
 
 const verified = runPhase('verify');

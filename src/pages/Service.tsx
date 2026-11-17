@@ -1,6 +1,7 @@
 // src/pages/Service.tsx - Modul Servis, Bengkel & Maintenance Alat Berat FATHONI EQUIPMENT OS
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDataStore } from '../store/dataStore';
 import { printDocument, sanitize, getCompanyName } from '../utils/printHelper';
 import { matchesQuery } from '../utils/searchMatch';
@@ -9,37 +10,33 @@ import {
   validateField,
   validateAmount,
   validateHourMeter,
+  validateHourMeterProgress,
+  catatanKoreksiHourMeter,
   validateName,
   validateServiceType
 } from '../utils/validation';
 
 
 import { type WorkOrder } from '../data/demoTransactions';
-
-
-
-const SERVICE_TYPE_LABEL: Record<string, string> = {
-  PERIODIC_250H: 'Servis Berkala 250 Jam',
-  PERIODIC_500H: 'Servis Berkala 500 Jam',
-  PERIODIC_1000H: 'Servis Berkala 1000 Jam',
-  BREAKDOWN: 'Perbaikan Breakdown (Darurat)',
-  OVERHAUL: 'Major Overhaul Mesin / Pompa',
-  INSPECTION: 'Inspeksi Pra-Kirim (PDI)',
-};
-
-const STATUS_MAP: Record<string, { label: string; badge: string }> = {
-  OPEN: { label: 'Menunggu Teknisi', badge: 'badge-muted' },
-  IN_PROGRESS: { label: 'Sedang Dikerjakan', badge: 'badge-info' },
-  WAITING_PARTS: { label: 'Menunggu Sparepart', badge: 'badge-warning' },
-  COMPLETED: { label: 'Servis Selesai', badge: 'badge-success' },
-};
+import { SERVICE_TYPE_LABEL, STATUS_WO as STATUS_MAP } from '../domain/labels';
 
 const fmt = (n: number) => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
 
 export default function Service() {
-  const { services: data, setServices: setData, units, customers, spareParts, completeService, updateUnitStatus, removeRow } = useDataStore();
+  const { services: data, setServices: setData, units, customers, spareParts, completeService, updateUnitStatus, saveRow, removeRow } = useDataStore();
 
-  const [search, setSearch] = useState('');
+  // Kartu detail unit mengirim pengguna ke menu ini lewat location.state:
+  // `cari` menyaring daftar ke alat itu, `baru` membuka form Work Order yang
+  // nomornya sudah dicalonkan tanpa mengisi model dan sasisnya dari awal.
+  // Tanpa state, layar berperilaku persis seperti sebelumnya.
+  const lokasi = useLocation();
+  const stateAwal = (lokasi.state ?? {}) as {
+    unit?: { serialNumber?: string; unitModel?: string };
+    baru?: boolean;
+    cari?: string;
+  };
+
+  const [search, setSearch] = useState(stateAwal.cari ?? '');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
@@ -63,10 +60,29 @@ export default function Service() {
   const [form, setForm] = useState(formKosong);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Pembacaan meter di Work Order boleh saja lebih kecil dari HM unit — tapi hanya
+  // kalau operator menyatakan itu koreksi dan menuliskan alasannya. Tanpa gerbang
+  // ini satu ketikan keliru (450 padahal 440) menurunkan angka servis seluruh
+  // alat tanpa jejak. Lihat validateHourMeterProgress + completeService.
+  const [koreksiHm, setKoreksiHm] = useState({ aktif: false, alasan: '' });
+
+  const unitDariSerial = (serial: string) => {
+    const kunci = String(serial || '').trim().toLowerCase();
+    if (!kunci) return undefined;
+    return (units as any[]).find((u: any) => String(u.serialNumber || '').trim().toLowerCase() === kunci);
+  };
+  const rujukanHm = unitDariSerial(form.serialNumber);
+  const meterMundur = !!rujukanHm && Number(form.hourMeter) < Number(rujukanHm.hourMeter || 0);
+
   // Selesai WO lewat modal: biaya aktual & part terpakai harus tercatat agar stok dan Invoice SERVICE tidak kosong.
   const [completing, setCompleting] = useState<WorkOrder | null>(null);
-  const [partsDraft, setPartsDraft] = useState<{ partId: string; quantity: number }[]>([]);
+  const [partsDraft, setPartsDraft] = useState<{ partId: string; quantity: number; _uid: string }[]>([]);
   const [actualCostDraft, setActualCostDraft] = useState(0);
+  // Kunci kirim ganda. Enter dua kali atau klik dobel pada tombol "Selesaikan"
+  // tidak boleh memanggil completeService dua kali: panggilan kedua akan
+  // mengurangi stok suku cadang sekali lagi walau invoice dan mutasi gudangnya
+  // sudah menolak duplikat. Kunci dilepas saat modal dibuka lagi.
+  const submitLock = useRef(false);
 
   const filtered = data.filter(item => {
     const matchSearch = matchesQuery([item.woNumber, item.unitModel, item.serialNumber, item.mechanicName], search);
@@ -100,7 +116,7 @@ export default function Service() {
     setDraggedId(null);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validasi model unit
@@ -147,6 +163,22 @@ export default function Service() {
       return;
     }
 
+    // Meter yang mundur terhadap HM unit hanya boleh lewat prosedur koreksi.
+    const unitRujukan = unitDariSerial(form.serialNumber);
+    // Nama kunci state layar (aktif) sengaja dipetakan ke nama API validator
+    // (koreksi): mengirim objek apa adanya membuat opts.koreksi selalu undefined,
+    // sehingga gerbangnya tidak pernah bisa dipenuhi — centang + alasan tetap
+    // ditolak dengan pesan "centang ... dan isi alasannya".
+    const hmMundur = validateHourMeterProgress(form.hourMeter, unitRujukan?.hourMeter,
+      { koreksi: koreksiHm.aktif, alasan: koreksiHm.alasan });
+    if (hmMundur) {
+      alert(hmMundur);
+      return;
+    }
+    const jejakKoreksi = unitRujukan && Number(form.hourMeter) < Number(unitRujukan.hourMeter || 0)
+      ? catatanKoreksiHourMeter(Number(unitRujukan.hourMeter || 0), Number(form.hourMeter), koreksiHm.alasan)
+      : undefined;
+
     // Validasi tanggal buka
     const dateError = validateField(form.openDate, { required: true }, 'Tanggal Buka');
     if (dateError) {
@@ -162,7 +194,9 @@ export default function Service() {
     }
 
     if (editingId) {
-      setData(data.map(i => i.id === editingId ? { ...i, woNumber: form.woNumber, unitModel: form.unitModel, serialNumber: form.serialNumber || i.serialNumber, customerOrProject: form.customerOrProject, serviceType: form.serviceType, mechanicName: form.mechanicName, hourMeter: Number(form.hourMeter), openDate: form.openDate, estimatedCost: Number(form.estimatedCost), complaintNotes: form.complaintNotes } : i));
+      const existing = data.find(i => i.id === editingId);
+      if (!existing) return;
+      await saveRow('services', { ...existing, woNumber: form.woNumber, unitModel: form.unitModel, serialNumber: form.serialNumber || existing.serialNumber, customerOrProject: form.customerOrProject, serviceType: form.serviceType, mechanicName: form.mechanicName, hourMeter: Number(form.hourMeter), openDate: form.openDate, estimatedCost: Number(form.estimatedCost), complaintNotes: form.complaintNotes, hmKoreksi: jejakKoreksi });
     } else {
       const newItem: WorkOrder = {
         id: Date.now().toString(),
@@ -177,16 +211,19 @@ export default function Service() {
         estimatedCost: Number(form.estimatedCost),
         status: 'OPEN',
         complaintNotes: form.complaintNotes,
+        hmKoreksi: jejakKoreksi,
       };
-      setData([newItem, ...data]);
+      await saveRow('services', newItem);
     }
     setShowModal(false);
     setEditingId(null);
     setForm(formKosong);
+    setKoreksiHm({ aktif: false, alasan: '' });
   };
 
   const handleEdit = (item: WorkOrder) => {
     setEditingId(item.id);
+    setKoreksiHm({ aktif: false, alasan: '' });
     setForm({ woNumber: item.woNumber, unitModel: item.unitModel, serialNumber: item.serialNumber, customerOrProject: item.customerOrProject, serviceType: item.serviceType, mechanicName: item.mechanicName, hourMeter: item.hourMeter, openDate: item.openDate, estimatedCost: item.estimatedCost, complaintNotes: item.complaintNotes });
     setShowModal(true);
   };
@@ -201,7 +238,7 @@ export default function Service() {
     }
   };
 
-  const handleUpdateStatus = (id: string, newStatus: any) => {
+  const handleUpdateStatus = async (id: string, newStatus: any) => {
     const wo = data.find(i => i.id === id);
     if (!wo) return;
 
@@ -210,7 +247,7 @@ export default function Service() {
       return;
     }
 
-    setData(data.map(i => (i.id === id ? { ...i, status: newStatus } : i)));
+    await saveRow('services', { ...wo, status: newStatus });
 
     if (wo.serialNumber && newStatus === 'IN_PROGRESS') {
       const unit = units.find((u: any) => u.serialNumber === wo.serialNumber);
@@ -219,12 +256,13 @@ export default function Service() {
   };
 
   const openCompleteModal = (wo: WorkOrder) => {
+    submitLock.current = false;
     setCompleting(wo);
     setPartsDraft([]);
     setActualCostDraft(Number(wo.estimatedCost) || 0);
   };
 
-  const addPartLine = () => setPartsDraft(prev => [...prev, { partId: '', quantity: 1 }]);
+  const addPartLine = () => setPartsDraft(prev => [...prev, { partId: '', quantity: 1, _uid: crypto.randomUUID() }]);
 
   const setPartLine = (index: number, patch: Partial<{ partId: string; quantity: number }>) =>
     setPartsDraft(prev => prev.map((line, i) => (i === index ? { ...line, ...patch } : line)));
@@ -261,6 +299,8 @@ export default function Service() {
       return;
     }
 
+    if (submitLock.current) return;
+    submitLock.current = true;
     completeService(completing.id, lines, Number(actualCostDraft));
     setCompleting(null);
     setPartsDraft([]);
@@ -268,10 +308,32 @@ export default function Service() {
 
   const openCreateModal = async () => {
     setEditingId(null);
+    setKoreksiHm({ aktif: false, alasan: '' });
     const woNumber = await nomorBerikut('services', 'woNumber', data, nomorWO);
     setForm({ ...formKosong, woNumber });
     setShowModal(true);
   };
+
+  // Pemakai jalur "catat service dari kartu Unit": form-nya dibuka lewat
+  // openCreateModal yang sama, jadi calon nomor WO tetap bersumber dari file.
+  useEffect(() => {
+    if (!stateAwal.baru) return undefined;
+    let batal = false;
+    void (async () => {
+      await openCreateModal();
+      if (batal) return;
+      const unitAwal = stateAwal.unit;
+      if (unitAwal) {
+        setForm(f => ({
+          ...f,
+          serialNumber: String(unitAwal.serialNumber ?? ''),
+          unitModel: String(unitAwal.unitModel ?? f.unitModel),
+        }));
+      }
+    })();
+    return () => { batal = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePrint = (item: WorkOrder) => {
     if (confirm(`Cetak Work Order ${item.woNumber}?`)) {
@@ -667,6 +729,41 @@ export default function Service() {
                   </div>
                 </div>
 
+                {meterMundur && (
+                  <div className="form-group" style={{
+                    border: '1px solid var(--status-maintenance, #F59E0B)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    marginBottom: 12,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: '#F59E0B' }}>
+                      Pembacaan meter mundur
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                      Unit {rujukanHm?.serialNumber} tercatat di {new Intl.NumberFormat('id-ID').format(Number(rujukanHm?.hourMeter) || 0)} HM,
+                      Work Order ini membaca {new Intl.NumberFormat('id-ID').format(Number(form.hourMeter) || 0)} HM
+                      ({new Intl.NumberFormat('id-ID').format((Number(rujukanHm?.hourMeter) || 0) - (Number(form.hourMeter) || 0))} jam lebih rendah).
+                      HM unit tidak akan diturunkan oleh servis ini.
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, marginBottom: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={koreksiHm.aktif}
+                        onChange={e => setKoreksiHm(k => ({ ...k, aktif: e.target.checked }))}
+                      />
+                      Ini koreksi pembacaan meter
+                    </label>
+                    {koreksiHm.aktif && (
+                      <input
+                        className="form-input"
+                        placeholder="Alasan koreksi, mis. HM sebelumnya salah baca 450, seharusnya 440"
+                        value={koreksiHm.alasan}
+                        onChange={e => setKoreksiHm(k => ({ ...k, alasan: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                )}
+
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Teknisi / Mekanik</label>
@@ -740,7 +837,7 @@ export default function Service() {
                       {partsDraft.map((line, index) => {
                         const part = spareParts.find(p => p.id === line.partId);
                         return (
-                          <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <div key={line._uid} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <select
                               className="form-select"
                               style={{ flex: 3 }}
