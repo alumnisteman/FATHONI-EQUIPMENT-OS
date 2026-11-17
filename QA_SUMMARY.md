@@ -32,10 +32,17 @@ tetap disimpan sebagai sejarah.
   mengizinkan kunci pengaturan `hems_business_modes`. Dua balapan navigasi di harness
   (redirect rute awal menimpa hash `#/units`/`#/spareparts`) ditutup dengan menunggu
   `.sidebar-item.active` sebelum berpindah layar (`perf P.9b`, `compat A.7b`).
-- **Paket**: `dist-app/win-unpacked/FATHONI.exe` 177.038.336 B (ProductVersion 3.1.0),
-  `app.asar` 4.522.534 B SHA-256 `6cbdb3e7…c931ff5`; installer
-  `dist-installer/FATHONI-Setup-3.1.0.exe` 83.159.797 B SHA-256 `2579c2ea…08fea60`.
-  Keduanya **TIDAK TERSIGN**.
+- **Paket (ditandatangani 17 Nov 14:08–14:11)**: `dist-app/win-unpacked/FATHONI.exe`
+  177.026.440 B SHA-256 `dd790ef7…9f01b4b` (ProductVersion 3.1.0), `app.asar` 4.522.534 B
+  SHA-256 `6cbdb3e7…c931ff5` (tidak berubah oleh signing); installer
+  `dist-installer/FATHONI-Setup-3.1.0.exe` 83.166.464 B SHA-256 `4a49e2a6…ea39732`.
+  Keduanya **TERSIGN** dengan sertifikat **internal** `CN=FATHONI EQUIPMENT OS,
+  OU=Internal Code Signing` (thumbprint `2D4FAE84…B722DB`, timestamp DigiCert);
+  `signtool verify /pa` lulus dan `Get-AuthenticodeSignature` = `Valid`. Ini **bukan**
+  sertifikat CA publik — SmartScreen tetap muncul di mesin yang belum memasang
+  `fathoni-internal.cer`. `smoke-paket` 28/0 diulang pada exe bertanda; rantai 1.502 di
+  bawah diukur pada binari unsigned dengan `app.asar` identik, salinannya disimpan di
+  `C:\tmp\riwayat\`.
 - **Hasil rantai 2026-11-17** (`C:/tmp/regressi-310c.log`): 19 harness + audit,
   **1.502 assertion lulus, 0 gagal**, `rusak: tidak`, semua proses keluar bersih,
   `npm audit` 0 kerentanan (tinggi/kritis 0, sedang 0, rendah 0). Angka 1.502 =

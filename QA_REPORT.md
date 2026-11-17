@@ -1535,10 +1535,16 @@ di bawah 250 ms.
 
 - **Tidak ada perubahan skema**; `DERIVED_REVISION` tetap 5 dan profil live
   `%APPDATA%\hems-heavy-equipment-system` tidak disentuh.
-- Paket 3.1.0: `app.asar` 4.522.534 B SHA-256 `6cbdb3e7…c931ff5`;
-  `dist-installer/FATHONI-Setup-3.1.0.exe` 83.159.797 B SHA-256 `2579c2ea…08fea60`,
-  ProductVersion 3.1.0. Keduanya **TIDAK TERSIGN**; distribusi luas tetap menunggu
-  sertifikat OV/EV. Dua perbaikan harness sesudah pemaketan hanya mengubah `tests/` dan
-  tidak masuk `app.asar`, jadi bukti paket tidak batal.
+- Paket 3.1.0 ditandatangani 17 Nov 14:08–14:11: `app.asar` 4.522.534 B SHA-256
+  `6cbdb3e7…c931ff5` (tidak berubah oleh signing); `FATHONI.exe` 177.026.440 B SHA-256
+  `dd790ef7…9f01b4b`; `dist-installer/FATHONI-Setup-3.1.0.exe` 83.166.464 B SHA-256
+  `4a49e2a6…ea39732`, ProductVersion 3.1.0. Keduanya **TERSIGN** dengan sertifikat
+  **internal/self-signed** (`CN=FATHONI EQUIPMENT OS, OU=Internal Code Signing`,
+  thumbprint `2D4FAE84…B722DB`, timestamp DigiCert, `verify /pa` lulus). SmartScreen tetap
+  muncul di mesin yang belum memasang sertifikat itu; distribusi luas tetap menunggu
+  sertifikat OV/EV publik. Rantai 1.502 diukur pada binari unsigned (`C:\tmp\riwayat\`);
+  setelah signing, `smoke-paket` diulang 28/0 pada exe bertanda. Dua perbaikan harness
+  sesudah pemaketan hanya mengubah `tests/` dan tidak masuk `app.asar`, jadi bukti paket
+  tidak batal.
 - Lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`) tidak dijalankan ulang pada
   siklus ini; angka kapasitas yang dikutip di §3 tetap milik pengukuran sebelumnya.

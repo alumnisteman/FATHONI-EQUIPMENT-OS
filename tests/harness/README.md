@@ -337,9 +337,12 @@ banner), otorisasi +13 (nomor dokumen, satu-sumber-satu-invoice, sewa tumpang ti
 lewat IPC), harness baru `automation-check` (33), serta `perf P.9b` dan `compat A.7b`.
 Dua percobaan sebelumnya merah karena balapan navigasi harness (redirect rute awal
 menimpa hash setelah `reload()`), bukan produk; perbaikannya menunggu
-`.sidebar-item.active` sebelum berpindah layar. Folder `tmp-harness/logs/` juga memuat
-arsip mutasi 11–12 Oktober (`m10`, `m12b`, `mut-*`, `crud-a`, dll.) yang memang merah;
-angka di atas hanya diambil dari log rantai terakhir.
+`.sidebar-item.active` sebelum berpindah layar. Pada 17 Nov 14:08–14:11 exe dan installer
+ditandatangani dengan sertifikat **internal** (`signtool verify /pa` lulus, timestamp
+DigiCert) — `smoke-paket` diulang 28/0 pada exe bertanda, sementara angka 1.502 di atas
+diukur pada binari unsigned dengan `app.asar` identik (`C:\tmp\riwayat\`). Folder
+`tmp-harness/logs/` juga memuat arsip mutasi 11–12 Oktober (`m10`, `m12b`, `mut-*`,
+`crud-a`, dll.) yang memang merah; angka di atas hanya diambil dari log rantai terakhir.
 Rantai penuh memakan ±15 menit dan **tidak boleh dijalankan dua-duanya sekaligus**:
 `rantai-302g` adalah contoh kegagalannya — dua rantai bertumpuk, dan hanya uji waktu yang
 jatuh (db 7.2: pencarian 50.000 baris 3.462 ms terhadap anggaran 1.000 ms) sementara
