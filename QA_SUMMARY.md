@@ -53,8 +53,11 @@ tetap disimpan sebagai sejarah.
   `C:/tmp/uji-instalasi-310/hasil-skrip-full.txt`). Exe terpasang identik dengan paket
   bertanda (`dd790ef7…9f01b4b`), `app.asar` `6cbdb3e7…c931ff5`, ProductVersion 3.1.0,
   per-pengguna tanpa admin, dan `fathoni.db` live tidak berubah. Mesin ini bukan Windows
-  bersih (VC++ dan sertifikat internal sudah ada); VM bersih, SmartScreen, dan AV masih
-  menjadi gerbang distribusi luas.
+  bersih (sertifikat internal sudah ada); ketergantungan VC++ diukur dan **tidak ada**
+  (`better_sqlite3.node` hanya mengimpor `KERNEL32.dll`). Untuk VM bersih kit dipanggil
+  dengan `-ExecutionPolicy Bypass` dan menghapus Mark of the Web installer setelah hash +
+  tanda tangan lolos agar SmartScreen tidak menghentikan mode senyap. VM bersih, SmartScreen
+  pada mesin asing, dan AV masih menjadi gerbang distribusi luas.
 - **Batas**: tidak ada perubahan skema dan `DERIVED_REVISION` tetap 5; profil live
   `%APPDATA%\hems-heavy-equipment-system` tidak disentuh. Lintasan kapasitas 400.000 baris
   **diulang pada 3.1.0** (`C:/tmp/kapasitas-310c.log`): **56 lulus / 0 gagal**, berkas

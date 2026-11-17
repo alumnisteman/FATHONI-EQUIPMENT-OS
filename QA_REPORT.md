@@ -1576,8 +1576,16 @@ uninstaller menghapus program/ARP/shortcut tanpa menyentuh `fathoni.db` (SHA-256
 - **Mesin uji instalasi bukan Windows bersih.** Host ini sudah memiliki VC++ runtime dan
   sertifikat internal terpasang di Root/TrustedPublisher, jadi hasil 30/0 membuktikan jalur
   uninstall→install→boot→uninstall serta ketahanan data, bukan ketergantungan runtime pada
-  Windows baru. Di VM tanpa sertifikat internal, status rantai Authenticode akan
-  `UnknownError` (kit memakai hash + thumbprint sebagai penentu) dan SmartScreen tetap
+  Windows baru. Ketergantungan itu diukur, bukan diasumsikan: `better_sqlite3.node` hanya
+  mengimpor `KERNEL32.dll`, dan proses utama 3.1.0 memuat `ucrtbase.dll`/`msvcp_win.dll`
+  milik Windows tanpa `vcruntime140`/`msvcp140`, jadi tidak ada redistributable VC++ yang
+  perlu dipasang lebih dulu. Di VM tanpa sertifikat internal, status rantai Authenticode
+  akan `UnknownError` (kit memakai hash + thumbprint sebagai penentu) dan SmartScreen tetap
   menampilkan “Unknown publisher”; pemindaian antivirus di mesin tanpa allowlist juga belum
   diuji. Kit `installer/uji-instalasi-bersih.ps1` disiapkan untuk menjalankan siklus ini di
-  VM bersih (`-SampleDb` opsional untuk uji data-bertahan dengan database sungguhan).
+  VM bersih (`-SampleDb` opsional untuk uji data-bertahan dengan database sungguhan). Di
+  Windows bersih kit harus dipanggil dengan `-ExecutionPolicy Bypass` (kebijakan bawaan
+  `Restricted`), dan setelah hash + tanda tangan lolos kit menghapus Mark of the Web dari
+  installer supaya SmartScreen tidak menghentikan `/VERYSILENT`; jalur itu diuji pada salinan
+  installer bertanda unduhan (`-PreflightOnly` 8 lulus dengan hanya P.6 gagal di host
+  terpasang, lalu `-BootOnly` 6/0 pada exe terpasang).

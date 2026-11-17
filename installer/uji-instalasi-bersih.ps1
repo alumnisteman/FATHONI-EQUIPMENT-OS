@@ -7,6 +7,15 @@
   Jalankan sebagai pengguna biasa (BUKAN administrator) di VM Windows 10/11 x64
   yang belum memiliki FATHONI terpasang. Skrip tidak memakai dependensi luar.
 
+  Windows 10/11 bersih memakai kebijakan eksekusi PowerShell "Restricted", sehingga
+  berkas .ps1 ditolak. Panggil lewat:
+    powershell -ExecutionPolicy Bypass -File .\uji-instalasi-bersih.ps1
+
+  Bila installer disalin dari jaringan/USB, berkas membawa tanda unduhan
+  (Mark of the Web) yang membuat SmartScreen menghalangi instalasi senyap.
+  Setelah hash dan tanda tangan lolos, skrip menghapus tanda itu (Unblock-File)
+  dan mencatatnya di log.
+
   Urutan uji:
     1. Preflight: installer ada, hash SHA-256 cocok, tanda tangan internal cocok,
        timestamp ada, tidak ada proses/instalasi FATHONI lama, disk cukup.
@@ -55,7 +64,10 @@
   yang sudah ada sebelumnya tidak pernah dihapus.
 
 .EXAMPLE
-  .\uji-instalasi-bersih.ps1 -Installer .\FATHONI-Setup-3.1.0.exe
+  powershell -ExecutionPolicy Bypass -File .\uji-instalasi-bersih.ps1 -Installer .\FATHONI-Setup-3.1.0.exe
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File .\uji-instalasi-bersih.ps1 -PreflightOnly
 
 .EXAMPLE
   .\uji-instalasi-bersih.ps1 -SampleDb .\fathoni.db -HapusDataUji
@@ -238,6 +250,21 @@ try {
   Cek 'P.3b timestamp tersemat' $adaTs $(if ($adaTs) { $sig.TimeStamperCertificate.Subject } else { 'tidak ada' })
   $sertAkhir = if ($sig.SignerCertificate) { $sig.SignerCertificate.NotAfter } else { $null }
   Cek 'P.3c sertifikat belum kedaluwarsa' ([bool]$sertAkhir -and $sertAkhir -gt (Get-Date)) $(if ($sertAkhir) { 'sampai ' + $sertAkhir.ToString('yyyy-MM-dd') } else { '-' })
+
+  # Dihapus hanya setelah integritas (P.2) dan identitas (P.3) terbukti: SmartScreen
+  # memeriksa Mark of the Web sebelum proses dibuat, jadi tanda itu harus hilang
+  # agar /VERYSILENT tidak berhenti di dialog "Windows protected your PC".
+  $zona = Get-Item -LiteralPath $Installer -Stream Zone.Identifier -ErrorAction SilentlyContinue
+  if ($zona) {
+    try {
+      Unblock-File -LiteralPath $Installer -ErrorAction Stop
+      Catat '       Mark of the Web dihapus dari installer (hash & tanda tangan sudah lolos); SmartScreen tidak menghalangi mode senyap'
+    } catch {
+      Catat ('       peringatan: gagal menghapus Mark of the Web: ' + $_.Exception.Message)
+    }
+  } else {
+    Catat '       installer tanpa Mark of the Web'
+  }
 
   Cek 'P.4 sistem operasi 64-bit' ([Environment]::Is64BitOperatingSystem) ([Environment]::OSVersion.VersionString)
 
