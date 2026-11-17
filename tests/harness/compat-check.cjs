@@ -178,6 +178,13 @@ async function run(wc) {
     await waitFor(wc, `!/Masuk ke FATHONI/.test(document.body.innerText) && document.body.innerText.length > 40`,
       'aplikasi terbuka', 40000));
 
+  // Redirect rute awal sesudah reload bisa menimpa hash yang disetel harapan
+  // terlalu cepat, sehingga layar tujuan tidak pernah tampil dan A.8 menunggu
+  // 30 detik di halaman lain. Tunggu menu aktif dulu sebelum berpindah.
+  const ruteAwal = await waitFor(wc, `!!document.querySelector('.sidebar-item.active')`,
+    'rute awal stabil', 40000);
+  ok('A.7b rute awal stabil sebelum harness memindahkan layar', ruteAwal, ruteAwal);
+
   await ev(wc, `window.location.hash = '#/spareparts'; return true;`);
   ok('A.8 halaman Suku Cadang terbuka di profil hasil upgrade',
     await waitFor(wc, `!!document.querySelector('#spareparts-search')`, 'halaman suku cadang', 30000));

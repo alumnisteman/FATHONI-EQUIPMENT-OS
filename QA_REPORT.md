@@ -1425,13 +1425,12 @@ Electron langsung dari `node_modules/electron/dist/electron.exe`, bukan `npx ele
 (§4.12); kalau berkas itu belum ada, `regressi.sh` berhenti dengan `RAMBU` dan `exit 8`
 alih-alih menjalankan rantai setengah jalan.
 
-## 9. Siklus otomatisasi 2026-11-17 — worktree 3.1.0 (belum dirilis)
+## 9. Rilis 3.1.0 — 2026-11-17 (siklus otomatisasi, terverifikasi terhadap paket)
 
-Bagian ini mencatat siklus audit-implementasi-uji berikutnya. Versi di `package.json`
-sudah 3.1.0, tetapi worktree memuat puluhan berkas yang belum di-commit dan **belum ada
-paket/installer 3.1.0 yang dibangun dari sumber ini**. Semua angka di bawah adalah bukti
-atas worktree yang dibangun pada hari itu (`npm run build` + `npm run build:electron`),
-bukan bukti rilis; catatan rilis 3.0.5 di atas tidak diubah.
+Bagian ini mencatat siklus audit-implementasi-uji yang berakhir sebagai rilis 3.1.0.
+Paket dibangun dari sumber hari ini dengan `npm run build` + `build:electron` +
+`electron-builder`, installer dikompilasi Inno Setup, lalu rantai penuh dijalankan
+terhadap paket itu. Catatan rilis 3.0.5 di atas tidak diubah dan tetap menjadi sejarah.
 
 ### §9.1 Celah yang ditemukan di sumber
 
@@ -1504,19 +1503,29 @@ Tiga kegagalan rantai pertama bukan cacat aplikasi, melainkan harness yang basi:
 `tahan A.14` juga kini mencetak teks banner yang tersisa saat gagal, bukan hanya `false`,
 supaya kegagalan berikutnya langsung bisa didiagnosis.
 
+Dua percobaan rantai terhadap paket 3.1.0 sempat merah karena balapan yang sama di
+harness: setelah `reload()`, harness menyetel hash tujuan (`#/units` pada `perf`,
+`#/spareparts` pada `compat`) sebelum redirect rute awal selesai, sehingga redirect itu
+menimpa hash dan layar tujuan tidak pernah tampil (masing-masing menunggu 60/30 detik di
+halaman lain). Rerun sendirian membuktikan aplikasinya sehat (`perf` 40/0, `compat` 31/0
+dengan profil baru). Perbaikannya di harness: tunggu `.sidebar-item.active` sebelum
+berpindah layar, lalu assertion `perf P.9b` dan `compat A.7b` mengunci prasyarat itu.
+Tidak ada perubahan produk untuk dua kegagalan tersebut.
+
 ### §9.5 Hasil pengujian 2026-11-17
 
-Rantai penuh `sh tests/harness/regressi.sh` (`C:/tmp/regressi-aut-final.log`), terhadap
-sumber yang dibangun hari itu: migration 49, unit 395, otomatisasi 33, auth 58, otorisasi
-62, gui 73, flow 30, handoff 176, usable 42, crud 32, cetak 73, db 136, integritas 74,
-compat 31, perf 40, tahan 32, store 48, backup 88, smoke-paket 28 — **1.500 assertion,
-0 gagal**, `rusak: tidak`, `proses keluar tidak bersih: tidak`, dan `exit=0` di setiap
-langkah. `npm audit`: 0 kerentanan (tinggi/kritis 0, sedang 0, rendah 0).
+Rantai penuh `sh tests/harness/regressi.sh` (`C:/tmp/regressi-310c.log`), terhadap paket
+3.1.0: migration 49, unit 395, otomatisasi 33, auth 58, otorisasi 62, gui 73, flow 30,
+handoff 176, usable 42, crud 32, cetak 73, db 136, integritas 74, compat 32, perf 41,
+tahan 32, store 48, backup 88, smoke-paket 28 — **1.502 assertion, 0 gagal**,
+`rusak: tidak`, `proses keluar tidak bersih: tidak`, dan `exit=0` di setiap langkah.
+`npm audit`: 0 kerentanan (tinggi/kritis 0, sedang 0, rendah 0). Langkah `paket` pada
+rantai ini menguji `FATHONI.exe` 3.1.0 yang dibangun hari yang sama, bukan exe 24 Oktober.
 
 Kenaikan dari 1.450 (3.0.5): unit +4, otorisasi +13 (tiga penjaga lewat IPC sungguhan),
-dan harness baru `automation-check` 33. `validation-check` juga memuat assertion untuk
-`dataStore` (idempotensi, `actualCost`, pembersihan banner) dan urutan kunci kirim ganda
-di layar Servis.
+harness baru `automation-check` 33, plus `perf P.9b` dan `compat A.7b`. `validation-check`
+juga memuat assertion untuk `dataStore` (idempotensi, `actualCost`, pembersihan banner)
+dan urutan kunci kirim ganda di layar Servis.
 
 Biaya penjaga diukur terpisah pada 100.000 unit: memuat collection 265–465 ms dan
 pemeriksaan 22 ms per tulisan; pada 12.000 unit P.23 (satu baris lewat `db-patch`) tetap
@@ -1526,10 +1535,10 @@ di bawah 250 ms.
 
 - **Tidak ada perubahan skema**; `DERIVED_REVISION` tetap 5 dan profil live
   `%APPDATA%\hems-heavy-equipment-system` tidak disentuh.
-- Langkah `smoke-paket` pada rantai ini menjalankan `dist-app/win-unpacked` yang dibangun
-  **24 Oktober 2026**, bukan paket dari worktree sekarang. Ia membuktikan harness dan
-  halaman paket, bukan sumber yang baru diubah; paket 3.1.0 harus dibangun ulang sebelum
-  angka ini boleh disebut bukti rilis.
+- Paket 3.1.0: `app.asar` 4.522.534 B SHA-256 `6cbdb3e7…c931ff5`;
+  `dist-installer/FATHONI-Setup-3.1.0.exe` 83.159.797 B SHA-256 `2579c2ea…08fea60`,
+  ProductVersion 3.1.0. Keduanya **TIDAK TERSIGN**; distribusi luas tetap menunggu
+  sertifikat OV/EV. Dua perbaikan harness sesudah pemaketan hanya mengubah `tests/` dan
+  tidak masuk `app.asar`, jadi bukti paket tidak batal.
 - Lintasan kapasitas 400.000 baris (`HEMS_PERF_KAPASITAS=1`) tidak dijalankan ulang pada
   siklus ini; angka kapasitas yang dikutip di §3 tetap milik pengukuran sebelumnya.
-- Binari belum ditandatangani; keputusan distribusi luas masih menunggu sertifikat.

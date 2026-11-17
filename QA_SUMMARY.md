@@ -1,13 +1,13 @@
-# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.0.5
-**Tanggal**: 2026-10-13
+# Ringkasan Status QA — FATHONI EQUIPMENT OS 3.1.0
+**Tanggal**: 2026-11-17
 **Rincian**: `QA_REPORT.md` (laporan lengkap) dan `tests/harness/README.md` (matriks assertion per cacat)
 
-## Status worktree 3.1.0 — 2026-11-17 (BELUM DIRILIS)
+## Status rilis 3.1.0 — 2026-11-17 (terverifikasi terhadap paket)
 
-Bagian ini mencatat keadaan sumber sekarang dan **tidak menggantikan** catatan rilis 3.0.5
-di bawah. `package.json` sudah 3.1.0, tetapi worktree memuat puluhan berkas yang belum
-di-commit dan **belum ada paket/installer 3.1.0 yang dibangun dari sumber ini**. Karena itu
-angka di sini adalah bukti atas worktree yang dibangun saat itu, bukan bukti rilis.
+Bagian ini mencatat rilis 3.1.0. Paket dibangun dari sumber hari ini
+(`npm run build` + `build:electron` + `electron-builder`), lalu installer Inno Setup;
+rantai penuh dijalankan terhadap paket itu, bukan jalur dev. Catatan rilis 3.0.5 di bawah
+tetap disimpan sebagai sejarah.
 
 - **Penjaga tulis baru** di `electron/automation.ts` (murni, tanpa SQLite) dipanggil dari
   `db-patch` di `electron/main.ts`: kontrak `duplicates` di skema ditegakkan saat baris
@@ -29,20 +29,28 @@ angka di sini adalah bukti atas worktree yang dibangun saat itu, bukan bukti ril
   `perf P.21` memakai bulan berjalan karena kartu Kas berlabel “Bulan Ini” (tanggal seed
   tetap membuat kartu Rp 0 setelah bulan berganti — itu harness basi, bukan aplikasi);
   `smoke-paket` kini menyelesaikan pemilih profil bisnis pada instalasi baru dan
-  mengizinkan kunci pengaturan `hems_business_modes`.
-- **Hasil rantai 2026-11-17** (`C:/tmp/regressi-aut-final.log`): 19 harness + audit,
-  **1.500 assertion lulus, 0 gagal**, `rusak: tidak`, semua proses keluar bersih,
-  `npm audit` 0 kerentanan (tinggi/kritis 0, sedang 0, rendah 0).
+  mengizinkan kunci pengaturan `hems_business_modes`. Dua balapan navigasi di harness
+  (redirect rute awal menimpa hash `#/units`/`#/spareparts`) ditutup dengan menunggu
+  `.sidebar-item.active` sebelum berpindah layar (`perf P.9b`, `compat A.7b`).
+- **Paket**: `dist-app/win-unpacked/FATHONI.exe` 177.038.336 B (ProductVersion 3.1.0),
+  `app.asar` 4.522.534 B SHA-256 `6cbdb3e7…c931ff5`; installer
+  `dist-installer/FATHONI-Setup-3.1.0.exe` 83.159.797 B SHA-256 `2579c2ea…08fea60`.
+  Keduanya **TIDAK TERSIGN**.
+- **Hasil rantai 2026-11-17** (`C:/tmp/regressi-310c.log`): 19 harness + audit,
+  **1.502 assertion lulus, 0 gagal**, `rusak: tidak`, semua proses keluar bersih,
+  `npm audit` 0 kerentanan (tinggi/kritis 0, sedang 0, rendah 0). Angka 1.502 =
+  1.500 sebelumnya + `perf P.9b` + `compat A.7b`.
 - **Batas**: tidak ada perubahan skema dan `DERIVED_REVISION` tetap 5; profil live
-  `%APPDATA%\hems-heavy-equipment-system` tidak disentuh. Langkah `smoke-paket` pada rantai
-  ini menjalankan `dist-app/win-unpacked` yang dibangun 24 Oktober, jadi ia belum membuktikan
-  sumber 3.1.0 sekarang. Biaya penjaga terukur: pada 100.000 unit muat collection 265–465 ms
-  + pemeriksaan 22 ms per tulisan; pada 12.000 unit P.23 tetap di bawah 250 ms.
+  `%APPDATA%\hems-heavy-equipment-system` tidak disentuh. Lintasan kapasitas 400.000 baris
+  tidak diulang. Dua perbaikan harness sesudah pemaketan hanya mengubah `tests/`, tidak
+  masuk `app.asar`, jadi bukti paket tetap berlaku. Biaya penjaga terukur: pada 100.000
+  unit muat collection 265–465 ms + pemeriksaan 22 ms per tulisan; pada 12.000 unit P.23
+  tetap di bawah 250 ms.
 
 ## Verdict
 
 Bagian di bawah adalah catatan **rilis 3.0.5** (2026-10-13) dan tetap berlaku untuk paket
-3.0.5 yang diedarkan; ia tidak diperbarui untuk worktree 3.1.0 di atas.
+3.0.5 yang diedarkan; ia tidak diperbarui untuk rilis 3.1.0 di atas.
 Rilis 3.0.5 terverifikasi pada mesin Windows ini, dan yang diuji adalah paket yang
 diedarkan: `dist-app/win-unpacked` + `dist-installer/FATHONI-Setup-3.0.5.exe` (`app.asar`
 4.511.034 byte; `FATHONI.exe` `FileVersion`/`ProductVersion` `3.0.5`, build 19:22;

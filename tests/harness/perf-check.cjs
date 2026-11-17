@@ -322,6 +322,14 @@ async function run(wc) {
   ok('P.9 dari klik sampai aplikasi terbuka di bawah 10 detik', siapMs < 10000, { siapMs });
   catat('login + reload sampai kerangka tampil (ms)', siapMs);
 
+  // Redirect rute awal sesudah reload bisa masih berjalan saat P.8 lulus. Kalau
+  // hash #/units disetel terlalu cepat, redirect itu menimpanya dan layar Unit
+  // tidak pernah tampil — P.10 lalu menunggu 60 detik pada halaman yang tidak
+  // punya #pager-info. Tunggu menu aktif dulu supaya pengukuran tidak balapan.
+  const ruteAwal = await waitFor(wc, `!!document.querySelector('.sidebar-item.active')`,
+    'rute awal stabil', 60000);
+  ok('P.9b rute awal stabil sebelum harness memindahkan layar', ruteAwal, ruteAwal);
+
   // ══ 4. Halaman Unit: halaman pertama ═════════════════════════════════════
   await ev(wc, `window.location.hash = '#/units'; return true;`);
   const unitSiap = await waitFor(wc, `!/memuat/.test(txt('#pager-info')) && /record/.test(txt('#pager-info'))`,

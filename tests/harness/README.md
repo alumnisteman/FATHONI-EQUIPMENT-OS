@@ -325,21 +325,21 @@ Riwayat: rantai 2026-10-12 19:55 `C:/tmp/rantai-3.0.4-final.log` adalah baseline
 menuntut nol baris sementara dropdown katalog memang membaca 10 — lihat daftar periksa di
 bawah dan QA_REPORT §4.19. Angka hijau yang dikutip dokumen QA milik
 `C:/tmp/rantai-3.0.4-final.log`.
-Catatan 2026-11-17 — worktree 3.1.0 (**BELUM DIRILIS**): rantai yang sama dijalankan
-terhadap sumber yang dibangun saat itu (`npm run build` + `npm run build:electron`;
-`C:/tmp/regressi-aut-final.log`): migration 49, unit 395, **otomatisasi 33**,
+Catatan 2026-11-17 — **rilis 3.1.0 terverifikasi terhadap paket**: `npm run build` +
+`build:electron` + `electron-builder` + Inno Setup, lalu rantai penuh
+(`C:/tmp/regressi-310c.log`): migration 49, unit 395, **otomatisasi 33**,
 auth 58, otorisasi 62, gui 73, flow 30, handoff 176, usable 42, crud 32, cetak 73,
-db 136, integritas 74, compat 31, perf 40, tahan 32, store 48, backup 88,
-smoke-paket 28 — **1.500 assertion, 0 gagal**, `rusak: tidak`,
+db 136, integritas 74, compat 32, perf 41, tahan 32, store 48, backup 88,
+smoke-paket 28 — **1.502 assertion, 0 gagal**, `rusak: tidak`,
 `proses keluar tidak bersih: tidak`; `npm audit` 0 kerentanan. Kenaikan dari 1.450
 berasal dari unit +4 (idempotensi servis, biaya aktual, kunci kirim ganda, pembersihan
 banner), otorisasi +13 (nomor dokumen, satu-sumber-satu-invoice, sewa tumpang tindih
-lewat IPC), dan harness baru `automation-check` (33). Dua peringatan kejujuran:
-(1) langkah `smoke-paket` di rantai ini menjalankan `dist-app/win-unpacked` yang
-dibangun 24 Oktober, bukan paket dari worktree sekarang — ia membuktikan harness dan
-halaman paket, bukan sumber yang baru diubah; (2) folder `tmp-harness/logs/` juga
-memuat arsip mutasi 11–12 Oktober (`m10`, `m12b`, `mut-*`, `crud-a`, dll.) yang memang
-merah, dan angka di atas hanya diambil dari log yang ditulis rantai terakhir.
+lewat IPC), harness baru `automation-check` (33), serta `perf P.9b` dan `compat A.7b`.
+Dua percobaan sebelumnya merah karena balapan navigasi harness (redirect rute awal
+menimpa hash setelah `reload()`), bukan produk; perbaikannya menunggu
+`.sidebar-item.active` sebelum berpindah layar. Folder `tmp-harness/logs/` juga memuat
+arsip mutasi 11–12 Oktober (`m10`, `m12b`, `mut-*`, `crud-a`, dll.) yang memang merah;
+angka di atas hanya diambil dari log rantai terakhir.
 Rantai penuh memakan ±15 menit dan **tidak boleh dijalankan dua-duanya sekaligus**:
 `rantai-302g` adalah contoh kegagalannya — dua rantai bertumpuk, dan hanya uji waktu yang
 jatuh (db 7.2: pencarian 50.000 baris 3.462 ms terhadap anggaran 1.000 ms) sementara
